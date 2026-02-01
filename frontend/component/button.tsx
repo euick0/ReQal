@@ -13,7 +13,6 @@ interface ButtonProps {
 
 
 const Button = ({content, style = "main", onClick, customCSS, reactNode, buttonType = "button"}: ButtonProps) => {
-    //TODO melhorar focus do butão
     return (
         <div>
             <button

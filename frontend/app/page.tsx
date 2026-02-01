@@ -3,6 +3,7 @@ import Header from "@/component/header";
 
 const Home = () => {
     //TODO completar a pagina de entrada
+    //TODO mudar o icone do site
     return (
         <main className="overflow-x-hidden ">
             <Header/>

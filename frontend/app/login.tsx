@@ -1,22 +1,21 @@
 'use server';
 
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
+import {redirect} from "next/navigation";
+import {cookies} from "next/headers";
 
-const RegisterHandler = async (formData: FormData) => {
+const LoginHandler = async (formData: FormData) => {
     const email = formData.get("email")
     const password = formData.get("password")
-    const name = formData.get("name")
 
-    const response = await fetch("http://localhost:8000/api/users/", {
+    const response = await fetch("http://localhost:8000/api/tokens/", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
-        body: JSON.stringify({name: name, username: email, password:password}),
+        body: JSON.stringify({ username: email, password:password}),
     });
 
-    console.log(response.json())
+    console.log(response)
 
     if (!response.ok) {
         const errorData = await response.json();
@@ -25,8 +24,8 @@ const RegisterHandler = async (formData: FormData) => {
         return;
     }
 
-
+    redirect("/main")
 
 };
 
-export default RegisterHandler;
+export default LoginHandler;

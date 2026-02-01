@@ -3,32 +3,40 @@
 import React from 'react';
 import SidebarItem from "@/app/main/sidebarItem";
 import clsx from "clsx";
+import Breadcrumbs from "./breadcrumbs";
+import Image from "next/image";
+import SidebarHeader from "@/app/main/sidebarHeader";
 
 const Sidebar = () => {
     const [isExpanded, setIsExpanded] = React.useState(false);
+    const transitionDelay = 300;
 
     return (
-        <div
-            className={clsx("group bg-backgroundLight w-20 h-full absolute top-0 left-0 rounded-r-lg z-10 transition-all duration-300 ease-in-out flex flex-col justify-between",{
-                "w-64": isExpanded,
-            })}>
-            <div className="h-20 w-1 absolute bg-white top-0 left-0">
+        <SidebarContext.Provider value={{isExpanded, setIsExpanded}}>
+            <div className="flex h-screen">
+                <div className={clsx(`group bg-backgroundLight w-20 h-full sticky top-0 left-0 rounded-r-lg z-10 transition-all duration-${transitionDelay} ease-in-out flex flex-col justify-between`, {
+                        "w-64": isExpanded,
+                    })}>
+                    <SidebarHeader transitionDelay={transitionDelay}></SidebarHeader>
+                    <div className="">
 
-            </div>
-            <div className="w-full flex-row items-center">
-                <div
-                    onClick={() => {
-                        setIsExpanded(!isExpanded)
-                    }}>
-                    <SidebarItem size={45} text="Toggle Sidebar" imagePath="svgs/sidebar.svg" invert={true}/>
+                    </div>
+                    <div className="w-full flex-row items-center">
+                        <SidebarItem size={50} text="Username" imagePath="svgs/user.svg" invert={true} customCSS=""/>
+                    </div>
                 </div>
-                <SidebarItem size={70} text="Main Page" imagePath="svgs/Reqal Logo - Dark Mode.svg"/>
+                <Breadcrumbs/>
             </div>
-            <div className="w-full flex-row items-center">
-                <SidebarItem size={70} text="Main Page" imagePath="svgs/Reqal Logo - Dark Mode.svg"/>
-            </div>
-        </div>
+        </SidebarContext.Provider>
     );
+
 };
 
 export default Sidebar;
+
+export type SidebarContextType = {
+    isExpanded: boolean;
+    setIsExpanded: (value: boolean) => void;
+};
+
+export const SidebarContext = React.createContext<SidebarContextType | undefined>(undefined);

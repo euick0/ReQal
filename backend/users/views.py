@@ -1,17 +1,16 @@
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
+from rest_framework import generics, permissions
 from .models import User
 from .serializers import UserSerializer
 
-@api_view(['GET'])
-def getUser(request):
-    users = User.objects.all()
-    serializer = UserSerializer(users, many=True)
-    return Response(serializer.data)
+class UserListCreate(generics.ListCreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
-@api_view(['POST'])
-def addUser(request):
-    serializer = UserSerializer(data=request.data)
-    if serializer.is_valid():
-         serializer.save()
-    return Response(serializer.data)
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+    
+class UserRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
