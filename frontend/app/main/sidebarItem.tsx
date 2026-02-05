@@ -2,13 +2,6 @@ import React from 'react';
 import Image from "next/image";
 import clsx from "clsx";
 
-interface SidebarItemProps {
-    size: number;
-    text: string;
-    imagePath: string;
-    customCSS?: string;
-    invert?: boolean;
-}
 
 const SidebarItem = ({size, text, imagePath, customCSS, invert}: SidebarItemProps) => {
     return (
@@ -22,4 +15,12 @@ const SidebarItem = ({size, text, imagePath, customCSS, invert}: SidebarItemProp
     );
 };
 
+
+export interface SidebarItemProps {
+    size: number;
+    text?: string;
+    imagePath: string;
+    customCSS?: string;
+    invert?: boolean;
+}
 export default SidebarItem;

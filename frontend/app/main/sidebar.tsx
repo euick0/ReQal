@@ -6,31 +6,43 @@ import clsx from "clsx";
 import Breadcrumbs from "./breadcrumbs";
 import Image from "next/image";
 import SidebarHeader from "@/app/main/sidebarHeader";
+import SidebarFooter from "@/app/main/sidebarFooter";
+import SidebarGroup, {GroupItem} from "@/app/main/sidebarGroup";
+import {redirect} from "next/navigation";
 
 const Sidebar = () => {
     const [isExpanded, setIsExpanded] = React.useState(false);
-    const transitionDelay = 300;
+    
+    const flashcardGroup: GroupItem[] = [
+        {text: "The 625 words", redirectUrl: "/flashcards/625-words"},
+        {text: "New words", redirectUrl: "/profile"},
+        {text: "Conjugations charts", redirectUrl: "/settings"},
+    ];
 
     return (
         <SidebarContext.Provider value={{isExpanded, setIsExpanded}}>
             <div className="flex h-screen">
-                <div className={clsx(`group bg-backgroundLight w-20 h-full sticky top-0 left-0 rounded-r-lg z-10 transition-all duration-${transitionDelay} ease-in-out flex flex-col justify-between`, {
+                <div className={clsx(`group bg-backgroundLight w-20 h-full sticky top-0 left-0 rounded-r-lg z-10 transition-all duration-300 ease-in-out flex flex-col justify-between`, {
                         "w-64": isExpanded,
                     })}>
-                    <SidebarHeader transitionDelay={transitionDelay}></SidebarHeader>
-                    <div className="">
+                    <SidebarHeader></SidebarHeader>
+                    <div className="flex-row items-center justify-evenly">
+                        <SidebarGroup groupItems={flashcardGroup} size={50} text="Flashcards" imagePath="svgs/cards.svg" invert={true}/>
+                        <SidebarGroup groupItems={flashcardGroup} size={50} text="Group Header" imagePath="svgs/user.svg" invert={true}/>
+                        <SidebarGroup groupItems={flashcardGroup} size={50} text="Group Header" imagePath="svgs/user.svg" invert={true}/>
 
                     </div>
                     <div className="w-full flex-row items-center">
-                        <SidebarItem size={50} text="Username" imagePath="svgs/user.svg" invert={true} customCSS=""/>
+                        <SidebarFooter></SidebarFooter>
                     </div>
                 </div>
-                <Breadcrumbs/>
+                <Breadcrumbs/> 
             </div>
         </SidebarContext.Provider>
     );
 
 };
+
 
 export default Sidebar;
 

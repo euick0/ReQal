@@ -90,7 +90,7 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
                 </div>
                 <div className="w-5/12 h-full p-0 top-0 left-0">
                     <Image src="/images/person mountains.webp" alt="img.png" width="1499" height="1000"
-                           className="object-cover w-full h-full "></Image>
+                           className="object-cover w-full h-full"></Image>
                 </div>
                 <form className="flex-1 flex-col flex justify-center" noValidate onSubmit={(event) => {validateFormInput(event)}}>
                     <p className="ml-36 pt-0 text-4xl antialiased font-semibold text-secondary text-stone-200">Register</p>
