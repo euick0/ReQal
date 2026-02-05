@@ -10,7 +10,12 @@ import SidebarFooter from "@/app/main/sidebarFooter";
 import SidebarGroup, {GroupItem} from "@/app/main/sidebarGroup";
 import {redirect} from "next/navigation";
 
-const Sidebar = () => {
+interface SidebarProps {
+    currentPath: string;
+    breadcrumbs: { text: string; url: string }[];
+}
+
+const Sidebar = ({currentPath, breadcrumbs}: SidebarProps) => {
     const [isExpanded, setIsExpanded] = React.useState(false);
     
     const flashcardGroup: GroupItem[] = [
@@ -27,16 +32,16 @@ const Sidebar = () => {
                     })}>
                     <SidebarHeader></SidebarHeader>
                     <div className="flex-row items-center justify-evenly">
-                        <SidebarGroup groupItems={flashcardGroup} size={50} text="Flashcards" imagePath="svgs/cards.svg" invert={true}/>
-                        <SidebarGroup groupItems={flashcardGroup} size={50} text="Group Header" imagePath="svgs/user.svg" invert={true}/>
-                        <SidebarGroup groupItems={flashcardGroup} size={50} text="Group Header" imagePath="svgs/user.svg" invert={true}/>
+                        <SidebarGroup groupItems={flashcardGroup} size={50} text="Flashcards" imagePath="/svgs/cards.svg" invert={true} />
+                        <SidebarGroup groupItems={flashcardGroup} size={50} text="Flashcards" imagePath="/svgs/cards.svg" invert={true}/>
+                        <SidebarGroup groupItems={flashcardGroup} size={50} text="Flashcards" imagePath="/svgs/cards.svg" invert={true}/>
 
                     </div>
                     <div className="w-full flex-row items-center">
                         <SidebarFooter></SidebarFooter>
                     </div>
                 </div>
-                <Breadcrumbs/> 
+                <Breadcrumbs breadcrumbs={breadcrumbs}/>
             </div>
         </SidebarContext.Provider>
     );

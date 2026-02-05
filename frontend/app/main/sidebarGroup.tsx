@@ -1,4 +1,4 @@
- import React, {useContext} from 'react';
+import React, {useContext} from 'react';
 import clsx from "clsx";
 import Image from "next/image";
 import {SidebarItemProps} from "@/app/main/sidebarItem";
@@ -8,8 +8,7 @@ interface SidebarGroupProps extends SidebarItemProps {
     groupItems: GroupItem[];
 }
 
-
-const SidebarGroup = ({groupItems, size, text, imagePath, customCSS, invert}: SidebarGroupProps) => {
+const SidebarGroup = ({groupItems, size, text, imagePath, customCSS, invert, redirectUrl}: SidebarGroupProps) => {
     //TODO implementar redirecionamento ao clicar nos itens do grupo
     const sidebarContext = useContext(SidebarContext);
     const isExpanded = sidebarContext?.isExpanded ?? false;
