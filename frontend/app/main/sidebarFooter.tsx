@@ -3,9 +3,9 @@ import Image from "next/image";
 
 const SidebarFooter = () => {
     return (
-        <div className="w-full h-20 border-transparent border rounded-t-4xl flex m-auto overflow-hidden cursor-pointer bg-surface">
+        <div className="w-full h-20 border-transparent border rounded-t-4xl flex m-auto overflow-hidden cursor-pointer bg-surface hover:bg-border transition duration-100 ease-in-out">
             <div className="w-[80px] h-[80px] flex items-center justify-center shrink-0">
-                <Image src="svgs/user.svg" alt="User icon" width={40} height={40}
+                <Image src="/svgs/user.svg" alt="User icon" width={40} height={40}
                        className="invert"/>
             </div>
             <div className="ml-0 my-auto ">

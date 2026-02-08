@@ -6,14 +6,13 @@ import {redirect} from "next/navigation";
 
 const SidebarItem = ({size, text, imagePath, customCSS, invert, redirectUrl}: SidebarItemProps) => {
 
-
     return (
         <div className="w-full h-20 border-transparent border rounded-xl flex m-auto overflow-hidden cursor-pointer">
             <div className="w-[80px] h-[80px] flex items-center justify-center shrink-0">
                 <Image src={imagePath} alt="Sidebar Item Icon" width={size} height={size}
-                       className={clsx(`${customCSS}`, {"invert": invert})} onClick={redirect(redirectUrl)}/>
+                       className={clsx(`${customCSS}`, {"invert": invert})} onClick={() => {if (redirectUrl) redirect(redirectUrl)}}/>
             </div>
-            <p className="text-center ml-4 my-auto text-xl whitespace-nowrap text-neutral-100">{text}</p>
+            <p className="text-center ml-4 my-auto text-xl whitespace-nowrap text-neutral-300 hover:text-neutral-100 transition duration-100 ease-in-out">{text}</p>
         </div>
     );
 };
@@ -27,4 +26,5 @@ export interface SidebarItemProps {
     invert?: boolean;
     redirectUrl?: string;
 }
+
 export default SidebarItem;
