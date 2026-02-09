@@ -9,7 +9,7 @@ interface LoginModalProps {
 }
 
 const LoginModal = ({onClose, onClickRegister}: LoginModalProps) => {
-
+    //TODO refactor ts
     return (
         <div className="z-2 fixed top-0 left-0 w-screen h-screen bg-black/70 flex justify-center items-center">
             <div className="bg-backgroundLight rounded-md w-8/12 h-8/12 relative flex overflow-hidden">

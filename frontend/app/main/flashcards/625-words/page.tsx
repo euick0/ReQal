@@ -1,11 +1,15 @@
 import React from 'react';
+import FlashcardParameters from "@/app/main/flashcards/flashcardParameters";
 
 const Words = () => {
-    //TODO fix ts
+
     return (
-        <div className="flex flex-col items-center justify-center h-full m-auto">
-            <h1 className="text-3xl font-bold mb-4 ">The 625 words</h1>
-            <p className="text-lg text-neutral-300">Here you can find the 625 most common words in English, along with their translations and example sentences.</p>
+        <div className="flex flex-col w-dvw h-dvh justify-between items-center">
+            <FlashcardParameters />
+            <div className="w-0.5 h-4/5 bg-rose-300 rounded-lg"></div>
+            <div className="">
+
+            </div>
         </div>
     );
 };
