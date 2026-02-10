@@ -18,7 +18,7 @@ const Sidebar = () => {
 
     return (
         <SidebarContext.Provider value={{isExpanded, setIsExpanded}}>
-            <div className="flex h-screen fixed">
+            <div className="flex h-screen fixed z-3">
                 <div className={clsx(`group bg-backgroundLight w-20 h-full fixed top-0 left-0 rounded-r-lg z-10 transition-all duration-300 ease-in-out flex flex-col justify-between`, {
                         "w-64": isExpanded,
                     })}>

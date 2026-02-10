@@ -1,0 +1,3 @@
+- Always suggest code changes instead of trying to write to files and edit them
+- Only edit files or try to write to them if i ask you explicitly, if i use verbs like "write", "edit", "change", "add", "remove", "delete" or similar, then you can write to files and edit them, otherwise just suggest code changes and explain how they work
+- Explain why the code works and how it works, instead of just giving me the code

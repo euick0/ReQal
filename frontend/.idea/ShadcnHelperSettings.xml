@@ -608,6 +608,18 @@
         <option name="urlTemplate" value="https://ui.manifest.build/r/{name}.json" />
       </RegistryConfigState>
       <RegistryConfigState>
+        <option name="id" value="central-mapcn" />
+        <option name="name" value="Mapcn" />
+        <option name="namespace" value="@mapcn" />
+        <option name="baseUrl" value="https://mapcn.dev/r" />
+        <option name="stylePath" value="/{name}.json" />
+        <option name="type" value="community" />
+        <option name="enabled" value="false" />
+        <option name="description" value="Beautiful maps, made simple. Ready to use, customizable map components for React. Built on MapLibre. Styled with Tailwind CSS." />
+        <option name="homepage" value="https://mapcn.dev" />
+        <option name="urlTemplate" value="https://mapcn.dev/r/{name}.json" />
+      </RegistryConfigState>
+      <RegistryConfigState>
         <option name="id" value="central-mui-treasury" />
         <option name="name" value="Mui-treasury" />
         <option name="namespace" value="@mui-treasury" />
@@ -862,13 +874,13 @@
         <option name="id" value="central-reui" />
         <option name="name" value="Reui" />
         <option name="namespace" value="@reui" />
-        <option name="baseUrl" value="https://reui.io/r" />
+        <option name="baseUrl" value="https://reui.io/r/{style}" />
         <option name="stylePath" value="/{name}.json" />
         <option name="type" value="community" />
         <option name="enabled" value="false" />
-        <option name="description" value="Open-source collection of UI components and animated effects built with React, Typescript, Tailwind CSS, and Motion. Pairs beautifully with shadcn/ui." />
+        <option name="description" value="Free &amp; open-source library of 1,000+ components and patterns to 10x your productivity in shadcn projects." />
         <option name="homepage" value="https://reui.io" />
-        <option name="urlTemplate" value="https://reui.io/r/{name}.json" />
+        <option name="urlTemplate" value="https://reui.io/r/{style}/{name}.json" />
       </RegistryConfigState>
       <RegistryConfigState>
         <option name="id" value="central-scrollxui" />
@@ -1505,18 +1517,6 @@
         <option name="description" value="A modern UI component library built with React and TailwindCSS to help you build beautiful and accessible web applications faster." />
         <option name="homepage" value="https://sona-ui.vercel.app" />
         <option name="urlTemplate" value="https://sona-ui.vercel.app/r/{name}.json" />
-      </RegistryConfigState>
-      <RegistryConfigState>
-        <option name="id" value="central-mapcn" />
-        <option name="name" value="Mapcn" />
-        <option name="namespace" value="@mapcn" />
-        <option name="baseUrl" value="https://mapcn.dev/r" />
-        <option name="stylePath" value="/{name}.json" />
-        <option name="type" value="community" />
-        <option name="enabled" value="false" />
-        <option name="description" value="Beautiful maps, made simple. Ready to use, customizable map components for React. Built on MapLibre. Styled with Tailwind CSS." />
-        <option name="homepage" value="https://mapcn.dev" />
-        <option name="urlTemplate" value="https://mapcn.dev/r/{name}.json" />
       </RegistryConfigState>
     </registryConfigs>
   </component>
