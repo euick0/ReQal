@@ -14,6 +14,7 @@ const Sidebar = () => {
         {text: "The 625 words", redirectUrl: "/main/flashcards/625-words"},
         {text: "New words", redirectUrl: "/profile"},
         {text: "Conjugations charts", redirectUrl: "/settings"},
+        {text: "Edit Flashcards", redirectUrl: "/settings"},
     ];
 
     return (
