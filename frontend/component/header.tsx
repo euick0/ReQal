@@ -41,7 +41,7 @@ const Header = () => {
             {isLoginModalOpen && <LoginModal  onClose={ToggleLoginModal} onClickRegister={ToggleRegisterModal}/>}
             {isRegisterModalOpen && <RegisterModal  onClose={ToggleRegisterModal} onClickLogin={ToggleLoginModal} />}
             
-            <div className="relative w-screen h-screen overflow-hidden">
+            <div className="relative w-screen h-screen">
                 <div className="flex justify-between box-border  px-8 py-3 top-5 left-5 right-5 items-center bg-gray-500/30 rounded-4xl absolute z-1">
                     <div className="flex flex-1 items-center gap-4 justify-start">
                         <Logo width={100} height={100} iconType="textDark"/>
@@ -55,7 +55,7 @@ const Header = () => {
                         <Button content="Register" onClick={ToggleRegisterModal}/>
                     </div>
                 </div>
-                <div className="absolute">
+                <div className="overflow-visible relative">
                     <HeroText/>
                 </div>
             </div>

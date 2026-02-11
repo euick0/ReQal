@@ -19,7 +19,6 @@ const ImageParameter = ({children}: any) => {
                     <ImageToggle></ImageToggle>
                     <ImageToggle></ImageToggle>
                 </div>
-
                     <ScrollBar orientation="vertical" className=""/>
             </ScrollArea>
             {children}
