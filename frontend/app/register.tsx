@@ -25,8 +25,6 @@ const RegisterHandler = async (formData: FormData) => {
         return;
     }
 
-
-
 };
 
 export default RegisterHandler;
