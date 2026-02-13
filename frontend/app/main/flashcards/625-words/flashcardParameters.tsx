@@ -16,6 +16,13 @@ import {Button} from "@/components/ui/button";
 import {HoverCard, HoverCardContent, HoverCardTrigger} from "@/components/ui/hover-card";
 import ImageParameter from "@/app/main/flashcards/625-words/imageParameter";
 import {ScrollArea, ScrollBar} from "@/components/ui/scroll-area";
+import {
+    AudioPlayerButton,
+    AudioPlayerDuration,
+    AudioPlayerProgress,
+    AudioPlayerProvider,
+    AudioPlayerTime
+} from "@/components/ui/audio-player";
 
 const languages = [
     "English",
@@ -39,13 +46,19 @@ const pathways = [
     }
 ]
 
+const track = {
+    id: "track-1",
+    src: "/audio/exampleAudio.mp3",
+    data: {}
+}
+
 const FlashcardParameters = () => {
     const [useTranslatedWord, setUseTranslatedWord] = React.useState("привет");
 
     return (
-        <div className="flex-1 box-border m-8 h-full w-full overflow-hidden">
-            <ScrollArea className="">
-                <Field className="w-auto">
+        <div className="box-border p-8 pr-0 w-full overflow-hidden">
+            <ScrollArea className="w-full h-230">
+                <Field className="w-auto pr-6">
                     <div className="">
                         <Combobox items={languages}>
                             <ComboboxInput placeholder="Select a language" className="w-64 mb-4"/>
@@ -106,31 +119,55 @@ const FlashcardParameters = () => {
                             </HoverCard>
                         </div>
 
-                        <Input className="w-96 mb-4" placeholder="Translated word" value={useTranslatedWord}
-                               onChange={({target}) => setUseTranslatedWord(target.value)}/>
+                        <div>
+                            <Input className="w-96 mb-4 mr-2" placeholder="Translated word" value={useTranslatedWord}
+                                   onChange={({target}) => setUseTranslatedWord(target.value)}/>
+                            <Input className="w-20 mb-4" placeholder="Gender"/>
+                        </div>
 
                         <ImageParameter>
-
-                            <div className="m-3 ">
+                            <div className="ml-3 mt-3">
                                 <FieldLabel htmlFor="customImage" className="mb-1">Or choose your own
                                     image...</FieldLabel>
                                 <Input className="w-96 mb-4" placeholder="Or choose your own image" type="file"
                                        id="customImage"
                                        accept="image/*"
-                                       multiple={true}/></div>
+                                       multiple={true}/>
+                            </div>
                         </ImageParameter>
-                        <FieldLabel htmlFor="customAudio" className="mb-1">Or choose your own audio file...</FieldLabel>
-                        <Input className="w-96 mb-4" placeholder="Or choose your audio file" type="file"
-                               id="customAudio"
-                               accept="audio/*"/>
+                        <div
+                            className="w-full flex flex-col bg-primary-foreground rounded-lg mb-4 border-sidebar-border border">
+                            <AudioPlayerProvider>
+                                <div className="flex items-center gap-4 p-4">
+                                    <AudioPlayerButton className="bg-primary  [&>svg]:invert" item={track}/>
+                                    <AudioPlayerProgress className="flex-1 "/>
+                                    <AudioPlayerTime/>
+                                    <AudioPlayerDuration/>
+                                </div>
+                            </AudioPlayerProvider>
+
+                            <FieldLabel htmlFor="customAudio" className="mb-1 ml-4">Or choose your own audio
+                                file...</FieldLabel>
+                            <Input className="w-96 mb-4 ml-4" placeholder="Or choose your audio file" type="file"
+                                   id="customAudio"
+                                   accept="audio/*"
+                                   multiple={true}/>
+                        </div>
+                        <div className="flex items-center">
+                            <Input className="w-70 mb-4 mr-2" placeholder="Optional: Image caption"/>
+                            <Input className="w-70 mb-4" placeholder="Optional: Translation caption"/>
+                        </div>
                         <div>
                             <Button className="text-white mr-4" size="default" type="submit">Create</Button>
                             <Button className="text-white" variant="ghost" size="default">Edit Last</Button>
+                            <Button className="text-white mr-4" variant="ghost" size="default">Progress</Button>
                         </div>
+
                     </div>
                 </Field>
-                <ScrollBar></ScrollBar>
-            </ScrollArea></div>
+                <ScrollBar className="absolute pl-8"></ScrollBar>
+            </ScrollArea>
+        </div>
     )
 };
 
