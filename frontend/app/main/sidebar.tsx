@@ -11,7 +11,7 @@ const Sidebar = () => {
     const [isExpanded, setIsExpanded] = React.useState(false);
     
     const flashcardGroup: GroupItem[] = [
-        {text: "The 625 words", redirectUrl: "/main/flashcards/625-words"},
+        {text: "The 600 words", redirectUrl: "/main/flashcards/600-words"},
         {text: "New words", redirectUrl: "/profile"},
         {text: "Conjugations charts", redirectUrl: "/settings"},
         {text: "Edit Flashcards", redirectUrl: "/settings"},

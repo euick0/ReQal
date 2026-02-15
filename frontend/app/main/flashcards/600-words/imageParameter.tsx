@@ -1,8 +1,6 @@
 import React from 'react';
-import {Toggle} from "@/components/ui/toggle";
-import Image from "next/image";
 import {ScrollArea, ScrollBar} from "@/components/ui/scroll-area";
-import ImageToggle from "@/app/main/flashcards/625-words/imageToggle";
+import ImageToggle from "@/app/main/flashcards/600-words/imageToggle";
 import clsx from "clsx";
 
 interface ImageParameterProps {
