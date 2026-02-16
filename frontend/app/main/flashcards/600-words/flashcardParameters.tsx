@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/audio-player";
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
 import ProgressDialog from "@/app/main/flashcards/600-words/progressDialog";
-import {PathContextType, PathsContext} from "@/app/main/flashcards/600-words/flashcardPreviews";
+import {PathsContext} from "@/app/main/flashcards/600-words/flashcardPreviews";
 
 const languages = [
     "English",
@@ -57,14 +57,30 @@ const track = {
 
 //TODO add status for each word, word list fix
 const FlashcardParameters = () => {
-    const [useTranslatedWord, setUseTranslatedWord] = React.useState("привет");
-    const [useTranslatedWordGender, setUseTranslatedWordGender] = React.useState("");
-    const [useImagePath, setUseImagePath] = React.useState("");
-    const [useAudioPath, setUseAudioPath] = React.useState("");
-    const [useImageCaption, setUseImageCaption] = React.useState("");
-    const [useTranslationCaption, setUseTranslationCaption] = React.useState("");
-    const [usePathway, setUsePathway] = React.useState(pathways[0]);
-    const [useIPATranslation, setUseIPATranslation] = React.useState("");
+    const pathContext = React.useContext(PathsContext);
+    
+    if (!pathContext) {
+        throw new Error("FlashcardParameters must be used within PathsContext.Provider");
+    }
+    
+    const {
+        translatedWord,
+        setTranslatedWord,
+        translatedWordGender,
+        setTranslatedWordGender,
+        imagePath,
+        setImagePath,
+        audioPath,
+        setAudioPath,
+        imageCaption,
+        setImageCaption,
+        translationCaption,
+        setTranslationCaption,
+        IPATranslation,
+        setIPATranslation,
+        pathway,
+        setPathway
+    } = pathContext;
 
     const wordList = [
         "actor", "adjective", "adult", "afternoon", "air", "airport", "alive", "animal",
@@ -145,149 +161,140 @@ const FlashcardParameters = () => {
         "window", "wine", "wing", "winter", "woman", "wood", "work (verb)", "world",
         "write (verb)", "yard", "year", "yellow", "yes", "you (singular/ plural)", "young", "zero"
     ];
-    const contextValue: PathContextType = {
-        translatedWord: useTranslatedWord,
-        setTranslatedWord: setUseTranslatedWord,
-        translatedWordGender: useTranslatedWordGender,
-        setTranslatedWordGender: setUseTranslatedWordGender,
-        imagePath: useImagePath,
-        setImagePath: setUseImagePath,
-        audioPath: useAudioPath,
-        setAudioPath: setUseAudioPath,
-        imageCaption: useImageCaption,
-        setImageCaption: setUseImageCaption,
-        translationCaption: useTranslationCaption,
-        setTranslationCaption: setUseTranslationCaption,
-        IPATranslation: useIPATranslation,
-        setIPATranslation: setUseIPATranslation,
-    };
+
 
     return (
-        <div className="box-border p-8 pr-0 pl-9 w-full overflow-y-hidden overflow-x-visible">
-            <PathsContext.Provider value={contextValue}>
-                <ScrollArea className="w-full h-230">
-                    <Field className="w-auto pr-6">
-                        <div className="">
-                            <Combobox items={languages}>
-                                <ComboboxInput placeholder="Select a language" className="w-64 mb-4"/>
+        <div className="box-border pt-17 pr-0 pl-9  w-full overflow-y-hidden ">
+            <ScrollArea className="w-full h-[calc(100vh-70px)] overflow-auto overflow-x-visible">
+                <Field className="w-auto pr-6">
+                    <div className="">
+                        <Combobox items={languages}>
+                            <ComboboxInput placeholder="Select a language" className="w-64 mb-4"/>
+                            <ComboboxContent>
+                                <ComboboxEmpty>No items found.</ComboboxEmpty>
+                                <ComboboxList>
+                                    {(item) => (
+                                        <ComboboxItem key={item} value={item}>
+                                            {item}
+                                        </ComboboxItem>
+                                    )}
+                                </ComboboxList>
+                            </ComboboxContent>
+                        </Combobox>
+
+                        <div className="flex gap-2">
+                            <Combobox
+                                items={pathways}
+                                itemToStringValue={(pathway: (typeof pathways)[number]) => pathway.pathName}
+                                itemToStringLabel={(pathway: (typeof pathways)[number]) => pathway.pathName}>
+                                <ComboboxInput placeholder="Select a pathway" className="w-64 mb-4"/>
                                 <ComboboxContent>
                                     <ComboboxEmpty>No items found.</ComboboxEmpty>
                                     <ComboboxList>
-                                        {(item) => (
-                                            <ComboboxItem key={item} value={item}>
-                                                {item}
+                                        {(pathway) => (
+                                            <ComboboxItem key={pathway.pathDescription} value={pathway}>
+                                                <Item size="sm" className="p-0">
+                                                    <ItemContent>
+                                                        <ItemTitle className="whitespace-nowrap">
+                                                            {pathway.pathName}
+                                                        </ItemTitle>
+                                                        <ItemDescription className="whitespace-pre-line">
+                                                            {pathway.pathDescription}
+                                                        </ItemDescription>
+                                                    </ItemContent>
+                                                </Item>
                                             </ComboboxItem>
                                         )}
                                     </ComboboxList>
                                 </ComboboxContent>
                             </Combobox>
 
-                            <div className="flex gap-2">
-                                <Combobox
-                                    items={pathways}
-                                    itemToStringValue={(pathway: (typeof pathways)[number]) => pathway.pathName}
-                                    itemToStringLabel={(pathway: (typeof pathways)[number]) => pathway.pathName}>
-                                    <ComboboxInput placeholder="Select a pathway" className="w-64 mb-4"/>
-                                    <ComboboxContent>
-                                        <ComboboxEmpty>No items found.</ComboboxEmpty>
-                                        <ComboboxList>
-                                            {(pathway) => (
-                                                <ComboboxItem key={pathway.pathDescription} value={pathway}>
-                                                    <Item size="sm" className="p-0">
-                                                        <ItemContent>
-                                                            <ItemTitle className="whitespace-nowrap">
-                                                                {pathway.pathName}
-                                                            </ItemTitle>
-                                                            <ItemDescription className="whitespace-pre-line">
-                                                                {pathway.pathDescription}
-                                                            </ItemDescription>
-                                                        </ItemContent>
-                                                    </Item>
-                                                </ComboboxItem>
-                                            )}
-                                        </ComboboxList>
-                                    </ComboboxContent>
-                                </Combobox>
+                            <HoverCard openDelay={100} closeDelay={200}>
+                                <HoverCardTrigger><Button variant="outline" size="icon">
+                                    ?
+                                </Button>
+                                </HoverCardTrigger>
+                                <HoverCardContent side="right" align="center">
+                                    <h5 className="font-bold">1st Path</h5>
+                                    <p className="text-sm">For easy languages and reviewing ones that you have
+                                        already
+                                        learnt</p>
+                                    <h5 className="font-bold">2nd Path</h5>
+                                    <p className="text-sm">For new intermediate level languages</p>
+                                    <h5 className="font-bold">3rd Path</h5>
+                                    <p className="text-sm">For hard languages (especially those with logograms)</p>
+                                </HoverCardContent>
+                            </HoverCard>
+                        </div>
 
-                                <HoverCard openDelay={100} closeDelay={200}>
-                                    <HoverCardTrigger><Button variant="outline" size="icon">
-                                        ?
-                                    </Button>
-                                    </HoverCardTrigger>
-                                    <HoverCardContent side="right" align="center">
-                                        <h5 className="font-bold">1st Path</h5>
-                                        <p className="text-sm">For easy languages and reviewing ones that you have
-                                            already
-                                            learnt</p>
-                                        <h5 className="font-bold">2nd Path</h5>
-                                        <p className="text-sm">For new intermediate level languages</p>
-                                        <h5 className="font-bold">3rd Path</h5>
-                                        <p className="text-sm">For hard languages (especially those with logograms)</p>
-                                    </HoverCardContent>
-                                </HoverCard>
-                            </div>
+                        <div>
+                            <Input className="w-96 mb-4 mr-2" placeholder="Translated word"
+                                   value={translatedWord}
+                                   onChange={({target}) => setTranslatedWord(target.value)}/>
+                            <Input className="w-20 mb-4 mr-2" placeholder="Gender"
+                                   value={translatedWordGender}
+                                   onChange={({target}) => setTranslatedWordGender(target.value)}/>
+                            <Input className="w-70 mb-4" placeholder="IPA translation"
+                                   value={IPATranslation}
+                                   onChange={({target}) => setIPATranslation(target.value)}/>
+                        </div>
 
-                            <div>
-                                <Input className="w-96 mb-4 mr-2" placeholder="Translated word"
-                                       value={useTranslatedWord}
-                                       onChange={({target}) => setUseTranslatedWord(target.value)}/>
-                                <Input className="w-20 mb-4 mr-2" placeholder="Gender"/>
-                                <Input className="w-70 mb-4" placeholder="IPA translation"/>
-                            </div>
-
-                            <ImageParameter>
-                                <div className="ml-3 mt-3">
-                                    <FieldLabel htmlFor="customImage" className="mb-1">Or choose your own
-                                        image...</FieldLabel>
-                                    <Input className="w-96 mb-4" placeholder="Or choose your own image" type="file"
-                                           id="customImage"
-                                           accept="image/*"
-                                           multiple={true}/>
-                                </div>
-                            </ImageParameter>
-                            <div
-                                className="w-full flex flex-col bg-primary-foreground rounded-lg mb-4 border-sidebar-border border">
-                                <AudioPlayerProvider>
-                                    <div className="flex items-center gap-4 p-4">
-                                        <AudioPlayerButton className="bg-primary  [&>svg]:invert" item={track}/>
-                                        <AudioPlayerProgress className="flex-1 "/>
-                                        <AudioPlayerTime/>
-                                        <AudioPlayerDuration/>
-                                    </div>
-                                </AudioPlayerProvider>
-
-                                <FieldLabel htmlFor="customAudio" className="mb-1 ml-4">Or choose your own audio
-                                    file...</FieldLabel>
-                                <Input className="w-96 mb-4 ml-4" placeholder="Or choose your audio file" type="file"
-                                       id="customAudio"
-                                       accept="audio/*"
+                        <ImageParameter>
+                            <div className="ml-3 mt-3">
+                                <FieldLabel htmlFor="customImage" className="mb-1">Or choose your own
+                                    image...</FieldLabel>
+                                <Input className="w-96 mb-4" placeholder="Or choose your own image" type="file"
+                                       id="customImage"
+                                       accept="image/*"
                                        multiple={true}/>
                             </div>
-                            <div className="flex items-center">
-                                <Input className="w-70 mb-4 mr-2" placeholder="Optional: Image caption"/>
-                                <Input className="w-70 mb-4" placeholder="Optional: Translation caption"/>
-                            </div>
-                            <div>
-                                <Button className="text-white mr-4" size="default" type="submit">Create</Button>
-                                <Button className="text-white" variant="ghost" size="default">Edit Last</Button>
-                                <Dialog>
-                                    <DialogTrigger asChild>
-                                        <Button className="text-white mr-4" variant="ghost"
-                                                size="default">Progress</Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="w-300 h-100">
-                                        <DialogHeader className="">
-                                            <DialogTitle className="mb-5">57 out of 604 completed</DialogTitle>
-                                            <ProgressDialog words={wordList}/>
-                                        </DialogHeader>
-                                    </DialogContent>
-                                </Dialog>
-                            </div>
+                        </ImageParameter>
+                        <div
+                            className="w-full flex flex-col bg-primary-foreground rounded-lg mb-4 border-sidebar-border border">
+                            <AudioPlayerProvider>
+                                <div className="flex items-center gap-4 p-4">
+                                    <AudioPlayerButton className="bg-primary  [&>svg]:invert" item={track}/>
+                                    <AudioPlayerProgress className="flex-1 "/>
+                                    <AudioPlayerTime/>
+                                    <AudioPlayerDuration/>
+                                </div>
+                            </AudioPlayerProvider>
+
+                            <FieldLabel htmlFor="customAudio" className="mb-1 ml-4">Or choose your own audio
+                                file...</FieldLabel>
+                            <Input className="w-96 mb-4 ml-4" placeholder="Or choose your audio file" type="file"
+                                   id="customAudio"
+                                   accept="audio/*"
+                                   multiple={true}/>
                         </div>
-                    </Field>
-                    <ScrollBar className="absolute pl-8"></ScrollBar>
-                </ScrollArea>
-            </PathsContext.Provider>
+                        <div className="flex items-center">
+                            <Input className="w-70 mb-4 mr-2" placeholder="Optional: Image caption"
+                                   value={imageCaption}
+                                   onChange={({target}) => setImageCaption(target.value)}/>
+                            <Input className="w-70 mb-4" placeholder="Optional: Translation caption"
+                                   value={translationCaption}
+                                   onChange={({target}) => setTranslationCaption(target.value)}/>
+                        </div>
+                        <div>
+                            <Button className="text-white mr-4" size="default" type="submit">Create</Button>
+                            <Button className="text-white" variant="ghost" size="default">Edit Last</Button>
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button className="text-white mr-4" variant="ghost"
+                                            size="default">Progress</Button>
+                                </DialogTrigger>
+                                <DialogContent className="w-300 h-100">
+                                    <DialogHeader className="">
+                                        <DialogTitle className="mb-5">57 out of 604 completed</DialogTitle>
+                                        <ProgressDialog words={wordList}/>
+                                    </DialogHeader>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+                    </div>
+                </Field>
+                <ScrollBar className="absolute pl-8"></ScrollBar>
+            </ScrollArea>
         </div>
     )
 };

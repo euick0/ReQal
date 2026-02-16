@@ -3039,9 +3039,9 @@ var WrappedRange = /*#__PURE__*/function () {
    * @return {WrappedRange}
    */
   createFromBookmark: function createFromBookmark(editable, bookmark) {
-    var sc = dom.fromOffsetPath(editable, bookmark.s.path);
+    var sc = dom.fromOffsetPath(editable, bookmark.s.pathway);
     var so = bookmark.s.offset;
-    var ec = dom.fromOffsetPath(editable, bookmark.e.path);
+    var ec = dom.fromOffsetPath(editable, bookmark.e.pathway);
     var eo = bookmark.e.offset;
     return new WrappedRange(sc, so, ec, eo);
   },
@@ -3057,8 +3057,8 @@ var WrappedRange = /*#__PURE__*/function () {
   createFromParaBookmark: function createFromParaBookmark(bookmark, paras) {
     var so = bookmark.s.offset;
     var eo = bookmark.e.offset;
-    var sc = dom.fromOffsetPath(lists.head(paras), bookmark.s.path);
-    var ec = dom.fromOffsetPath(lists.last(paras), bookmark.e.path);
+    var sc = dom.fromOffsetPath(lists.head(paras), bookmark.s.pathway);
+    var ec = dom.fromOffsetPath(lists.last(paras), bookmark.e.pathway);
     return new WrappedRange(sc, so, ec, eo);
   }
 });

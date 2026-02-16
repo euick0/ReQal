@@ -32,12 +32,12 @@ const Breadcrumbs =() => {
     const {isExpanded, setIsExpanded} = sidebarContext;
 
     return (
-        <div className={clsx("fixed top-0 flex justify-center text-lg h-[70px] p-4 z-10 bg-background transition-all duration-300 ease-in-out right-01", {
-                "left-20": !isExpanded,
-                "left-64": isExpanded})}>
+        <div className={clsx("fixed  flex justify-center text-lg h-17.5 p-4 z-10 bg-background transition-all duration-300 ease-in-out right-01", {
+                "left-20 -top-2": !isExpanded,
+                "left-64 top-0": isExpanded})}>
             <Image width={40} height={40} alt="Sidebar closing image" src="/svgs/sidebar.svg"
                    className={clsx("invert m-1 transition-all duration-200 ease-in-out", {
-                       "cursor-pointer max-w-[70px]": !isExpanded,
+                       "cursor-pointer max-w-17.5": !isExpanded,
                        "pointer-events-none max-w-0": isExpanded,
                    })}
                    onClick={() => setIsExpanded(!isExpanded)}></Image>

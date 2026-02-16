@@ -18,9 +18,9 @@ const ImageParameter = ({children}: any) => {
 
 
     return (
-        <div className={clsx("max-w-full max-h-150 flex flex-col bg-primary-foreground rounded-lg mb-4 border-sidebar-border border",
-            {"h-90": searchImagesResults.length < 4},
-            {"h-140": searchImagesResults.length > 3})} >
+        <div className={clsx("max-w-full  flex flex-col bg-primary-foreground rounded-lg mb-4 border-sidebar-border border",
+            {"h-[37vh]": searchImagesResults.length < 4},
+            {"h-[50vh]": searchImagesResults.length > 3})} >
             <ScrollArea className="max-w-full max-h-120 overflow-y-hidden">
                 <div className="grid grid-cols-3 gap-4 w-auto h-auto m-4 ">
                     {searchImagesResults.map((image) => (

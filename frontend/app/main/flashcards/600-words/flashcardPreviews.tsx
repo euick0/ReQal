@@ -1,6 +1,7 @@
 "use client";
 import React from 'react';
 import {Card} from "@/components/ui/card";
+import Image from "next/image";
 
 interface FirstPathPreviewProps {
     imageSrc: string;
@@ -13,12 +14,13 @@ interface FirstPathPreviewProps {
 
 
 const FirstPathPreview = () => {
-    const pathContext = React.useContext(PathsContext);
+    const pathContext = React.useContext(FlashcardContext);
 
     return (
         <div className="flex flex-row gap-4 h-100 pt-8 w-full">
-            <Card className="flex-1">
-                {pathContext?.translatedWord}
+            <Card className="flex-1 flex items-center">
+                {pathContext?.imagePath[0] && <Image alt="Flashcard Image Preview" src={pathContext?.imagePath[0]}></Image>}
+
             </Card>
             <Card className="flex-1">
             </Card>
@@ -28,13 +30,13 @@ const FirstPathPreview = () => {
 };
 
 export default FirstPathPreview;
-export type PathContextType = {
+export type FlashcardContextType = {
     translatedWord: string;
     setTranslatedWord: (word: string) => void;
     translatedWordGender: string;
     setTranslatedWordGender: (gender: string) => void;
-    imagePath: string;
-    setImagePath: (path: string) => void;
+    imagePath: string[];
+    setImagePath: (path: string[]) => void;
     audioPath: string;
     setAudioPath: (path: string) => void;
     imageCaption: string;
@@ -43,5 +45,7 @@ export type PathContextType = {
     setTranslationCaption: (caption: string) => void;
     IPATranslation: string;
     setIPATranslation: (translation: string) => void;
+    pathway: {pathName: string, pathDescription: string} | null;
+    setPathway: (path: {pathName: string, pathDescription: string} | null) => void;
 }
-export const PathsContext = React.createContext<PathContextType | undefined>(undefined);
+export const FlashcardContext = React.createContext<FlashcardContextType | undefined>(undefined);
