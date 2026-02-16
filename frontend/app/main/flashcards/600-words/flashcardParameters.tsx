@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/audio-player";
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
 import ProgressDialog from "@/app/main/flashcards/600-words/progressDialog";
-import {PathsContext} from "@/app/main/flashcards/600-words/flashcardPreviews";
+import {FlashcardContext} from "@/app/main/flashcards/600-words/flashcardPreviews";
 
 const languages = [
     "English",
@@ -57,7 +57,7 @@ const track = {
 
 //TODO add status for each word, word list fix
 const FlashcardParameters = () => {
-    const pathContext = React.useContext(PathsContext);
+    const pathContext = React.useContext(FlashcardContext);
     
     if (!pathContext) {
         throw new Error("FlashcardParameters must be used within PathsContext.Provider");
