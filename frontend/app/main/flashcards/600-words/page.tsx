@@ -14,9 +14,9 @@ const pathways = [
 
 
 const Words = () => {
-    const [useTranslatedWord, setUseTranslatedWord] = React.useState("привет");
+    const [useTranslatedWord, setUseTranslatedWord] = React.useState("привет привет привет");
     const [useTranslatedWordGender, setUseTranslatedWordGender] = React.useState("");
-    const [useImagePath, setUseImagePath] = React.useState([""]);
+    const [useImagePath, setUseImagePath] = React.useState<string[]>([]);
     const [useAudioPath, setUseAudioPath] = React.useState("");
     const [useImageCaption, setUseImageCaption] = React.useState("");
     const [useTranslationCaption, setUseTranslationCaption] = React.useState("");

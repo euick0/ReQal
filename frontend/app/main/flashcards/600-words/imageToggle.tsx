@@ -4,11 +4,12 @@ import {Toggle} from "@/components/ui/toggle";
 
 interface ImageToggleProps {
     imageUrl: string;
+    onToggle: (imageUrl: string, isSelected: boolean) => void;
 }
 
-const ImageToggle = ({imageUrl}: ImageToggleProps) => {
+const ImageToggle = ({imageUrl, onToggle}: ImageToggleProps) => {
     return (
-        <Toggle aria-label="Search Image" size="lg" variant="outline"
+        <Toggle aria-label="Search Image" size="lg" variant="outline" onPressedChange={(pressed) => onToggle(imageUrl, pressed)}
                 className="relative p-0 lg:w-[13vw] lg:h-[13vw] w-[15vw] h-[15vw] cursor-pointer group data-[state=on]:border-contrast data-[state=on]:border">
             <Image src={imageUrl} alt="Image icon"
                    className="object-cover group-data-[state=off]:brightness-50 rounded-md" fill>
