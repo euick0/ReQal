@@ -1,9 +1,16 @@
 "use client";
 import React from 'react';
 import FlashcardParameters from "@/app/main/flashcards/600-words/flashcardParameters";
-import FirstPathPreview, {FlashcardContextType, FlashcardContext} from "@/app/main/flashcards/600-words/flashcardPreviews";
+import FirstPathPreview, {
+    FlashcardContextType,
+    FlashcardContext,
+    ThirdPathPreview,
+    SecondPathPreview
+} from "@/app/main/flashcards/600-words/flashcardPreviews";
+import {ScrollArea, ScrollBar} from "@/components/ui/scroll-area";
 
-const pathways = [
+// @ts-ignore
+export const pathways = [
     {pathName: "1st path", pathDescription: "What's the image called?"},
     {pathName: "2nd path", pathDescription: "All of the above + What's the word about?"},
     {
@@ -14,10 +21,10 @@ const pathways = [
 
 
 const Words = () => {
-    const [useTranslatedWord, setUseTranslatedWord] = React.useState("привет привет привет");
+    const [useTranslatedWord, setUseTranslatedWord] = React.useState("привет");
     const [useTranslatedWordGender, setUseTranslatedWordGender] = React.useState("");
     const [useImagePath, setUseImagePath] = React.useState<string[]>([]);
-    const [useAudioPath, setUseAudioPath] = React.useState("");
+    const [useAudioPath, setUseAudioPath] = React.useState("/audio/exampleAudio.mp3");
     const [useImageCaption, setUseImageCaption] = React.useState("");
     const [useTranslationCaption, setUseTranslationCaption] = React.useState("");
     const [usePathway, setUsePathway] =  React.useState<{pathName: string, pathDescription: string} | null>(pathways[0]);
@@ -39,9 +46,8 @@ const Words = () => {
         IPATranslation: useIPATranslation,
         setIPATranslation: setUseIPATranslation,
         pathway: usePathway,
-        setPathway: setUsePathway
+        setPathway: setUsePathway,
     };
-
 
     return (
         <FlashcardContext.Provider value={contextValue}>
@@ -52,9 +58,12 @@ const Words = () => {
                 <div className="items-center h-full flex mx-4">
                     <div className="w-0.5 h-200 bg-rose-300 rounded-lg content-center"></div>
                 </div>
-                <div className=" box-border m-8 flex-1">
+                <ScrollArea className="box-border m-8 flex-1">
                     <FirstPathPreview></FirstPathPreview>
-                </div>
+                    {(contextValue.pathway == pathways[1] || contextValue.pathway == pathways[2]) && <SecondPathPreview></SecondPathPreview>}
+                    {contextValue.pathway == pathways[2] && <ThirdPathPreview></ThirdPathPreview>}
+                    <ScrollBar></ScrollBar>
+                </ScrollArea>
             </div>
         </FlashcardContext.Provider>
     );

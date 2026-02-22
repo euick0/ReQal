@@ -1,6 +1,7 @@
 "use client"
 
 import React from 'react';
+import {pathways} from "./page";
 import {
     Combobox,
     ComboboxContent,
@@ -40,29 +41,14 @@ const languages = [
     "Korean"
 ]
 
-const pathways = [
-    {pathName: "1st path", pathDescription: "What's the image called?"},
-    {pathName: "2nd path", pathDescription: "All of the above + What's the word about?"},
-    {
-        pathName: "3rd path",
-        pathDescription: "All of the above + How do you spell this?"
-    }
-]
-
-const track = {
-    id: "track-1",
-    src: "/audio/exampleAudio.mp3",
-    data: {}
-}
-
 //TODO add status for each word, word list fix
 const FlashcardParameters = () => {
-    const pathContext = React.useContext(FlashcardContext);
-    
-    if (!pathContext) {
+    const flashcardContext = React.useContext(FlashcardContext);
+
+    if (!flashcardContext) {
         throw new Error("FlashcardParameters must be used within PathsContext.Provider");
     }
-    
+
     const {
         translatedWord,
         setTranslatedWord,
@@ -80,7 +66,13 @@ const FlashcardParameters = () => {
         setIPATranslation,
         pathway,
         setPathway
-    } = pathContext;
+    } = flashcardContext;
+
+    const track = {
+        id: "track-1",
+        src: flashcardContext.audioPath,
+        data: {}
+    }
 
     const wordList = [
         "actor", "adjective", "adult", "afternoon", "air", "airport", "alive", "animal",
@@ -162,7 +154,6 @@ const FlashcardParameters = () => {
         "write (verb)", "yard", "year", "yellow", "yes", "you (singular/ plural)", "young", "zero"
     ];
 
-
     return (
         <div className="box-border pt-17 pr-0 pl-9  w-full overflow-y-hidden ">
             <ScrollArea className="w-full h-[calc(100vh-70px)] overflow-auto overflow-x-visible">
@@ -185,6 +176,8 @@ const FlashcardParameters = () => {
                         <div className="flex gap-2">
                             <Combobox
                                 items={pathways}
+                                value={pathway}
+                                onValueChange={setPathway}
                                 itemToStringValue={(pathway: (typeof pathways)[number]) => pathway.pathName}
                                 itemToStringLabel={(pathway: (typeof pathways)[number]) => pathway.pathName}>
                                 <ComboboxInput placeholder="Select a pathway" className="w-64 mb-4"/>

@@ -9,6 +9,7 @@ import {
     AudioPlayerProvider,
     AudioPlayerTime
 } from "@/components/ui/audio-player";
+import clsx from "clsx";
 
 interface FirstPathPreviewProps {
     imageSrc: string;
@@ -19,39 +20,161 @@ interface FirstPathPreviewProps {
     translationAlt: string;
 }
 
-
 const FirstPathPreview = () => {
-    //TODO dar fix ao adio e dar pretty aos flashcards
-    const pathContext = React.useContext(FlashcardContext);
+    const flashcardContext = React.useContext(FlashcardContext);
+
+    const track = {
+        id: "track-1",
+        src: flashcardContext?.audioPath || "",
+        data: {}
+    }
 
     return (
-        <div className="flex flex-row gap-4 h-100 pt-8 w-full">
-            <Card className="flex-1 flex items-center">
-                {pathContext?.imagePath[0] && pathContext.imagePath.map(((path, i) => (
-                    <Image alt="Flashcard Image Preview" src={pathContext?.imagePath[i]} width={100} height={100}
-                           key={i}/>
-                )),)}
-                {pathContext?.imageCaption && <p className="text-2xl mt-4">{pathContext.imageCaption}</p>}
+        <div className="flex flex-row gap-4 h-100 pt-8">
+            <Card className="w-full flex-1 h-full ">
+                {!!flashcardContext?.imagePath.length && <div className={clsx("grid gap-4 w-full flex-1 p-4",
+                    {"grid-cols-1 max-w-md mx-auto": flashcardContext?.imagePath.length <= 2},
+                    {"grid-cols-2": flashcardContext?.imagePath.length > 2})}>
+                    {flashcardContext?.imagePath[0] && flashcardContext.imagePath.map(((path, i) => (
+                        <div className="relative " key={i}>
+                            <Image alt="Flashcard Image Preview" src={flashcardContext?.imagePath[i]} fill
+                                   style={{objectFit: "contain"}}/>
+                        </div>
+                    )))}
+                </div>}
+                {flashcardContext?.imageCaption &&
+                    <p className="text-xl text-center">{flashcardContext.imageCaption}</p>}
             </Card>
-            <Card className="flex-1 flex flex-col items-center">
-                {pathContext?.translatedWord && <p className="text-2xl mt-4">{pathContext.translatedWord}</p>}
-                {pathContext?.translatedWordGender &&
-                    <p className="text-2xl mt-4">{pathContext.translatedWordGender}</p>}
-                {pathContext?.IPATranslation && <p className="text-2xl mt-4">{pathContext.IPATranslation}</p>}
-                {pathContext?.audioPath && track && <AudioPlayerProvider>
-                    <div className="flex items-center gap-4 p-4">
-                        <AudioPlayerButton className="bg-primary  [&>svg]:invert" />
+            <Card className="flex-1 flex flex-col items-center justify-center">
+                <p>
+                    {flashcardContext?.translatedWord &&
+                        <span className="text-2xl">{flashcardContext.translatedWord} </span>}
+                    {flashcardContext?.IPATranslation &&
+                        <span className="text-2xl">/{flashcardContext.IPATranslation}/</span>}
+                    {flashcardContext?.translatedWordGender &&
+                        <span className="text-2xl"> {flashcardContext.translatedWordGender}</span>}
+                </p>
+                {flashcardContext?.audioPath && <AudioPlayerProvider>
+                    <div className="flex items-center gap-4 w-4/5">
+                        <AudioPlayerButton className="bg-primary  [&>svg]:invert" item={track}/>
                         <AudioPlayerProgress className="flex-1 "/>
                         <AudioPlayerTime/>
                         <AudioPlayerDuration/>
                     </div>
                 </AudioPlayerProvider>}
-                {pathContext?.translationCaption && <p className="text-2xl mt-4">{pathContext.translationCaption}</p>}
+                {flashcardContext?.translationCaption &&
+                    <p className="text-xl">{flashcardContext.translationCaption}</p>}
             </Card>
         </div>
 
     );
 };
+
+export const SecondPathPreview = () => {
+    const flashcardContext = React.useContext(FlashcardContext);
+
+    const track = {
+        id: "track-1",
+        src: flashcardContext?.audioPath || "",
+        data: {}
+    }
+
+    return (
+        <div className="flex flex-row gap-4 h-100 pt-8">
+            <Card className="flex-1 flex flex-col items-center justify-center">
+                <p>
+                    {flashcardContext?.translatedWord &&
+                        <span className="text-2xl">{flashcardContext.translatedWord} </span>}
+                    {flashcardContext?.IPATranslation &&
+                        <span className="text-2xl">/{flashcardContext.IPATranslation}/</span>}
+                    {flashcardContext?.translatedWordGender &&
+                        <span className="text-2xl"> {flashcardContext.translatedWordGender}</span>}
+                </p>
+                {flashcardContext?.audioPath && <AudioPlayerProvider>
+                    <div className="flex items-center gap-4 w-4/5">
+                        <AudioPlayerButton className="bg-primary  [&>svg]:invert" item={track}/>
+                        <AudioPlayerProgress className="flex-1 "/>
+                        <AudioPlayerTime/>
+                        <AudioPlayerDuration/>
+                    </div>
+                </AudioPlayerProvider>}
+                {flashcardContext?.translationCaption &&
+                    <p className="text-xl">{flashcardContext.translationCaption}</p>}
+            </Card>
+            <Card className="w-full flex-1 h-full">
+                {!!flashcardContext?.imagePath.length && <div className={clsx("grid gap-4 w-full flex-1",
+                    {"grid-cols-1 max-w-md mx-auto": flashcardContext?.imagePath.length <= 2},
+                    {"grid-cols-2": flashcardContext?.imagePath.length > 2})}>
+
+                    {flashcardContext?.imagePath[0] && flashcardContext.imagePath.map(((path, i) => (
+                        <div className="relative " key={i}>
+                            <Image alt="Flashcard Image Preview" src={flashcardContext?.imagePath[i]} fill
+                                   style={{objectFit: "contain"}}/>
+                        </div>
+                    )))}
+                </div>}
+                {flashcardContext?.imageCaption &&
+                    <p className="text-xl text-center">{flashcardContext.imageCaption}</p>}
+            </Card>
+        </div>
+
+    );
+};
+
+export const ThirdPathPreview = () => {
+    const flashcardContext = React.useContext(FlashcardContext);
+
+    const track = {
+        id: "track-1",
+        src: flashcardContext?.audioPath || "",
+        data: {}
+    }
+
+    return (
+        <div className="flex flex-row gap-4 h-100 pt-8">
+            <Card className="w-full flex-1 h-full">
+                <p className="text-xl text-center flex-1">How do you spell this?</p>
+                {!!flashcardContext?.imagePath.length && <div className={clsx("grid gap-4 w-full flex-1",
+                    {"grid-cols-1 max-w-md mx-auto": flashcardContext?.imagePath.length <= 2},
+                    {"grid-cols-2": flashcardContext?.imagePath.length > 2})}>
+
+                    {flashcardContext?.imagePath[0] && flashcardContext.imagePath.map(((path, i) => (
+                        <div className="relative " key={i}>
+                            <Image alt="Flashcard Image Preview" src={flashcardContext?.imagePath[i]} fill
+                                   style={{objectFit: "contain"}}/>
+                        </div>
+                    )))}
+                </div>}
+                {flashcardContext?.imageCaption &&
+                    <p className="text-xl text-center">{flashcardContext.imageCaption}</p>}
+
+
+            </Card>
+            <Card className="flex-1 flex flex-col items-center justify-center">
+                <p>
+                    {flashcardContext?.translatedWord &&
+                        <span className="text-2xl">{flashcardContext.translatedWord} </span>}
+                    {flashcardContext?.IPATranslation &&
+                        <span className="text-2xl">/{flashcardContext.IPATranslation}/</span>}
+                    {flashcardContext?.translatedWordGender &&
+                        <span className="text-2xl"> {flashcardContext.translatedWordGender}</span>}
+                </p>
+                {flashcardContext?.audioPath && <AudioPlayerProvider>
+                    <div className="flex items-center gap-4 w-4/5">
+                        <AudioPlayerButton className="bg-primary  [&>svg]:invert" item={track}/>
+                        <AudioPlayerProgress className="flex-1 "/>
+                        <AudioPlayerTime/>
+                        <AudioPlayerDuration/>
+                    </div>
+                </AudioPlayerProvider>}
+                {flashcardContext?.translationCaption &&
+                    <p className="text-xl">{flashcardContext.translationCaption}</p>}
+            </Card>
+        </div>
+
+    );
+};
+
 
 export default FirstPathPreview;
 export type FlashcardContextType = {
