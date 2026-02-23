@@ -1,7 +1,6 @@
 "use client"
 
 import React from 'react';
-import {pathways} from "./page";
 import {
     Combobox,
     ComboboxContent,
@@ -27,6 +26,7 @@ import {
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
 import ProgressDialog from "@/app/main/flashcards/600-words/progressDialog";
 import {FlashcardContext} from "@/app/main/flashcards/600-words/flashcardPreviews";
+import {pathways} from "@/app/main/flashcards/600-words/flashcardCreation";
 
 const languages = [
     "English",
@@ -153,11 +153,12 @@ const FlashcardParameters = () => {
         "window", "wine", "wing", "winter", "woman", "wood", "work (verb)", "world",
         "write (verb)", "yard", "year", "yellow", "yes", "you (singular/ plural)", "young", "zero"
     ];
+    const currentWordIndex = 0;
 
     return (
-        <div className="box-border pt-17 pr-0 pl-9  w-full overflow-y-hidden ">
-            <ScrollArea className="w-full h-[calc(100vh-70px)] overflow-auto overflow-x-visible">
-                <Field className="w-auto pr-6">
+        <div className="box-border pt-17 pr-0 pl-9 w-full">
+            <ScrollArea className="w-full h-[calc(100vh-70px)] overflow-visible">
+                <Field className="w-auto p-1 pr-6">
                     <div className="">
                         <Combobox items={languages}>
                             <ComboboxInput placeholder="Select a language" className="w-64 mb-4"/>

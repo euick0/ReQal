@@ -132,10 +132,10 @@ export const ThirdPathPreview = () => {
 
     return (
         <div className="flex flex-row gap-4 h-100 pt-8">
-            <Card className="w-full flex-1 h-full">
-                <p className="text-xl text-center flex-1">How do you spell this?</p>
-                {!!flashcardContext?.imagePath.length && <div className={clsx("grid gap-4 w-full flex-1",
-                    {"grid-cols-1 max-w-md mx-auto": flashcardContext?.imagePath.length <= 2},
+            <Card className="w-full flex-1 h-full flex">
+                <p className="text-xl text-center">How do you spell this?</p>
+                {!!flashcardContext?.imagePath.length && <div className={clsx("grid gap-4 flex-1",
+                    {"grid-cols-1 ": flashcardContext?.imagePath.length <= 2},
                     {"grid-cols-2": flashcardContext?.imagePath.length > 2})}>
 
                     {flashcardContext?.imagePath[0] && flashcardContext.imagePath.map(((path, i) => (
