@@ -1,5 +1,5 @@
 import BackgroundVideo from "@/app/backgroundVideo";
-import Header from "@/component/header";
+import Header from "@/components/header";
 
 const Home = () => {
     //TODO completar a pagina de entrada

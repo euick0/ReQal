@@ -1,7 +1,7 @@
 'use client';
 import React, {useState} from 'react';
-import Logo from "@/component/logo";
-import Button from "@/component/button";
+import Logo from "@/components/logo";
+import Button from "@/components/button";
 import HeroText from "@/app/heroText";
 import LoginModal from "@/app/loginModal";
 import RegisterModal from "@/app/registerModal";

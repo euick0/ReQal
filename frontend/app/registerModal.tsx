@@ -1,7 +1,8 @@
+"use client"
 import React, {FormEvent, useState} from 'react';
-import Button from "@/component/button";
+import Button from "@/components/button";
 import Image from "next/image";
-import RegisterHandler from "@/app/register";
+import RegisterHandler from "@/lib/register";
 import clsx from "clsx";
 
 interface RegisterModalProps {
@@ -9,8 +10,11 @@ interface RegisterModalProps {
     onClickLogin: () => void;
 }
 
+const GoogleOAuthHandler = () => {
+    return
+}
+
 const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
-    //TODO fazer confirmação de erros
     const [registerInput, setRegisterInput] = useState({
         email: "", password: "", name: ""
     })
@@ -34,7 +38,7 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
     const validateFormInput = async (event: FormEvent) => {
         event.preventDefault()
 
-        if(registerInput.name === ""){
+        if (registerInput.name === "") {
             setRegisterError({
                 ...registerError,
                 name: "Name cannot be empty"
@@ -42,14 +46,13 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
             return
         }
 
-        if(registerInput.email === ""){
+        if (registerInput.email === "") {
             setRegisterError({
                 ...registerError,
                 email: "Email cannot be empty"
             })
             return
-        }
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registerInput.email)){
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(registerInput.email)) {
             setRegisterError({
                 ...registerError,
                 email: "Invalid email format"
@@ -57,7 +60,7 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
             return
         }
 
-        if(registerInput.password === ""){
+        if (registerInput.password === "") {
             setRegisterError({
                 ...registerError,
                 password: "Password cannot be empty"
@@ -72,7 +75,7 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
 
         setRegisterInput({
             email: "",
-            password:"",
+            password: "",
             name: ""
         })
 
@@ -92,7 +95,9 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
                     <Image src="/images/person mountains.webp" alt="img.png" width="1499" height="1000"
                            className="object-cover w-full h-full"></Image>
                 </div>
-                <form className="flex-1 flex-col flex justify-center" noValidate onSubmit={(event) => {validateFormInput(event)}}>
+                <form className="flex-1 flex-col flex justify-center" noValidate onSubmit={(event) => {
+                    validateFormInput(event)
+                }}>
                     <p className="ml-36 pt-0 text-4xl antialiased font-semibold text-secondary text-stone-200">Register</p>
                     <label className="antialiased ml-36 mt-5 mb-1 text--">Name</label>
                     <input type="text"
@@ -101,7 +106,7 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
                            })}
                            placeholder=""
                            value={registerInput.name}
-                           onChange= {({target}) => handleUserInput(target.name, target.value)}
+                           onChange={({target}) => handleUserInput(target.name, target.value)}
                            name="name">
                     </input>
                     <div className=""><p className=" ml-36 mb-2 text-red-400">{registerError.name}</p></div>
@@ -112,7 +117,7 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
                            })}
                            placeholder=""
                            value={registerInput.email}
-                           onChange= {({target}) => handleUserInput(target.name, target.value)}
+                           onChange={({target}) => handleUserInput(target.name, target.value)}
                            name="email">
                     </input>
                     <div className=""><p className=" ml-36 mb-2 text-red-400">{registerError.email}</p></div>
@@ -123,7 +128,7 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
                            })}
                            placeholder=""
                            value={registerInput.password}
-                           onChange= {({target}) => handleUserInput(target.name, target.value)}
+                           onChange={({target}) => handleUserInput(target.name, target.value)}
                            name="password">
                     </input>
                     <div className=""><p className=" ml-36 mb-2 text-red-400">{registerError.password}</p></div>
@@ -133,7 +138,8 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
                         <Button content="Continue with Google"
                                 reactNode={<Image src="/svgs/Google%20Logo.svg" width="20" height="20" alt="Google Logo"
                                                   className="m-full"></Image>}
-                                customCSS="w-full bg-transparent border-1 border-border hover:bg-border! flex justify-center items-center gap-2"/>
+                                customCSS="w-full bg-transparent border-1 border-border hover:bg-border! flex justify-center items-center gap-2"
+                                onClick={GoogleOAuthHandler}/>
                     </div>
                     <div className="mx-36 max-w-full flex flex-row gap-1 justify-center items-center">
                         <p>Already have an account?</p> <Button content="Login" customCSS="text-blue-300 underline"

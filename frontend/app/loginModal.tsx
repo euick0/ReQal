@@ -1,7 +1,7 @@
 import React from 'react';
-import Button from "@/component/button";
+import Button from "@/components/button";
 import Image from "next/image";
-import Login from "@/app/login";
+import Login from "@/lib/login";
 
 interface LoginModalProps {
     onClose: () => void;
