@@ -1,31 +1,22 @@
 'use server';
 
 import {redirect} from "next/navigation";
-import {cookies} from "next/headers";
+import {createClient} from "@/lib/supabase/server";
 
 const LoginHandler = async (formData: FormData) => {
-    const email = formData.get("email")
-    const password = formData.get("password")
+    const supabase = await createClient()
+    const email = formData.get("email") || ""
+    const password = formData.get("password") || ""
 
-    const response = await fetch("http://localhost:8000/api/tokens/", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username: email, password:password}),
-    });
+    const {data, error} = await supabase.auth.signInWithPassword({
+        email: email.toString(),
+        password: password.toString(),
+    })
 
-    console.log(response)
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        console.log("Detalhes do erro:", errorData);
-        console.log("Erro: " + JSON.stringify(errorData));
-        return;
+    if (!error){
+        redirect("/main")
     }
-
-    redirect("/main")
-
+    console.error("Login error:", error)
 };
 
 export default LoginHandler;
