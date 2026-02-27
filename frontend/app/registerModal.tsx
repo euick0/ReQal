@@ -3,7 +3,7 @@ import React, {FormEvent, useState} from 'react';
 import CustomButton from "@/components/customButton";
 import Image from "next/image";
 import RegisterHandler from "@/lib/register";
-import {Field, FieldGroup, FieldLegend, FieldSeparator, FieldSet} from "@/components/ui/field";
+import {Field, FieldError, FieldGroup, FieldLegend, FieldSeparator, FieldSet, FieldTitle} from "@/components/ui/field";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {GoogleOAuthHandler} from "@/lib/googleAuth";
@@ -65,6 +65,12 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
                 password: "Password cannot be empty"
             })
             return
+        } else if (registerInput.password.length < 8) {
+            setRegisterError({
+                ...registerError,
+                password: "Password must be at least 8 characters long"
+            })
+            return
         }
 
         const formData = new FormData();
@@ -99,10 +105,8 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
                     validateFormInput(event)
                 }}>
                     <FieldSet className="mx-36">
-                        <FieldLegend variant="4xl"
-                                     className="text-4xl antialiased font-semibold text-stone-200">Register</FieldLegend>
+                        <FieldTitle className="text-4xl antialiased font-semibold text-stone-200">Register</FieldTitle>
                         <FieldGroup>
-
                             <Field>
                                 <FieldLegend variant="legend"
                                              className="antialiased text-stone-200 mb-0 pt-3">Name</FieldLegend>
@@ -110,6 +114,8 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
                                        onChange={({target}) => handleUserInput(target.name, target.value)}
                                        name="name"
                                        aria-invalid={registerError.name !== "" ? true : undefined}></Input>
+                                {registerError.name &&
+                                    <FieldError className="">{registerError.name}</FieldError>}
                             </Field>
                             <Field>
                                 <FieldLegend variant="legend"
@@ -118,6 +124,8 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
                                        onChange={({target}) => handleUserInput(target.name, target.value)} name="email"
                                        type="email"
                                        aria-invalid={registerError.email !== "" ? true : undefined}></Input>
+                                {registerError.email &&
+                                    <FieldError className="">{registerError.email}</FieldError>}
                             </Field>
                             <Field>
                                 <FieldLegend variant="legend"
@@ -127,16 +135,18 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
                                        name="password"
                                        type="password"
                                        aria-invalid={registerError.password !== "" ? true : undefined}></Input>
+                                {registerError.password &&
+                                    <FieldError className="">{registerError.password}</FieldError>}
                             </Field>
                         </FieldGroup>
                         <FieldSeparator className="my-1"/>
                         <Field>
                             <Button className="text-white font-normal py-5" type="submit">Register</Button>
-                            <Button variant="outline" className="text-white font-normal py-5"><Image
+                            <Button variant="outline" className="text-white font-normal py-5"
+                                    onClick={GoogleOAuthHandler} type="button"><Image
                                 src="/svgs/Google%20Logo.svg" width="20" height="20"
                                 alt="Google Logo"
-                                className="m-full"
-                                onClick={GoogleOAuthHandler}></Image> Continue with Google</Button>
+                                className="m-full"></Image> Continue with Google</Button>
                         </Field>
                         <div className="flex mx-10 justify-center items-center">
                             <p>Already have an account?</p>

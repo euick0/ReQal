@@ -57,7 +57,7 @@ const Header = () => {
                     <div className="flex flex-1 items-center gap-4 justify-end">
                         <Button variant="ghost" size="lg"
                                 className="rounded-xl text-white text-md px-3 py-2 font-normal"
-                                onClick={ToggleLoginModal}>Log in</Button>
+                                onClick={ToggleLoginModal}>Login</Button>
                         <Button size="lg" className="rounded-xl text-white text-md px-3 py-2 font-normal"
                                 onClick={ToggleRegisterModal}>Register</Button>
                     </div>
