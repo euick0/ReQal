@@ -17,6 +17,7 @@ const LoginHandler = async (formData: FormData) => {
         redirect("/main")
     }
     console.error("Login error:", error)
+    return error
 };
 
 export default LoginHandler;

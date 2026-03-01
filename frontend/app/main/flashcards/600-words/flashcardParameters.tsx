@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react';
+import React, {useTransition} from 'react';
 import {
     Combobox,
     ComboboxContent,
@@ -27,6 +27,7 @@ import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@
 import ProgressDialog from "@/app/main/flashcards/600-words/progressDialog";
 import {FlashcardContext} from "@/app/main/flashcards/600-words/flashcardPreviews";
 import {pathways} from "@/app/main/flashcards/600-words/flashcardCreation";
+import InsertWordsFlashcard from "@/lib/flashcardUtils";
 
 interface FlashcardParametersProps {
     wordList: string[];
@@ -46,9 +47,9 @@ const languages = [
     "Korean"
 ]
 
-//TODO add status for each word, word list fix
 const FlashcardParameters = () => {
     const flashcardContext = React.useContext(FlashcardContext);
+    const [isPending, startTransition] = useTransition()
 
     if (!flashcardContext) {
         throw new Error("FlashcardParameters must be used within PathsContext.Provider");
@@ -159,11 +160,19 @@ const FlashcardParameters = () => {
         "write (verb)", "yard", "year", "yellow", "yes", "you (singular/ plural)", "young", "zero"
     ];
 
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+       e.preventDefault()
+       const formData = new FormData(e.currentTarget)
+       startTransition(async () => {
+           await InsertWordsFlashcard(formData)
+       })
+   }
+
     return (
         <div className="box-border pt-17 pr-0 pl-9 w-full">
             <ScrollArea className="w-full h-[calc(100vh-70px)] overflow-visible">
-                <Field className="w-auto p-1 pr-6">
-                    <div className="">
+                <Field className="w-auto p-1 pr-6 pb-4">
+                    <form className="" onSubmit={handleSubmit}>
                         <Combobox items={languages}>
                             <ComboboxInput placeholder="Select a language" className="w-64 mb-4"/>
                             <ComboboxContent>
@@ -226,25 +235,36 @@ const FlashcardParameters = () => {
                         </div>
 
                         <div>
-                            <Input className="w-96 mb-4 mr-2" placeholder="Translated word"
-                                   value={translatedWord}
-                                   onChange={({target}) => setTranslatedWord(target.value)}/>
-                            <Input className="w-20 mb-4 mr-2" placeholder="Gender"
-                                   value={translatedWordGender}
-                                   onChange={({target}) => setTranslatedWordGender(target.value)}/>
-                            <Input className="w-70 mb-4" placeholder="IPA translation"
-                                   value={IPATranslation}
-                                   onChange={({target}) => setIPATranslation(target.value)}/>
+                            <Input
+                                className="w-96 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! dark:bg-input/30! selection:text-primary-foreground!"
+                                placeholder="Translated word"
+                                name="translatedWord"
+                                value={translatedWord}
+                                onChange={({target}) => setTranslatedWord(target.value)}/>
+                            <Input
+                                className="w-20 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! dark:bg-input/30! selection:text-primary-foreground!"
+                                placeholder="Gender"
+                                name="translatedWordGender"
+                                value={translatedWordGender}
+                                onChange={({target}) => setTranslatedWordGender(target.value)}/>
+                            <Input
+                                className="w-70 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! dark:bg-input/30! selection:text-primary-foreground!"
+                                placeholder="IPA translation"
+                                name="IPATranslation"
+                                value={IPATranslation}
+                                onChange={({target}) => setIPATranslation(target.value)}/>
                         </div>
 
                         <ImageParameter>
                             <div className="ml-3 mt-3">
                                 <FieldLabel htmlFor="customImage" className="mb-1">Or choose your own
                                     image...</FieldLabel>
-                                <Input className="w-96 mb-4" placeholder="Or choose your own image" type="file"
-                                       id="customImage"
-                                       accept="image/*"
-                                       multiple={true}/>
+                                <Input
+                                    className="w-96 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! dark:bg-input/30! selection:text-primary-foreground!"
+                                    placeholder="Or choose your own image" type="file"
+                                    id="customImage"
+                                    accept="image/*"
+                                    multiple={true}/>
                             </div>
                         </ImageParameter>
                         <div
@@ -260,25 +280,31 @@ const FlashcardParameters = () => {
 
                             <FieldLabel htmlFor="customAudio" className="mb-1 ml-4">Or choose your own audio
                                 file...</FieldLabel>
-                            <Input className="w-96 mb-4 ml-4" placeholder="Or choose your audio file" type="file"
-                                   id="customAudio"
-                                   accept="audio/*"
-                                   multiple={true}/>
+                            <Input
+                                className="w-96 mb-4 ml-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! dark:bg-input/30! selection:text-primary-foreground!"
+                                placeholder="Or choose your audio file" type="file"
+                                id="customAudio"
+                                accept="audio/*"
+                                multiple={true}/>
                         </div>
                         <div className="flex items-center">
-                            <Input className="w-70 mb-4 mr-2" placeholder="Optional: Image caption"
-                                   value={imageCaption}
-                                   onChange={({target}) => setImageCaption(target.value)}/>
-                            <Input className="w-70 mb-4" placeholder="Optional: Translation caption"
-                                   value={translationCaption}
-                                   onChange={({target}) => setTranslationCaption(target.value)}/>
+                            <Input
+                                className="w-70 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! dark:bg-input/30! selection:text-primary-foreground!"
+                                placeholder="Optional: Image caption"
+                                value={imageCaption}
+                                onChange={({target}) => setImageCaption(target.value)}/>
+                            <Input
+                                className="w-70 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! dark:bg-input/30! selection:text-primary-foreground!"
+                                placeholder="Optional: Translation caption"
+                                value={translationCaption}
+                                onChange={({target}) => setTranslationCaption(target.value)}/>
                         </div>
                         <div>
-                            <Button className="text-white mr-4" size="default" type="submit">Create</Button>
-                            <Button className="text-white" variant="ghost" size="default">Edit Last</Button>
+                            <Button className="text-white mr-4 rounded-md!  antialiased" size="default" type="submit">Create</Button>
+                            <Button className="text-white " variant="ghost" size="default">Edit Last</Button>
                             <Dialog>
                                 <DialogTrigger asChild>
-                                    <Button className="text-white mr-4" variant="ghost"
+                                    <Button className="text-white mr-4 " variant="ghost"
                                             size="default">Progress</Button>
                                 </DialogTrigger>
                                 <DialogContent className="w-300 h-100">
@@ -289,7 +315,7 @@ const FlashcardParameters = () => {
                                 </DialogContent>
                             </Dialog>
                         </div>
-                    </div>
+                    </form>
                 </Field>
                 <ScrollBar className="absolute pl-8"></ScrollBar>
             </ScrollArea>

@@ -4,10 +4,6 @@ const Words = () => {
     return (
         <div>
             <FlashcardCreation></FlashcardCreation>
-            <img
-                src="https://pihmftnfpfvuayazswsy.supabase.co/storage/v1/object/public/publicFiles/Reqal%20Logo%20W-text.svg"
-                alt="ReQal Logo"/>
-
         </div>
     );
 };

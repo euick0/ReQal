@@ -4,16 +4,7 @@ import CustomButton from "@/components/customButton";
 import Image from "next/image";
 import Login from "@/lib/login";
 import {Input} from "@/components/ui/input";
-import {
-    Field,
-    FieldDescription,
-    FieldError,
-    FieldGroup,
-    FieldLegend,
-    FieldSeparator,
-    FieldSet,
-    FieldTitle
-} from "@/components/ui/field";
+import {Field, FieldError, FieldGroup, FieldLegend, FieldSeparator, FieldSet, FieldTitle} from "@/components/ui/field";
 import {Checkbox} from "@/components/ui/checkbox";
 import {Label} from "@/components/ui/label";
 import {Button} from "@/components/ui/button";
@@ -54,7 +45,12 @@ const LoginModal = ({onClose, onClickRegister}: LoginModalProps) => {
         formData.append("password", loginInput.password)
 
         setLoginInput({email: "", password: ""})
-        await Login(formData)
+        const error = await Login(formData)
+
+        if (error) {
+            setLoginError({...loginError , password: "Invalid email or password"})
+            return
+        }
     }
 
     return (
@@ -81,7 +77,7 @@ const LoginModal = ({onClose, onClickRegister}: LoginModalProps) => {
                                        value={loginInput.email}
                                        onChange={({target}) => handleUserInput(target.name, target.value)}
                                        aria-invalid={loginError.email !== "" ? true : undefined}></Input>
-                                {loginError.email && <FieldError >{loginError.email}</FieldError>}
+                                {loginError.email && <FieldError>{loginError.email}</FieldError>}
                             </Field>
                             <Field>
                                 <FieldLegend variant="legend"
@@ -105,21 +101,21 @@ const LoginModal = ({onClose, onClickRegister}: LoginModalProps) => {
                             ></CustomButton>
                         </div>
                         <Field>
-                                <Button className="text-white font-normal py-5" type="submit">Login</Button>
-                                <Button variant="outline" className="text-white font-normal py-5"
-                                        onClick={GoogleOAuthHandler} type="button"><Image
-                                    src="/svgs/Google%20Logo.svg" width="20" height="20"
-                                    alt="Google Logo"
-                                    className="m-full"></Image> Continue with Google</Button>
-                            </Field>
-                            <div className="flex mx-10 justify-center items-center">
-                                <p>Don't have an account?</p>
-                                <CustomButton content="Register"
-                                              customCSS="text-blue-300 underline"
-                                              style="secondary"
-                                                onClick={onClickRegister}
-                                              ></CustomButton>
-                            </div>
+                            <Button className="text-white font-normal py-5" type="submit">Login</Button>
+                            <Button variant="outline" className="text-white font-normal py-5"
+                                    onClick={GoogleOAuthHandler} type="button"><Image
+                                src="/svgs/Google%20Logo.svg" width="20" height="20"
+                                alt="Google Logo"
+                                className="m-full"></Image> Continue with Google</Button>
+                        </Field>
+                        <div className="flex mx-10 justify-center items-center">
+                            <p>Don't have an account?</p>
+                            <CustomButton content="Register"
+                                          customCSS="text-blue-300 underline"
+                                          style="secondary"
+                                          onClick={onClickRegister}
+                            ></CustomButton>
+                        </div>
                     </FieldSet>
                 </form>
             </div>
