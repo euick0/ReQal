@@ -15,13 +15,14 @@ const RegisterHandler = async (formData: FormData) => {
             data: {
                 name
             },
-            emailRedirectTo: "http://localhost:3000/main"
+            emailRedirectTo: `${window.location.origin}/main`
 
         }
     })
 
     if (error) {
         console.error("Error during registration:", error.message);
+        return error
     }
 
 

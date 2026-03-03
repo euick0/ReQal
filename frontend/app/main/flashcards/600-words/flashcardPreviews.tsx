@@ -1,5 +1,5 @@
 "use client";
-import React from 'react';
+import React, {Dispatch, SetStateAction} from 'react';
 import {Card} from "@/components/ui/card";
 import Image from "next/image";
 import {
@@ -183,9 +183,13 @@ export type FlashcardContextType = {
     translatedWordGender: string;
     setTranslatedWordGender: (gender: string) => void;
     imagePath: string[];
-    setImagePath: (path: string[]) => void;
+    setImagePath: Dispatch<SetStateAction<string[]>>;
+    imageFiles: File[];
+    setImageFiles: (files: File[]) => void;
     audioPath: string;
     setAudioPath: (path: string) => void;
+    audioFile: File | null;
+    setAudioFile: (file: File | null) => void;
     imageCaption: string;
     setImageCaption: (caption: string) => void;
     translationCaption: string;
@@ -194,5 +198,7 @@ export type FlashcardContextType = {
     setIPATranslation: (translation: string) => void;
     pathway: { pathName: string, pathDescription: string } | null;
     setPathway: (path: { pathName: string, pathDescription: string } | null) => void;
+    language: string;
+    setLanguage: (language: string) => void;
 }
 export const FlashcardContext = React.createContext<FlashcardContextType | undefined>(undefined);

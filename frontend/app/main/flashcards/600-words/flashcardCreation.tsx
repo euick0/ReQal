@@ -23,11 +23,14 @@ const FlashcardCreation = () => {
     const [useTranslatedWord, setUseTranslatedWord] = React.useState("привет");
     const [useTranslatedWordGender, setUseTranslatedWordGender] = React.useState("");
     const [useImagePath, setUseImagePath] = React.useState<string[]>([]);
+    const [useImageFiles, setUseImageFiles] = React.useState<File[]>([]);
     const [useAudioPath, setUseAudioPath] = React.useState("/audio/exampleAudio.mp3");
+    const [useAudioFile, setUseAudioFile] = React.useState<File | null>(null);
     const [useImageCaption, setUseImageCaption] = React.useState("");
     const [useTranslationCaption, setUseTranslationCaption] = React.useState("");
     const [usePathway, setUsePathway] =  React.useState<{pathName: string, pathDescription: string} | null>(pathways[0]);
     const [useIPATranslation, setUseIPATranslation] = React.useState("");
+    const [useLanguage, setUseLanguage] = React.useState("");
 
     const contextValue: FlashcardContextType = {
         translatedWord: useTranslatedWord,
@@ -36,8 +39,12 @@ const FlashcardCreation = () => {
         setTranslatedWordGender: setUseTranslatedWordGender,
         imagePath: useImagePath,
         setImagePath: setUseImagePath,
+        imageFiles: useImageFiles,
+        setImageFiles: setUseImageFiles,
         audioPath: useAudioPath,
         setAudioPath: setUseAudioPath,
+        audioFile: useAudioFile,
+        setAudioFile: setUseAudioFile,
         imageCaption: useImageCaption,
         setImageCaption: setUseImageCaption,
         translationCaption: useTranslationCaption,
@@ -46,6 +53,8 @@ const FlashcardCreation = () => {
         setIPATranslation: setUseIPATranslation,
         pathway: usePathway,
         setPathway: setUsePathway,
+        language: useLanguage,
+        setLanguage: setUseLanguage,
     };
 
     return (
