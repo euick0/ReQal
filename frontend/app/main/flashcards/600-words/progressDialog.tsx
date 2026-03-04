@@ -12,7 +12,7 @@ interface ProgressDialogProps {
     words: string[];
 }
 
-const arrangeWords = (words: string[]) => {
+const ArrangeWords = (words: string[]) => {
     let arrangedWords: ArrangedWords = [];
 
     for (let i = 0; i < words.length; i++) {
@@ -34,14 +34,14 @@ const arrangeWords = (words: string[]) => {
 }
 
 const ProgressDialog = ({words}: ProgressDialogProps) => {
-    const arrangedWords = arrangeWords(words);
+    const arrangedWords = ArrangeWords(words);
 
     return (
         <Carousel opts={{align: "center",}} className="w-250  mx-auto">
             <CarouselContent className="">
                 {arrangedWords.map((arrangedWordsEntry) => (
                     <CarouselItem key={arrangedWordsEntry.letter} className="basis-1/6">
-                        <Card>
+                        <Card className="bg-input/10!">
                             <CardContent className="flex h-60 justify-top flex-col">
                                 <h6 className="text-2xl font-semibold text-center ">{arrangedWordsEntry.letter}</h6>
                                 <div className="h-0.5 w-4/5 items-center bg-neutral-300 mx-auto my-1"></div>

@@ -31,6 +31,7 @@ import InsertWordsFlashcard, {GetCurrentWordIndex, IncrementCurrentWordIndex} fr
 import GeminiSendTranslationQuery from "@/lib/geminiQueries";
 import {uploadFile} from "@/lib/uploadToStorage";
 import {createClient} from "@/lib/supabase/client";
+import {GetGoogleImages} from "@/lib/getGoogleImages";
 
 const getWordList = async () => {
     const supabase = createClient()
@@ -58,10 +59,12 @@ const languages = [
 
 const FlashcardParameters = () => {
     const flashcardContext = React.useContext(FlashcardContext);
-    const [isPending, startTransition] = useTransition()
     const [isSubmitting, setIsSubmitting] = React.useState(false)
     const [wordList, setWordList] = React.useState<string[]>([])
     const [currentWordIndex, setCurrentWordIndex] = React.useState<number>(0)
+    const [imageSearchResults, setImageSearchResults] = React.useState<string[]>([])
+    const [imageAlts, setImageAlts] = React.useState<string[]>([])
+    const [currentWord, setCurrentWord] = React.useState<string>("")
 
     useEffect(() => {
         getWordList().then(setWordList)
@@ -103,6 +106,44 @@ const FlashcardParameters = () => {
         src: flashcardContext.audioPath,
         data: {}
     }
+    const updateParameters = async () => {
+        const [
+            {data: newCurrentWordIndex, error: incrementIndexError},
+            {data: translationData, error: translationError},
+        ] = await Promise.all([
+            IncrementCurrentWordIndex(),
+            GeminiSendTranslationQuery(wordList[currentWordIndex], language),
+        ])
+
+        setCurrentWordIndex(newCurrentWordIndex ?? currentWordIndex)
+        if (translationError || incrementIndexError ) {
+            console.log("Error updating page:", incrementIndexError, translationError)
+        } else if (translationData) {
+            const {
+                data: googleImagesData,
+                error: googleImagesError
+            } = await GetGoogleImages(translationData.translation)
+
+            if (googleImagesError) {
+                console.error("Error fetching Google Images:", googleImagesError)
+                setIsSubmitting(false)
+            }
+            else {
+                setTranslatedWord(translationData.translation)
+                setTranslatedWordGender(translationData.gender ?? "")
+                setImageSearchResults(googleImagesData.map(img => img.src))
+                setImageAlts(googleImagesData.map(img => img.alt))
+                setImageFiles([])
+                setAudioPath("")
+                setAudioFile(null)
+                setImageCaption("")
+                setTranslationCaption("")
+                setIPATranslation(translationData.ipa)
+                setCurrentWord(wordList[currentWordIndex])
+            }
+            setIsSubmitting(false)
+        }
+    }
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -130,46 +171,14 @@ const FlashcardParameters = () => {
         } else if (audioPath) {
             formData.set("audioPath", audioPath)
         }
+        
+        const {error: insertWordsFlashcardError} = await InsertWordsFlashcard(formData)
 
-        console.time("insert");
-        console.time("increment");
-        console.time("gemini");
-        const [
-            {error: insertWordsFlashcardError},
-            {data: newCurrentWordIndex, error: incrementIndexError},
-            {data: translationData, error: translationError},
-        ] = await Promise.all([
-            InsertWordsFlashcard(formData).then(r => {
-                console.timeEnd("insert");
-                return r
-            }),
-            IncrementCurrentWordIndex().then(r => {
-                console.timeEnd("increment");
-                return r
-            }),
-            GeminiSendTranslationQuery(wordList[currentWordIndex], language).then(r => {
-                console.timeEnd("gemini");
-                return r
-            }),        ])
-
-        setCurrentWordIndex(newCurrentWordIndex ?? currentWordIndex)
-
-        if (translationError || incrementIndexError || insertWordsFlashcardError) {
-            console.log("Error submitting flashcard:", insertWordsFlashcardError, incrementIndexError, translationError)
-        } else {
-            setTranslatedWord(translationData.translation)
-            setTranslatedWordGender(translationData.gender ?? "")
-            setImagePath([])
-            setImageFiles([])
-            setAudioPath("")
-            setAudioFile(null)
-            setImageCaption("")
-            setTranslationCaption("")
-            setIPATranslation(translationData.ipa)
+        if (insertWordsFlashcardError) {
+            console.error("Error inserting flashcard:", insertWordsFlashcardError)
         }
-        setIsSubmitting(false)
-
-
+        
+        updateParameters()
     }
 
     return (
@@ -177,8 +186,9 @@ const FlashcardParameters = () => {
             <ScrollArea className="w-full h-[calc(100vh-70px)] overflow-visible">
                 <Field className="w-auto p-1 pr-6 pb-4">
                     <form className="" onSubmit={handleSubmit}>
-                        <Combobox items={languages} name="" value={language}
-                                  onValueChange={(value) => value !== null && setLanguage(value)}>
+                        <Combobox items={languages} name="language" value={language}
+                                  onValueChange={(value) => value !== null && setLanguage(value)}
+                                  required={true}>
                             <ComboboxInput placeholder="Select a language" className="w-64 mb-4"/>
                             <ComboboxContent>
                                 <ComboboxEmpty>No items found.</ComboboxEmpty>
@@ -238,35 +248,40 @@ const FlashcardParameters = () => {
                                     <p className="text-sm">For hard languages (especially those with logograms)</p>
                                 </HoverCardContent>
                             </HoverCard>
+                            <Input
+                                className="w-60 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                placeholder="Original Word"
+                                value={currentWord}
+                                readOnly/>
                         </div>
 
                         <div>
                             <Input
-                                className="w-96 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! dark:bg-input/30! selection:text-primary-foreground!"
+                                className="w-96 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Translated word"
                                 name="translatedWord"
                                 value={translatedWord}
                                 onChange={({target}) => setTranslatedWord(target.value)}/>
                             <Input
-                                className="w-20 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! dark:bg-input/30! selection:text-primary-foreground!"
+                                className="w-20 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Gender"
                                 name="translatedWordGender"
                                 value={translatedWordGender}
                                 onChange={({target}) => setTranslatedWordGender(target.value)}/>
                             <Input
-                                className="w-70 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! dark:bg-input/30! selection:text-primary-foreground!"
+                                className="w-70 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="IPA translation"
                                 name="IPATranslation"
                                 value={IPATranslation}
                                 onChange={({target}) => setIPATranslation(target.value)}/>
                         </div>
 
-                        <ImageParameter>
+                        <ImageParameter src={imageSearchResults} alt={imageAlts}>
                             <div className="ml-3 mt-3">
                                 <FieldLabel htmlFor="customImage" className="mb-1">Or choose your own
                                     image...</FieldLabel>
                                 <Input
-                                    className="w-96 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! dark:bg-input/30! selection:text-primary-foreground!"
+                                    className="w-96 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                     placeholder="Or choose your own image" type="file"
                                     id="customImage"
                                     accept="image/*"
@@ -279,7 +294,7 @@ const FlashcardParameters = () => {
                             </div>
                         </ImageParameter>
                         <div
-                            className="w-full flex flex-col bg-primary-foreground rounded-lg mb-4 border-sidebar-border border">
+                            className="w-full flex flex-col bg-input/10 rounded-lg mb-4 border-sidebar-border border pt-4">
                             {audioPath && <AudioPlayerProvider>
                                 <div className="flex items-center gap-4 p-4">
                                     <AudioPlayerButton className="bg-primary  [&>svg]:invert" item={track}/>
@@ -292,7 +307,7 @@ const FlashcardParameters = () => {
                             <FieldLabel htmlFor="customAudio" className="mb-1 ml-4">Or choose your own audio
                                 file...</FieldLabel>
                             <Input
-                                className="w-96 mb-4 ml-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! dark:bg-input/30! selection:text-primary-foreground!"
+                                className="w-96 mb-4 ml-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Or choose your audio file" type="file"
                                 id="customAudio"
                                 accept="audio/*"
@@ -304,13 +319,13 @@ const FlashcardParameters = () => {
                         </div>
                         <div className="flex items-center">
                             <Input
-                                className="w-70 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! dark:bg-input/30! selection:text-primary-foreground!"
+                                className="w-70 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Optional: Image caption"
                                 value={imageCaption}
                                 name="imageCaption"
                                 onChange={({target}) => setImageCaption(target.value)}/>
                             <Input
-                                className="w-70 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! dark:bg-input/30! selection:text-primary-foreground!"
+                                className="w-70 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Optional: Translation caption"
                                 value={translationCaption}
                                 name="translationCaption"

@@ -8,7 +8,7 @@ export interface ForvoAudio {
 
 export async function getForvoAudio(
     word: string
-): Promise<{ data: ForvoAudio[] | null; error: Error | null }> {
+): Promise<{ data: ForvoAudio | null; error: Error | null }> {
     try {
         const url = `https://forvo.com/word/${encodeURIComponent(word)}/`;
 
@@ -34,14 +34,12 @@ export async function getForvoAudio(
         if (playMatches.length === 0)
             return { data: null, error: new Error(`No pronunciations found for "${word}"`) };
 
-        const results: ForvoAudio[] = playMatches.map(([, base64Path], i) => {
-            const decoded = Buffer.from(base64Path, "base64").toString("utf-8");
-            const audioUrl = `https://audio00.forvo.com/audios/mp3/${decoded}`;
-            const username = usernameMatches[i]?.[1]?.trim() ?? "unknown";
-            return { word, audioUrl, username };
-        });
+        const [, base64Path] = playMatches[0];
+        const decoded = Buffer.from(base64Path, "base64").toString("utf-8");
+        const audioUrl = `https://audio00.forvo.com/audios/mp3/${decoded}`;
+        const username = usernameMatches[0]?.[1]?.trim() ?? "unknown";
 
-        return { data: results, error: null };
+        return { data: { word, audioUrl, username }, error: null };
     } catch (err) {
         return { data: null, error: err instanceof Error ? err : new Error(String(err)) };
     }

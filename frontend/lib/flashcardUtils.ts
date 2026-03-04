@@ -133,10 +133,6 @@ const IncrementCurrentWordIndex = async () => {
     return { data: newIndex, error: null }
 }
 
-const GetAudioPath = async (word: string) => {
-
-}
-
 
 export {GetCurrentWordIndex};
 export {IncrementCurrentWordIndex};

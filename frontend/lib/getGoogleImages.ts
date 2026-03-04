@@ -1,13 +1,13 @@
 "use server";
- 
+
 export interface GoogleImage {
     src: string;
     alt: string;
 }
 
-export async function GetGoogleImages(query: string): Promise<{ data: GoogleImage[] | null; error: Error | null }> {
+export async function GetGoogleImages(query: string): Promise<{ data: GoogleImage[]; error: Error | null }> {
     try {
-        const url = `https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=isch&hl=en`;
+        const url = `https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=isch&hl=en&safe=active`;
 
         const res = await fetch(url, {
             headers: {
@@ -17,15 +17,18 @@ export async function GetGoogleImages(query: string): Promise<{ data: GoogleImag
             },
         });
 
-        if (!res.ok) return { data: null, error: new Error(`Failed to fetch Google Images: ${res.status}`) };
+        if (!res.ok) return {data: [], error: new Error(`Failed to fetch Google Images: ${res.status}`)};
 
         const html = await res.text();
 
-        // Google embeds image data as escaped JSON strings in the page
         const matches = [...html.matchAll(/\["(https:\/\/[^"]+\.(?:jpg|jpeg|png|webp|gif))",\d+,\d+/g)];
 
-        return { data: matches.map((m) => ({ src: m[1], alt: query })), error: null };
+        const seen = new Set<string>();
+        const unique = matches.filter(m => !seen.has(m[1]) && seen.add(m[1]));
+
+        return {data: unique.map((m) => ({src: m[1], alt: query})), error: null};
+        
     } catch (err) {
-        return { data: null, error: err instanceof Error ? err : new Error(String(err)) };
+        return {data: [], error: err instanceof Error ? err : new Error(String(err))};
     }
 }
