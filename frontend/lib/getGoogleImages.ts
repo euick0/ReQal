@@ -26,8 +26,8 @@ export async function GetGoogleImages(query: string): Promise<{ data: GoogleImag
         const seen = new Set<string>();
         const unique = matches.filter(m => !seen.has(m[1]) && seen.add(m[1]));
 
-        return {data: unique.map((m) => ({src: m[1], alt: query})), error: null};
-        
+        return {data: unique.slice(0, 40).map((m) => ({src: m[1], alt: query})), error: null};
+
     } catch (err) {
         return {data: [], error: err instanceof Error ? err : new Error(String(err))};
     }

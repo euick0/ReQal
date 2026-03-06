@@ -16,6 +16,11 @@ const Sidebar = () => {
         {text: "Conjugations charts", redirectUrl: "/settings"},
         {text: "Edit Flashcards", redirectUrl: "/settings"},
     ];
+    
+    const decksGroup: GroupItem[] = [
+        {text: "My decks", redirectUrl: "/main/decks/my-decks"},
+        {text: "Review Flashcards", redirectUrl: "/settings"},
+    ];
 
     return (
         <SidebarContext.Provider value={{isExpanded, setIsExpanded}}>
@@ -25,8 +30,8 @@ const Sidebar = () => {
                     })}>
                     <SidebarHeader></SidebarHeader>
                     <div className="flex-row items-center justify-evenly">
+                        <SidebarGroup groupItems={decksGroup} size={35} text="Decks" imagePath="/svgs/flashcard_deck.svg" invert={true}  redirectUrl="/main/decks" />
                         <SidebarGroup groupItems={flashcardGroup} size={50} text="Flashcards" imagePath="/svgs/cards.svg" invert={true} redirectUrl="/main/flashcards" />
-
                     </div>
                     <div className="w-full flex-row items-center">
                         <SidebarFooter></SidebarFooter>

@@ -2,6 +2,7 @@ import React from 'react';
 import {Card, CardContent} from "@/components/ui/card";
 import {Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious} from "@/components/ui/carousel";
 import {ScrollArea, ScrollBar} from "@/components/ui/scroll-area";
+import clsx from "clsx";
 
 type ArrangedWords = {
     letter: string;
@@ -10,6 +11,7 @@ type ArrangedWords = {
 
 interface ProgressDialogProps {
     words: string[];
+    nextWord?: string;
 }
 
 const ArrangeWords = (words: string[]) => {
@@ -33,7 +35,7 @@ const ArrangeWords = (words: string[]) => {
 
 }
 
-const ProgressDialog = ({words}: ProgressDialogProps) => {
+const ProgressDialog = ({words, nextWord}: ProgressDialogProps) => {
     const arrangedWords = ArrangeWords(words);
 
     return (
@@ -47,7 +49,9 @@ const ProgressDialog = ({words}: ProgressDialogProps) => {
                                 <div className="h-0.5 w-4/5 items-center bg-neutral-300 mx-auto my-1"></div>
                                 <ScrollArea className="flex-1 h-full max-h-[180px]">
                                     {arrangedWordsEntry.words.map((word, index) => (
-                                        <p key={index} className="text-center text-sm">{word}</p>
+                                        <p key={index} className={clsx("text-center text-sm", {
+                                            "text-contrast": word === nextWord
+                                        })}>{word}</p>
                                         ))}
                                     <ScrollBar></ScrollBar>
                                 </ScrollArea>

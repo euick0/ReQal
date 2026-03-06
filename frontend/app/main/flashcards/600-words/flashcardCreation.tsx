@@ -3,32 +3,26 @@ import React from 'react';
 import FirstPathPreview, {
     FlashcardContext,
     FlashcardContextType,
-    SecondPathPreview, ThirdPathPreview
+    SecondPathPreview,
+    ThirdPathPreview
 } from "@/app/main/flashcards/600-words/flashcardPreviews";
 import FlashcardParameters from "@/app/main/flashcards/600-words/flashcardParameters";
 import {ScrollArea, ScrollBar} from "@/components/ui/scroll-area";
+import {pathways} from "@/lib/pathways";
+import {Toaster} from "@/components/ui/sonner";
 
-export const pathways = [
-    {pathName: "1st path", pathDescription: "What's the image called?"},
-    {pathName: "2nd path", pathDescription: "All of the above + What's the word about?"},
-    {
-        pathName: "3rd path",
-        pathDescription: "All of the above + How do you spell this?"
-    }
-]
-
-
+export {pathways} from "@/lib/pathways"
 
 const FlashcardCreation = () => {
-    const [useTranslatedWord, setUseTranslatedWord] = React.useState("привет");
+    const [useTranslatedWord, setUseTranslatedWord] = React.useState("");
     const [useTranslatedWordGender, setUseTranslatedWordGender] = React.useState("");
     const [useImagePath, setUseImagePath] = React.useState<string[]>([]);
     const [useImageFiles, setUseImageFiles] = React.useState<File[]>([]);
-    const [useAudioPath, setUseAudioPath] = React.useState("/audio/exampleAudio.mp3");
+    const [useAudioPath, setUseAudioPath] = React.useState("");
     const [useAudioFile, setUseAudioFile] = React.useState<File | null>(null);
     const [useImageCaption, setUseImageCaption] = React.useState("");
     const [useTranslationCaption, setUseTranslationCaption] = React.useState("");
-    const [usePathway, setUsePathway] =  React.useState<{pathName: string, pathDescription: string} | null>(pathways[0]);
+    const [usePathway, setUsePathway] = React.useState<{ pathName: string, pathDescription: string } | null>(null)
     const [useIPATranslation, setUseIPATranslation] = React.useState("");
     const [useLanguage, setUseLanguage] = React.useState("");
 
@@ -72,11 +66,13 @@ const FlashcardCreation = () => {
                         <h1 className="m-auto">Back</h1>
                     </div>
                     <FirstPathPreview></FirstPathPreview>
-                    {(contextValue.pathway == pathways[1] || contextValue.pathway == pathways[2]) && <SecondPathPreview></SecondPathPreview>}
+                    {(contextValue.pathway == pathways[1] || contextValue.pathway == pathways[2]) &&
+                        <SecondPathPreview></SecondPathPreview>}
                     {contextValue.pathway == pathways[2] && <ThirdPathPreview></ThirdPathPreview>}
                     <ScrollBar></ScrollBar>
                 </ScrollArea>
             </div>
+            <Toaster></Toaster>
         </FlashcardContext.Provider>
     );
 };

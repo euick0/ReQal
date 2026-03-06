@@ -18,6 +18,10 @@ const ImageParameter = ({children, src, alt}: ImageParameterProps & { children: 
 
     const {imagePath, setImagePath} = pathContext;
 
+    const [loadedCount, setLoadedCount] = React.useState(0)
+
+    React.useEffect(() => setLoadedCount(0), [src])
+
     const searchImagesResults = src
 
     const handleImageToggle = (imageUrl: string, isSelected: boolean) => {
@@ -32,12 +36,13 @@ const ImageParameter = ({children, src, alt}: ImageParameterProps & { children: 
         <div
             className={clsx("max-w-full  flex flex-col bg-input/10 rounded-lg mb-4 border-sidebar-border border",
                 {"h-[10vh]": searchImagesResults.length == 0},
-                {"h-[37vh]": searchImagesResults.length < 4 && searchImagesResults.length > 0},
-                {"h-[50vh]": searchImagesResults.length > 3},)}>
+                {"h-[37vh]": loadedCount < 4 && loadedCount > 0},
+                {"h-[50vh]": loadedCount > 3},)}>
             <ScrollArea className="max-w-full max-h-120 overflow-y-hidden">
                 <div className="grid grid-cols-3 gap-4 w-auto h-auto m-4 ">
                     {searchImagesResults.map((image, index) => (
-                        <ImageToggle key={index} imageUrl={image} onToggle={handleImageToggle} alt={alt[index]}/>
+                        <ImageToggle key={index} imageUrl={image} onToggle={handleImageToggle} alt={alt[index]}
+                            onLoad={() => setLoadedCount(c => c + 1)}/>
                     ))}
                 </div>
                 <ScrollBar orientation="vertical" className=""/>
