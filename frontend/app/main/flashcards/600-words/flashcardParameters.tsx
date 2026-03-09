@@ -122,9 +122,7 @@ const FlashcardParameters = () => {
     }
     
     const loadParameters = async (lang: string, word: string) => {
-        console.time("[load] gemini translation")
         const {data: translationData, error: translationError} = await GeminiSendTranslationQuery(word, lang)
-        console.timeEnd("[load] gemini translation")
 
         if (translationError || !translationData) {
             setProgress(100)
@@ -134,7 +132,6 @@ const FlashcardParameters = () => {
         }
         setProgress(60)
 
-        console.time("[load] images + audio")
         const [
             {data: googleImagesData, error: googleImagesError},
             {data: audioData, error: audioError}
@@ -142,7 +139,6 @@ const FlashcardParameters = () => {
             GetGoogleImages(translationData.translation),
             GetWiktionaryAudio(translationData.translation, lang)
         ])
-        console.timeEnd("[load] images + audio")
 
         if (googleImagesError) {
             showErrorToast("Error fetching images. Please try again.")
@@ -173,7 +169,6 @@ const FlashcardParameters = () => {
         setIsSubmitting(true)
         setProgress(0)
 
-        console.time("[load] word list + preferences")
         const [
             words,
             {data: wordIndex},
@@ -183,7 +178,6 @@ const FlashcardParameters = () => {
             GetCurrentWordIndex(),
             GetDeckPreferences("600 Words")
         ])
-        console.timeEnd("[load] word list + preferences")
         setProgress(25)
 
         const lang = prefs?.language ?? ""
@@ -219,7 +213,6 @@ const FlashcardParameters = () => {
         const nextWordIndex = currentWordIndex + 1
         setProgress(0)
 
-        console.time("[update] phase1: increment index + translation")
         const [
             {data: newCurrentWordIndex, error: incrementIndexError},
             {data: translationData, error: translationError},
@@ -227,7 +220,6 @@ const FlashcardParameters = () => {
             IncrementCurrentWordIndex(),
             GeminiSendTranslationQuery(wordList[nextWordIndex], language),
         ])
-        console.timeEnd("[update] phase1: increment index + translation")
         setProgress(50)
 
         setCurrentWordIndex(newCurrentWordIndex ?? currentWordIndex)
@@ -236,7 +228,6 @@ const FlashcardParameters = () => {
             showErrorToast("Error fetching translation or updating progress. Please try again.")
             setIsSubmitting(false)
         } else if (translationData) {
-            console.time("[update] phase2: images + audio")
             const [
                 {data: googleImagesData, error: googleImagesError},
                 {data: audioData, error: audioError},
@@ -244,7 +235,6 @@ const FlashcardParameters = () => {
                 GetGoogleImages(translationData.translation),
                 GetWiktionaryAudio(translationData.translation, language),
             ])
-            console.timeEnd("[update] phase2: images + audio")
 
             if (googleImagesError) {
                 showErrorToast("Error fetching images for the next word. Please try again.")

@@ -30,6 +30,7 @@ import GeminiSendTranslationQuery from "@/lib/geminiQueries";
 import {uploadFile} from "@/lib/uploadToStorage";
 import {GetGoogleImages} from "@/lib/getGoogleImages";
 import {GetWiktionaryAudio} from "@/lib/getAudio";
+import {Progress} from "@/components/ui/progress";
 import {toast} from "sonner";
 
 const languages = [
@@ -48,6 +49,7 @@ const CustomFlashcardParameters = () => {
     const customFlashcardContext = React.useContext(CustomFlashcardContext);
     const [isSubmitting, setIsSubmitting] = React.useState(false)
     const [isTranslating, setIsTranslating] = React.useState(false)
+    const [progress, setProgress] = React.useState<number>(100)
     const [imageSearchResults, setImageSearchResults] = React.useState<string[]>([])
     const [imageAlts, setImageAlts] = React.useState<string[]>([])
     const [currentWord, setCurrentWord] = React.useState<string>("")
@@ -61,7 +63,7 @@ const CustomFlashcardParameters = () => {
             await GetCustomFlashcardsDeckID()
             const {data: prefs} = await GetDeckPreferences("Custom Words")
             if (prefs?.language) setLanguage(prefs.language)
-            setPathway(prefs?.pathway ?? pathways[0])
+            if (prefs?.pathway) setPathway(pathways.find(p => p.pathName === prefs?.pathway?.pathName) ?? pathways[0])
         }
         loadPreferences()
     }, [])
@@ -108,28 +110,32 @@ const CustomFlashcardParameters = () => {
         }
 
         setIsTranslating(true)
+        setProgress(0)
 
         const {
             data: translationData,
             error: translationError
-        } = await GeminiSendTranslationQuery(currentWord.trim(), language)
+        } = await GeminiSendTranslationQuery(currentWord.trim(), language!)
 
         if (translationError || !translationData) {
             showErrorToast("Error fetching translation. Please try again.")
+            setProgress(100)
             setIsTranslating(false)
             return
         }
+        setProgress(60)
 
         const [
             {data: googleImagesData, error: googleImagesError},
             {data: audioData, error: audioError}
         ] = await Promise.all([
             GetGoogleImages(translationData.translation),
-            GetWiktionaryAudio(translationData.translation, language)
+            GetWiktionaryAudio(translationData.translation, language!)
         ])
 
         if (googleImagesError) {
             showErrorToast("Error fetching images. Please try again.")
+            setProgress(100)
             setIsTranslating(false)
             return
         }
@@ -149,6 +155,7 @@ const CustomFlashcardParameters = () => {
         setImageCaption("")
         setTranslationCaption("")
         setIPATranslation(translationData.ipa ?? "")
+        setProgress(100)
         setIsTranslating(false)
     }
 
@@ -170,6 +177,7 @@ const CustomFlashcardParameters = () => {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         setIsSubmitting(true)
+        setProgress(0)
         const formData = new FormData(e.currentTarget)
 
         if (formData.get("pathway")?.toString() == "2nd path") {
@@ -194,15 +202,18 @@ const CustomFlashcardParameters = () => {
             formData.set("audioPath", audioPath)
         }
 
+        setProgress(50)
         const {error: insertError} = await InsertCustomFlashcard(formData)
 
         if (insertError) {
             showErrorToast("Error creating flashcard. Please try again.")
+            setProgress(100)
             setIsSubmitting(false)
             return
         }
 
         resetWordFields()
+        setProgress(100)
         setIsSubmitting(false)
     }
 
@@ -211,12 +222,13 @@ const CustomFlashcardParameters = () => {
     return (
         <div className="box-border pt-17 pr-0 pl-9 w-full">
             <ScrollArea className="w-full h-[calc(100vh-70px)] overflow-visible">
+                <Progress value={progress} className="w-full h-2 mb-4 mx-auto"></Progress>
                 <Field className="w-auto p-1 pr-6 pb-4">
                     <form className="" onSubmit={handleSubmit}>
-                        <Combobox items={languages} name="language" value={language}
+                        <Combobox items={languages} name="language" value={language ?? null}
                                   onValueChange={(value) => {
-                                      if (value !== null) {
-                                          setLanguage(value);
+                                      setLanguage(value ?? null);
+                                      if (value) {
                                           UpdateDeckPreference("Custom Words", "prefered_language", value);
                                       }
                                   }}
@@ -241,8 +253,8 @@ const CustomFlashcardParameters = () => {
                                 value={pathway}
                                 name="pathway"
                                 onValueChange={(value) => {
-                                    setPathway(value);
-                                    if (value !== null) {
+                                    setPathway(value ?? null);
+                                    if (value != null) {
                                         const pathwayIndex = pathways.indexOf(value) + 1;
                                         UpdateDeckPreference("Custom Words", "prefered_path", pathwayIndex);
                                     }
@@ -308,7 +320,7 @@ const CustomFlashcardParameters = () => {
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30! font-normal!"
+                                className="mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30! font-normal! text-sm!"
                                 disabled={isLoading || !currentWord.trim() || !language}
                                 onClick={handleTranslate}>
                                 {isTranslating ? "Translating..." : "Translate"}
@@ -401,7 +413,7 @@ const CustomFlashcardParameters = () => {
                         <div>
                             <Button className="text-white mr-4 rounded-md!  antialiased" size="default"
                                     type="submit" disabled={isLoading}>Create</Button>
-                            <Button className="text-white " variant="ghost" size="default">Edit Last</Button>
+                            <Button className="text-white " variant="ghost" size="default" type="button">Edit Last</Button>
                         </div>
                     </form>
                 </Field>

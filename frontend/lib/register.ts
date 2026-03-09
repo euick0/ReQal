@@ -15,17 +15,14 @@ const RegisterHandler = async (formData: FormData) => {
             data: {
                 name
             },
-            emailRedirectTo: `${window.location.origin}/main`
-
+            emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/main`
         }
     })
 
     if (error) {
         console.error("Error during registration:", error.message);
-        return error
+        return { message: error.message, code: error.code ?? "unknown" }
     }
-
-
 };
 
 export default RegisterHandler;

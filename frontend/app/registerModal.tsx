@@ -7,6 +7,7 @@ import {Field, FieldError, FieldGroup, FieldLegend, FieldSeparator, FieldSet, Fi
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {GoogleOAuthHandler} from "@/lib/googleAuth";
+import {toast} from "sonner";
 
 interface RegisterModalProps {
     onClose: () => void;
@@ -84,7 +85,15 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
             name: ""
         })
 
-        await RegisterHandler(formData);
+        const error = await RegisterHandler(formData);
+
+        if (error) {
+            if (error.message === "User already registered") {
+                toast.error("An account with this email already exists.");
+            } else {
+                toast.error("Registration failed. Please try again.");
+            }
+        }
     }
 
     return (

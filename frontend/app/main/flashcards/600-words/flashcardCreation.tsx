@@ -9,7 +9,7 @@ import FirstPathPreview, {
 import FlashcardParameters from "@/app/main/flashcards/600-words/flashcardParameters";
 import {ScrollArea, ScrollBar} from "@/components/ui/scroll-area";
 import {pathways} from "@/lib/pathways";
-import {Toaster} from "@/components/ui/sonner";
+
 
 export {pathways} from "@/lib/pathways"
 
@@ -72,7 +72,6 @@ const FlashcardCreation = () => {
                     <ScrollBar></ScrollBar>
                 </ScrollArea>
             </div>
-            <Toaster></Toaster>
         </FlashcardContext.Provider>
     );
 };

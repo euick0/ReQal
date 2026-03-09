@@ -29,7 +29,7 @@ const FirstPathPreview = () => {
                     {flashcardContext?.imagePath[0] && flashcardContext.imagePath.slice(0, 4).map(((path, i) => (
                         <div className="relative " key={i}>
                             <Image alt="Flashcard Image Preview" src={flashcardContext?.imagePath[i]} fill
-                                   className="object-cover"/>
+                                   className="object-cover" priority/>
                         </div>
                     )))}
                 </div>}
@@ -100,7 +100,7 @@ export const SecondPathPreview = () => {
                     {flashcardContext?.imagePath[0] && flashcardContext.imagePath.slice(0, 4).map(((path, i) => (
                         <div className="relative " key={i}>
                             <Image alt="Flashcard Image Preview" src={flashcardContext?.imagePath[i]} fill
-                                   className="object-cover"/>
+                                   className="object-cover" priority/>
                         </div>
                     )))}
                 </div>}
@@ -132,7 +132,7 @@ export const ThirdPathPreview = () => {
                     {flashcardContext?.imagePath[0] && flashcardContext.imagePath.slice(0, 4).map(((path, i) => (
                         <div className="relative " key={i}>
                             <Image alt="Flashcard Image Preview" src={flashcardContext?.imagePath[i]} fill
-                                   className="object-cover"/>
+                                   className="object-cover" priority/>
                         </div>
                     )))}
                 </div>}

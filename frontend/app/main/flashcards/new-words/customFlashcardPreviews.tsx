@@ -29,7 +29,7 @@ const FirstPathPreview = () => {
                     {customFlashcardContext?.imagePath[0] && customFlashcardContext.imagePath.slice(0, 4).map(((path, i) => (
                         <div className="relative " key={i}>
                             <Image alt="Flashcard Image Preview" src={customFlashcardContext?.imagePath[i]} fill
-                                   className="object-cover"/>
+                                   className="object-cover" priority/>
                         </div>
                     )))}
                 </div>}
@@ -100,7 +100,7 @@ export const SecondPathPreview = () => {
                     {customFlashcardContext?.imagePath[0] && customFlashcardContext.imagePath.slice(0, 4).map(((path, i) => (
                         <div className="relative " key={i}>
                             <Image alt="Flashcard Image Preview" src={customFlashcardContext?.imagePath[i]} fill
-                                   className="object-cover"/>
+                                   className="object-cover" priority/>
                         </div>
                     )))}
                 </div>}
@@ -132,7 +132,7 @@ export const ThirdPathPreview = () => {
                     {customFlashcardContext?.imagePath[0] && customFlashcardContext.imagePath.slice(0, 4).map(((path, i) => (
                         <div className="relative " key={i}>
                             <Image alt="Flashcard Image Preview" src={customFlashcardContext?.imagePath[i]} fill
-                                   className="object-cover"/>
+                                   className="object-cover" priority/>
                         </div>
                     )))}
                 </div>}
@@ -189,7 +189,7 @@ export type CustomFlashcardContextType = {
     setIPATranslation: (translation: string) => void;
     pathway: { pathName: string, pathDescription: string } | null;
     setPathway: (path: { pathName: string, pathDescription: string } | null) => void;
-    language: string;
-    setLanguage: (language: string) => void;
+    language: string | null;
+    setLanguage: (language: string | null) => void;
 }
 export const CustomFlashcardContext = React.createContext<CustomFlashcardContextType | undefined>(undefined);

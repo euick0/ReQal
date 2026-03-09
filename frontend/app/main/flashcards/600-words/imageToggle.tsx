@@ -11,7 +11,12 @@ interface ImageToggleProps {
 
 const ImageToggle = ({imageUrl, onToggle, alt, onLoad}: ImageToggleProps) => {
     const [failed, setFailed] = React.useState(false);
-    
+
+    React.useEffect(() => {
+        const img = new window.Image();
+        img.src = imageUrl;
+    }, [imageUrl]);
+
     if (failed) return null;
     
     return (

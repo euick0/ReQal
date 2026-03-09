@@ -9,7 +9,7 @@ import FirstPathPreview, {
 import CustomFlashcardParameters from "@/app/main/flashcards/new-words/customFlashcardParameters";
 import {ScrollArea, ScrollBar} from "@/components/ui/scroll-area";
 import {pathways} from "@/lib/pathways";
-import {Toaster} from "@/components/ui/sonner";
+
 
 export {pathways} from "@/lib/pathways"
 
@@ -22,9 +22,9 @@ const CustomFlashcardCreation = () => {
     const [useAudioFile, setUseAudioFile] = React.useState<File | null>(null);
     const [useImageCaption, setUseImageCaption] = React.useState("");
     const [useTranslationCaption, setUseTranslationCaption] = React.useState("");
-    const [usePathway, setUsePathway] = React.useState<{ pathName: string, pathDescription: string } | null>(null)
+    const [usePathway, setUsePathway] = React.useState<{ pathName: string, pathDescription: string }>(pathways[0])
     const [useIPATranslation, setUseIPATranslation] = React.useState("");
-    const [useLanguage, setUseLanguage] = React.useState("");
+    const [useLanguage, setUseLanguage] = React.useState<string | null>(null);
 
     const contextValue: CustomFlashcardContextType = {
         translatedWord: useTranslatedWord,
@@ -72,7 +72,6 @@ const CustomFlashcardCreation = () => {
                     <ScrollBar></ScrollBar>
                 </ScrollArea>
             </div>
-            <Toaster></Toaster>
         </CustomFlashcardContext.Provider>
     );
 };

@@ -37,6 +37,9 @@ const Header = () => {
     };
 
     const ToggleForgotPasswordModal = () => {
+        if (!isForgotPasswordModalOpen) {
+            setIsLoginModalOpen(false);
+        }
         setIsForgotPasswordModalOpen(!isForgotPasswordModalOpen);
     };
 
