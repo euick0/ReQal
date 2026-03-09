@@ -22,7 +22,7 @@ const CustomFlashcardCreation = () => {
     const [useAudioFile, setUseAudioFile] = React.useState<File | null>(null);
     const [useImageCaption, setUseImageCaption] = React.useState("");
     const [useTranslationCaption, setUseTranslationCaption] = React.useState("");
-    const [usePathway, setUsePathway] = React.useState<{ pathName: string, pathDescription: string }>(pathways[0])
+    const [usePathway, setUsePathway] = React.useState<{ pathName: string, pathDescription: string } | null>(pathways[0])
     const [useIPATranslation, setUseIPATranslation] = React.useState("");
     const [useLanguage, setUseLanguage] = React.useState<string | null>(null);
 

@@ -1,0 +1,505 @@
+import {NextRequest, NextResponse} from "next/server"
+import Database from "better-sqlite3"
+import JSZip from "jszip"
+import {GetDeckById, GetDeckFlashcards} from "@/lib/backendUtils"
+import {createClient} from "@/lib/supabase/server"
+
+// ---------------------------------------------------------------------------
+// Anki collection schema (Anki 2.1 / collection.anki2)
+// ---------------------------------------------------------------------------
+
+const ANKI_SCHEMA = `
+CREATE TABLE IF NOT EXISTS col (
+    id      INTEGER PRIMARY KEY,
+    crt     INTEGER NOT NULL,
+    mod     INTEGER NOT NULL,
+    scm     INTEGER NOT NULL,
+    ver     INTEGER NOT NULL,
+    dty     INTEGER NOT NULL,
+    usn     INTEGER NOT NULL,
+    ls      INTEGER NOT NULL,
+    conf    TEXT NOT NULL,
+    models  TEXT NOT NULL,
+    decks   TEXT NOT NULL,
+    dconf   TEXT NOT NULL,
+    tags    TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS notes (
+    id      INTEGER PRIMARY KEY,
+    guid    TEXT NOT NULL,
+    mid     INTEGER NOT NULL,
+    mod     INTEGER NOT NULL,
+    usn     INTEGER NOT NULL,
+    tags    TEXT NOT NULL,
+    flds    TEXT NOT NULL,
+    sfld    TEXT NOT NULL,
+    csum    INTEGER NOT NULL,
+    flags   INTEGER NOT NULL,
+    data    TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS cards (
+    id      INTEGER PRIMARY KEY,
+    nid     INTEGER NOT NULL,
+    did     INTEGER NOT NULL,
+    ord     INTEGER NOT NULL,
+    mod     INTEGER NOT NULL,
+    usn     INTEGER NOT NULL,
+    type    INTEGER NOT NULL,
+    queue   INTEGER NOT NULL,
+    due     INTEGER NOT NULL,
+    ivl     INTEGER NOT NULL,
+    factor  INTEGER NOT NULL,
+    reps    INTEGER NOT NULL,
+    lapses  INTEGER NOT NULL,
+    left    INTEGER NOT NULL,
+    odue    INTEGER NOT NULL,
+    odid    INTEGER NOT NULL,
+    flags   INTEGER NOT NULL,
+    data    TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS revlog (
+    id      INTEGER PRIMARY KEY,
+    cid     INTEGER NOT NULL,
+    usn     INTEGER NOT NULL,
+    ease    INTEGER NOT NULL,
+    ivl     INTEGER NOT NULL,
+    lastIvl INTEGER NOT NULL,
+    factor  INTEGER NOT NULL,
+    time    INTEGER NOT NULL,
+    type    INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS graves (
+    usn     INTEGER NOT NULL,
+    oid     INTEGER NOT NULL,
+    type    INTEGER NOT NULL
+);
+`
+
+// ---------------------------------------------------------------------------
+// Unique ID helpers
+// ---------------------------------------------------------------------------
+
+let idCounter = Date.now()
+const nextId = () => ++idCounter
+
+// Simple checksum used by Anki for the sfld (first field) of a note
+function fieldChecksum(str: string): number {
+    // CRC32-like: Anki uses the first 8 hex chars of sha1, cast to signed int32
+    // We approximate with a simple hash sufficient for our purposes
+    let hash = 0
+    for (let i = 0; i < str.length && i < 9; i++) {
+        hash = (Math.imul(31, hash) + str.charCodeAt(i)) | 0
+    }
+    return Math.abs(hash)
+}
+
+// ---------------------------------------------------------------------------
+// Anki note-model (card type) definition
+// ---------------------------------------------------------------------------
+// Fields:
+//   0  Word
+//   1  IPA
+//   2  Gender
+//   3  Audio           — Anki sound tag, e.g. [sound:0.mp3]
+//   4  Image           — HTML <img> tags for all images
+//   5  ImageCaption
+//   6  TranslationCaption
+//   7  EnableCard2     — non-empty string → card 2 is generated (pathway ≥ 2)
+//   8  EnableCard3     — non-empty string → card 3 is generated (pathway = 3)
+
+const MODEL_ID = 1698765432100  // fixed stable ID for our note type
+
+function buildModel(deckId: number) {
+    const now = Math.floor(Date.now() / 1000)
+
+    const fields = [
+        {name: "Word", ord: 0, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "IPA", ord: 1, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "Gender", ord: 2, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "Audio", ord: 3, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "Image", ord: 4, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "ImageCaption", ord: 5, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "TranslationCaption", ord: 6, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "EnableCard2", ord: 7, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "EnableCard3", ord: 8, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+    ]
+
+    // Card 1 — "What's the image called?" (pathway 1, 2, 3)
+    // Front: image(s) + image caption
+    // Back:  word + IPA + gender + audio + translation caption
+    const tmpl1 = {
+        name: "Card 1 – Image → Word",
+        ord: 0,
+        qfmt: `<div class="card-front">
+{{#Image}}<div class="image-wrap">{{Image}}</div>{{/Image}}
+{{#ImageCaption}}<p class="caption">{{ImageCaption}}</p>{{/ImageCaption}}
+</div>`,
+        afmt: `{{FrontSide}}
+<hr id="answer">
+<div class="card-back">
+  <p class="word">{{Word}}{{#IPA}} <span class="ipa">/{{IPA}}/</span>{{/IPA}}{{#Gender}} <span class="gender">({{Gender}})</span>{{/Gender}}</p>
+  {{#Audio}}<div class="audio">{{Audio}}</div>{{/Audio}}
+  {{#TranslationCaption}}<p class="caption">{{TranslationCaption}}</p>{{/TranslationCaption}}
+</div>`,
+        bqfmt: "",
+        bafmt: "",
+        did: deckId,
+        bfont: "",
+        bsize: 0,
+    }
+
+    // Card 2 — "What's the word about?" inverted (pathway 2, 3)
+    // Front: word + IPA + gender + audio + translation caption
+    // Back:  image(s) + image caption
+    const tmpl2 = {
+        name: "Card 2 – Word → Image",
+        ord: 1,
+        qfmt: `{{#EnableCard2}}
+<div class="card-front">
+  <p class="word">{{Word}}{{#IPA}} <span class="ipa">/{{IPA}}/</span>{{/IPA}}{{#Gender}} <span class="gender">({{Gender}})</span>{{/Gender}}</p>
+  {{#Audio}}<div class="audio">{{Audio}}</div>{{/Audio}}
+  {{#TranslationCaption}}<p class="caption">{{TranslationCaption}}</p>{{/TranslationCaption}}
+</div>
+{{/EnableCard2}}`,
+        afmt: `{{FrontSide}}
+<hr id="answer">
+<div class="card-back">
+  {{#Image}}<div class="image-wrap">{{Image}}</div>{{/Image}}
+  {{#ImageCaption}}<p class="caption">{{ImageCaption}}</p>{{/ImageCaption}}
+</div>`,
+        bqfmt: "",
+        bafmt: "",
+        did: deckId,
+        bfont: "",
+        bsize: 0,
+    }
+
+    // Card 3 — "How do you spell this?" (pathway 3)
+    // Front: prompt + image(s) + audio
+    // Back:  word + IPA + gender + translation caption
+    const tmpl3 = {
+        name: "Card 3 – Spelling",
+        ord: 2,
+        qfmt: `{{#EnableCard3}}
+<div class="card-front">
+  <p class="prompt">How do you spell this?</p>
+  {{#Image}}<div class="image-wrap">{{Image}}</div>{{/Image}}
+  {{#Audio}}<div class="audio">{{Audio}}</div>{{/Audio}}
+</div>
+{{/EnableCard3}}`,
+        afmt: `{{FrontSide}}
+<hr id="answer">
+<div class="card-back">
+  <p class="word">{{Word}}{{#IPA}} <span class="ipa">/{{IPA}}/</span>{{/IPA}}{{#Gender}} <span class="gender">({{Gender}})</span>{{/Gender}}</p>
+  {{#TranslationCaption}}<p class="caption">{{TranslationCaption}}</p>{{/TranslationCaption}}
+</div>`,
+        bqfmt: "",
+        bafmt: "",
+        did: deckId,
+        bfont: "",
+        bsize: 0,
+    }
+
+    const css = `
+.card { font-family: Arial, sans-serif; font-size: 18px; text-align: center; color: #222; background: #fff; padding: 16px; }
+.word { font-size: 1.6em; font-weight: bold; margin: 8px 0; }
+.ipa { color: #555; font-style: italic; font-size: 0.85em; }
+.gender { color: #888; font-size: 0.8em; }
+.caption { color: #666; font-size: 0.9em; margin: 4px 0; }
+.prompt { font-size: 1.2em; color: #444; margin-bottom: 12px; }
+.image-wrap img { max-width: 100%; max-height: 280px; object-fit: cover; border-radius: 6px; margin: 4px; }
+hr#answer { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
+`
+
+    return {
+        id: MODEL_ID,
+        name: "ReQal Flashcard",
+        type: 0,
+        mod: now,
+        usn: -1,
+        sortf: 0,
+        did: deckId,
+        tmpls: [tmpl1, tmpl2, tmpl3],
+        flds: fields,
+        css,
+        latexPre: "\\documentclass[12pt]{article}\n\\special{papersize=3in,5in}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amssymb,amsmath}\n\\pagestyle{empty}\n\\setlength{\\parindent}{0in}\n\\begin{document}\n",
+        latexPost: "\\end{document}",
+        req: [
+            [0, "any", [0, 4]],   // Card 1: Word OR Image must be non-empty
+            [1, "all", [7]],       // Card 2: EnableCard2 must be non-empty
+            [2, "all", [8]],       // Card 3: EnableCard3 must be non-empty
+        ],
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Media download helper
+// ---------------------------------------------------------------------------
+
+async function downloadMedia(url: string): Promise<Buffer | null> {
+    try {
+        const res = await fetch(url, {signal: AbortSignal.timeout(10000)})
+        if (!res.ok) return null
+        const arrayBuf = await res.arrayBuffer()
+        return Buffer.from(arrayBuf)
+    } catch {
+        return null
+    }
+}
+
+function mediaExtension(url: string): string {
+    try {
+        const pathname = new URL(url).pathname
+        const ext = pathname.split(".").pop()?.toLowerCase()
+        return ext ? `.${ext}` : ".bin"
+    } catch {
+        return ".bin"
+    }
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/export-anki?deckId=<uuid>
+// ---------------------------------------------------------------------------
+
+export async function GET(request: NextRequest) {
+    // Auth check
+    const supabase = await createClient()
+    const {data: {user}} = await supabase.auth.getUser()
+    if (!user) {
+        return NextResponse.json({error: "Unauthorized"}, {status: 401})
+    }
+
+    const deckId = request.nextUrl.searchParams.get("deckId")
+    if (!deckId) {
+        return NextResponse.json({error: "Missing deckId"}, {status: 400})
+    }
+
+    // Fetch deck metadata and flashcards
+    const [{data: deck, error: deckError}, {data: flashcards, error: cardsError}] = await Promise.all([
+        GetDeckById(deckId),
+        GetDeckFlashcards(deckId),
+    ])
+
+    if (deckError || !deck) return NextResponse.json({error: "Deck not found"}, {status: 404})
+    if (cardsError || !flashcards) return NextResponse.json({error: "Failed to fetch flashcards"}, {status: 500})
+    if (flashcards.length === 0) return NextResponse.json({error: "Deck has no flashcards"}, {status: 400})
+
+    // ---------------------------------------------------------------------------
+    // Download all media in parallel
+    // ---------------------------------------------------------------------------
+    // Build a flat list of all media URLs we need, tagged with card index
+    type MediaJob = { cardIndex: number; role: "audio" | "image"; imageIndex?: number; url: string }
+    const jobs: MediaJob[] = []
+
+    for (let i = 0; i < flashcards.length; i++) {
+        const fc = flashcards[i]
+        if (fc.audio_path) jobs.push({cardIndex: i, role: "audio", url: fc.audio_path})
+        for (let j = 0; j < (fc.image_paths ?? []).length; j++) {
+            jobs.push({cardIndex: i, role: "image", imageIndex: j, url: fc.image_paths[j]})
+        }
+    }
+
+    const results = await Promise.allSettled(jobs.map(j => downloadMedia(j.url)))
+
+    // mediaFiles: maps mediaIndex → { filename, buffer }
+    // We assign each downloaded file a sequential number (Anki media convention)
+    let mediaIndex = 0
+    let skippedCount = 0
+
+    // For each card, store its resolved audio filename and image filenames
+    type CardMedia = { audioFilename: string | null; imageFilenames: string[] }
+    const cardMedia: CardMedia[] = flashcards.map(() => ({audioFilename: null, imageFilenames: []}))
+    const mediaManifest: Record<string, string> = {}  // { "0": "audio.mp3", "1": "img.jpg", ... }
+    const mediaBuffers: { index: number; buffer: Buffer }[] = []
+
+    for (let k = 0; k < jobs.length; k++) {
+        const job = jobs[k]
+        const result = results[k]
+
+        if (result.status === "fulfilled" && result.value) {
+            const ext = mediaExtension(job.url)
+            const originalName = `${job.role}_${job.cardIndex}_${job.imageIndex ?? 0}${ext}`
+            const idx = mediaIndex++
+            mediaManifest[String(idx)] = originalName
+            mediaBuffers.push({index: idx, buffer: result.value})
+
+            if (job.role === "audio") {
+                cardMedia[job.cardIndex].audioFilename = originalName
+            } else {
+                cardMedia[job.cardIndex].imageFilenames.push(originalName)
+            }
+        } else {
+            skippedCount++
+        }
+    }
+
+    // ---------------------------------------------------------------------------
+    // Build collection.anki2 (SQLite)
+    // ---------------------------------------------------------------------------
+    const db = new Database(":memory:")
+    db.exec(ANKI_SCHEMA)
+
+    const now = Math.floor(Date.now() / 1000)
+    const deckIdNum = nextId()
+
+    // Anki deck JSON
+    const deckJson = {
+        [String(deckIdNum)]: {
+            id: deckIdNum,
+            name: deck.name,
+            desc: "",
+            extendRev: 50,
+            usn: -1,
+            collapsed: false,
+            newToday: [0, 0],
+            timeToday: [0, 0],
+            dyn: 0,
+            extendNew: 10,
+            conf: 1,
+            revToday: [0, 0],
+            lrnToday: [0, 0],
+            mod: now,
+        },
+        // Anki requires a "Default" deck entry
+        "1": {
+            id: 1,
+            name: "Default",
+            conf: 1,
+            extendNew: 10,
+            extendRev: 50,
+            collapsed: false,
+            desc: "",
+            dyn: 0,
+            lrnToday: [0, 0],
+            mod: now,
+            newToday: [0, 0],
+            revToday: [0, 0],
+            timeToday: [0, 0],
+            usn: 0,
+        },
+    }
+
+    const model = buildModel(deckIdNum)
+    const modelsJson = {[String(MODEL_ID)]: model}
+
+    const conf = {
+        nextPos: 1,
+        estTimes: true,
+        activeDecks: [deckIdNum],
+        sortType: "noteFld",
+        timeLim: 0,
+        sortBackwards: false,
+        addToCur: true,
+        curDeck: deckIdNum,
+        newBury: true,
+        newSpread: 0,
+        dueCounts: true,
+        curModel: String(MODEL_ID),
+        collapseTime: 1200,
+    }
+
+    const dconf = {
+        "1": {
+            id: 1,
+            mod: now,
+            name: "Default",
+            usn: -1,
+            maxTaken: 60,
+            autoplay: true,
+            timer: 0,
+            replayq: true,
+            new: {delays: [1, 10], ints: [1, 4, 7], initialFactor: 2500, separate: true, order: 1, perDay: 20, bury: false},
+            lapse: {delays: [10], leechAction: 0, leechFails: 8, minInt: 1, mult: 0},
+            rev: {perDay: 100, ease4: 1.3, fuzz: 0.05, minSpace: 1, ivlFct: 1, maxIvl: 36500, bury: false, hardFactor: 1.2},
+        },
+    }
+
+    db.prepare(`INSERT INTO col VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+        1, now, now, now, 11, 0, -1, 0,
+        JSON.stringify(conf),
+        JSON.stringify(modelsJson),
+        JSON.stringify(deckJson),
+        JSON.stringify(dconf),
+        "{}"
+    )
+
+    const insertNote = db.prepare(`INSERT INTO notes VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
+    const insertCard = db.prepare(`INSERT INTO cards VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+
+    for (let i = 0; i < flashcards.length; i++) {
+        const fc = flashcards[i]
+        const cm = cardMedia[i]
+
+        // Build field values
+        const audioTag = cm.audioFilename ? `[sound:${cm.audioFilename}]` : ""
+        const imageTags = cm.imageFilenames.map(f => `<img src="${f}">`).join("\n")
+        const gender = fc.gender ?? ""
+        const ipa = fc.IPA_translation ?? ""
+        const enableCard2 = fc.pathway >= 2 ? "1" : ""
+        const enableCard3 = fc.pathway >= 3 ? "1" : ""
+
+        // Anki field separator is \x1f (unit separator)
+        const flds = [
+            fc.translated_word ?? "",
+            ipa,
+            gender,
+            audioTag,
+            imageTags,
+            fc.image_caption ?? "",
+            fc.translation_caption ?? "",
+            enableCard2,
+            enableCard3,
+        ].join("\x1f")
+
+        const noteId = nextId()
+        const guid = `reqal_${fc.id}`
+        const sfld = fc.translated_word ?? ""
+        const csum = fieldChecksum(sfld)
+
+        insertNote.run(noteId, guid, MODEL_ID, now, -1, "", flds, sfld, csum, 0, "")
+
+        // Generate cards based on pathway
+        // Card 1 — always
+        insertCard.run(nextId(), noteId, deckIdNum, 0, now, -1, 0, 0, i, 0, 0, 0, 0, 0, 0, 0, 0, "")
+
+        // Card 2 — pathway >= 2
+        if (fc.pathway >= 2) {
+            insertCard.run(nextId(), noteId, deckIdNum, 1, now, -1, 0, 0, i, 0, 0, 0, 0, 0, 0, 0, 0, "")
+        }
+
+        // Card 3 — pathway >= 3
+        if (fc.pathway >= 3) {
+            insertCard.run(nextId(), noteId, deckIdNum, 2, now, -1, 0, 0, i, 0, 0, 0, 0, 0, 0, 0, 0, "")
+        }
+    }
+
+    // Export the SQLite DB to a Buffer
+    const dbBuffer = Buffer.from(db.serialize())
+    db.close()
+
+    // ---------------------------------------------------------------------------
+    // Assemble .apkg (ZIP)
+    // ---------------------------------------------------------------------------
+    const zip = new JSZip()
+    zip.file("collection.anki2", dbBuffer)
+    zip.file("media", JSON.stringify(mediaManifest))
+
+    for (const {index, buffer} of mediaBuffers) {
+        zip.file(String(index), buffer)
+    }
+
+    const apkgBuffer = await zip.generateAsync({type: "nodebuffer", compression: "DEFLATE"})
+
+    const safeName = deck.name.replace(/[^a-z0-9_\-]/gi, "_")
+    const headers = new Headers({
+        "Content-Type": "application/octet-stream",
+        "Content-Disposition": `attachment; filename="${safeName}.apkg"`,
+        "X-Skipped-Media": String(skippedCount),
+    })
+
+    return new NextResponse(apkgBuffer as unknown as BodyInit, {status: 200, headers})
+}
