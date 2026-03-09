@@ -1,4 +1,5 @@
 "use client"
+
 import React, {FormEvent, useState} from 'react';
 import Image from "next/image";
 import {Input} from "@/components/ui/input";
@@ -62,7 +63,8 @@ const ForgotPasswordModal = ({onClose, onClickLogin}: ForgotPasswordModalProps) 
         <div className="z-2 fixed top-0 left-0 w-screen h-screen bg-black/70 flex justify-center items-center">
             <div className="bg-backgroundLight rounded-md w-8/12 h-8/12 relative flex overflow-hidden">
                 <div className="w-0 h-0">
-                    <Button variant="ghost" size="icon" onClick={onClose} className="absolute top-2 right-2 p-0 hover:bg-transparent">
+                    <Button variant="ghost" size="icon" onClick={onClose}
+                            className="absolute top-2 right-2 p-0 hover:bg-transparent">
                         <Image
                             src="/svgs/x.svg"
                             width="25"
@@ -93,7 +95,7 @@ const ForgotPasswordModal = ({onClose, onClickLogin}: ForgotPasswordModalProps) 
                                     Enter your email address and we'll send you a link to reset your password.
                                 </p>
                                 <FieldGroup>
-                                    <Field>
+                                    <Field className="mb-3">
                                         <FieldLegend variant="legend" className="antialiased text-stone-200 mb-0 pt-3">
                                             Email
                                         </FieldLegend>
@@ -123,7 +125,8 @@ const ForgotPasswordModal = ({onClose, onClickLogin}: ForgotPasswordModalProps) 
                                 </Field>
 
                                 <div className="flex mx-10 justify-center items-center">
-                                    <Button variant="ghost" className="text-blue-300 underline font-normal" onClick={onClickLogin}>
+                                    <Button variant="ghost" className="text-blue-300 underline font-normal"
+                                            onClick={onClickLogin}>
                                         Back to Login
                                     </Button>
                                 </div>
@@ -131,7 +134,8 @@ const ForgotPasswordModal = ({onClose, onClickLogin}: ForgotPasswordModalProps) 
                         ) : (
                             <>
                                 <p className="text-neutral-300 text-md mt-3">
-                                    We've sent a password reset link to <strong>{submittedEmail}</strong>. Please check your
+                                    We've sent a password reset link to <strong>{submittedEmail}</strong>. Please check
+                                    your
                                     email and follow the link to reset your password.
                                 </p>
                                 <p className="text-neutral-300 text-sm mt-2 mb-2">
@@ -150,7 +154,8 @@ const ForgotPasswordModal = ({onClose, onClickLogin}: ForgotPasswordModalProps) 
                                 </Field>
 
                                 <div className="flex mx-10 justify-center items-center">
-                                    <Button variant="ghost" className="text-blue-300 underline font-normal" onClick={onClickLogin}>
+                                    <Button variant="ghost" className="text-blue-300 underline font-normal"
+                                            onClick={onClickLogin}>
                                         Back to Login
                                     </Button>
                                 </div>

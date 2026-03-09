@@ -272,6 +272,104 @@ const InsertCustomFlashcard = async (formData: FormData) => {
 }
 
 
+const GetDeckById = async (deckId: string) => {
+    const supabase = await createClient()
+    const {data, error} = await supabase
+        .from("deck")
+        .select("id, name")
+        .eq("id", deckId)
+        .single()
+
+    if (error || !data) {
+        console.error("Error fetching deck:", error)
+        return {data: null, error: error ?? new Error("Deck not found")}
+    }
+
+    return {data: data as { id: string; name: string }, error: null}
+}
+
+const GetDeckFlashcards = async (deckId: string) => {
+    const supabase = await createClient()
+    const {data, error} = await supabase
+        .from("flashcards")
+        .select("id, translated_word, IPA_translation, gender, image_paths, audio_path, translation_caption, image_caption, pathway")
+        .eq("deck_id", deckId)
+
+    if (error) {
+        console.error("Error fetching flashcards:", error)
+        return {data: null, error}
+    }
+
+    return {data: data as {
+        id: string;
+        translated_word: string;
+        IPA_translation: string;
+        gender: string | null;
+        image_paths: string[];
+        audio_path: string;
+        translation_caption: string | null;
+        image_caption: string | null;
+        pathway: number;
+    }[], error: null}
+}
+
+const GetFlashcardsByDeckId = async (deckId: string) => {
+    const supabase = await createClient()
+
+    const {data, error} = await supabase
+        .from("flashcards")
+        .select("id, translated_word, IPA_translation, gender, image_paths, audio_path, translation_caption, image_caption, pathway")
+        .eq("deck_id", deckId)
+
+    if (error) {
+        console.error("Error fetching flashcards:", error)
+        return {data: null, error}
+    }
+
+    return {data, error: null}
+}
+
+const UpdateFlashcard = async (flashcardId: number, payload: {
+    translated_word?: string | null
+    IPA_translation?: string | null
+    gender?: string | null
+    image_paths?: string[]
+    audio_path?: string | null
+    translation_caption?: string | null
+    image_caption?: string | null
+    pathway?: number
+}) => {
+    const supabase = await createClient()
+
+    const {error} = await supabase
+        .from("flashcards")
+        .update(payload)
+        .eq("id", flashcardId)
+
+    if (error) {
+        console.error("Error updating flashcard:", error)
+        return {data: null, error}
+    }
+
+    return {data: true, error: null}
+}
+
+const DeleteFlashcard = async (flashcardId: number) => {
+    const supabase = await createClient()
+
+    const {error} = await supabase
+        .from("flashcards")
+        .delete()
+        .eq("id", flashcardId)
+
+    if (error) {
+        console.error("Error deleting flashcard:", error)
+        return {data: null, error}
+    }
+
+    return {data: true, error: null}
+}
+
 export {
     InsertWordsFlashcard,
     GetCurrentWordIndex,
@@ -282,4 +380,9 @@ export {
     DeleteDeck,
     InsertCustomFlashcard,
     GetCustomFlashcardsDeckID,
+    GetDeckById,
+    GetDeckFlashcards,
+    GetFlashcardsByDeckId,
+    UpdateFlashcard,
+    DeleteFlashcard,
 }

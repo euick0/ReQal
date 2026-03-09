@@ -99,12 +99,15 @@ const GeminiSendTranslationQuery = async (word: string, targetLanguage: string) 
         });
 
         const text = response.text ?? ""
-        const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim()
-        const parsed = JSON.parse(cleaned)
-
-        console.log("Raw Gemini response:", text)
-        console.log("Gemini response:", parsed)
         console.log("Propmt:", prompt)
+        console.log("Raw Gemini response:", text)
+
+        const fenceStripped = text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim()
+        const match = fenceStripped.match(/\{[\s\S]*\}/)
+        const extracted = match ? match[0] : fenceStripped
+        const sanitized = extracted.replace(/\]\s*}/g, "}").replace(/\{\s*\[/g, "{")
+        const parsed = JSON.parse(sanitized)
+        console.log("Gemini response:", parsed)
 
         return {data: parsed as TranslationResult, error: null}
     } catch (err) {
