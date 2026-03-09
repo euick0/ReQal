@@ -1,12 +1,11 @@
 import React from 'react';
+import DeckList from "@/app/main/decks/my-decks/decksList";
 
-const MyDecks = () => {
+const MyDecksPage = () => {
+    
     return (
-        <div className="mt-10">
-            <h1 className="text-center text-5xl text-white font-semibold">My decks</h1>
-
-        </div>
-    );
+        <DeckList></DeckList>
+    )
 };
 
-export default MyDecks;
+export default MyDecksPage;

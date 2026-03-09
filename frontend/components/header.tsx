@@ -4,11 +4,13 @@ import Logo from "@/components/logo";
 import HeroText from "@/app/heroText";
 import LoginModal from "@/app/loginModal";
 import RegisterModal from "@/app/registerModal";
+import ForgotPasswordModal from "@/app/forgotPasswordModal";
 import {Button} from "@/components/ui/button";
 
 const Header = () => {
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+    const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
 
     const ToggleLoginModal = () => {
         if (isRegisterModalOpen) {
@@ -34,10 +36,18 @@ const Header = () => {
         }
     };
 
+    const ToggleForgotPasswordModal = () => {
+        setIsForgotPasswordModalOpen(!isForgotPasswordModalOpen);
+    };
+
     return (
         <>
-            {isLoginModalOpen && <LoginModal onClose={ToggleLoginModal} onClickRegister={ToggleRegisterModal}/>}
+            {isLoginModalOpen && <LoginModal onClose={ToggleLoginModal} onClickRegister={ToggleRegisterModal} onClickForgotPassword={ToggleForgotPasswordModal}/>}
             {isRegisterModalOpen && <RegisterModal onClose={ToggleRegisterModal} onClickLogin={ToggleLoginModal}/>}
+            {isForgotPasswordModalOpen && <ForgotPasswordModal onClose={ToggleForgotPasswordModal} onClickLogin={() => {
+                setIsForgotPasswordModalOpen(false);
+                setIsLoginModalOpen(true);
+            }}/>}
 
             <div className="relative w-screen h-screen">
                 <div

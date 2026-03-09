@@ -13,9 +13,10 @@ import {GoogleOAuthHandler} from "@/lib/googleAuth";
 interface LoginModalProps {
     onClose: () => void;
     onClickRegister: () => void;
+    onClickForgotPassword: () => void;
 }
 
-const LoginModal = ({onClose, onClickRegister}: LoginModalProps) => {
+const LoginModal = ({onClose, onClickRegister, onClickForgotPassword}: LoginModalProps) => {
     const [loginInput, setLoginInput] = useState({email: "", password: ""})
     const [loginError, setLoginError] = useState({email: "", password: ""})
 
@@ -98,6 +99,7 @@ const LoginModal = ({onClose, onClickRegister}: LoginModalProps) => {
                             <CustomButton content="Forgot Password?"
                                           customCSS="text-blue-300 underline max-w-full whitespace-nowrap"
                                           style="secondary"
+                                          onClick={onClickForgotPassword}
                             ></CustomButton>
                         </div>
                         <Field>
