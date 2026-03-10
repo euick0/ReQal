@@ -12,9 +12,10 @@ import {toast} from "sonner";
 interface RegisterModalProps {
     onClose: () => void;
     onClickLogin: () => void;
+    onRegistered: (email: string) => void;
 }
 
-const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
+const RegisterModal = ({onClose, onClickLogin, onRegistered}: RegisterModalProps) => {
     const [registerInput, setRegisterInput] = useState({
         email: "", password: "", name: ""
     })
@@ -74,9 +75,11 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
             return
         }
 
+        const submittedEmail = registerInput.email;
+
         const formData = new FormData();
         formData.append("name", registerInput.name);
-        formData.append("email", registerInput.email);
+        formData.append("email", submittedEmail);
         formData.append("password", registerInput.password);
 
         setRegisterInput({
@@ -93,6 +96,9 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
             } else {
                 toast.error("Registration failed. Please try again.");
             }
+        } else {
+            onClose();
+            onRegistered(submittedEmail);
         }
     }
 

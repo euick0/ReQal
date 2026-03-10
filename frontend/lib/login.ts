@@ -1,23 +1,24 @@
 "use server"
 
-import {redirect} from "next/navigation";
 import {createClient} from "@/lib/supabase/server";
+import {AuthError} from "@supabase/auth-js";
 
-const LoginHandler = async (formData: FormData) => {
+const LoginHandler = async (formData: FormData): Promise<AuthError | null> => {
     const supabase = await createClient()
     const email = formData.get("email") || ""
     const password = formData.get("password") || ""
 
-    const {data, error} = await supabase.auth.signInWithPassword({
+    const {error} = await supabase.auth.signInWithPassword({
         email: email.toString(),
         password: password.toString(),
     })
 
-    if (!error){
-        redirect("/main")
+    if (error) {
+        console.error("Login error:", error)
+        return error
     }
-    console.error("Login error:", error)
-    return error
+
+    return null
 };
 
 export default LoginHandler;

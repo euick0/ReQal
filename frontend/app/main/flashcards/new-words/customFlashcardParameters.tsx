@@ -32,6 +32,7 @@ import {GetGoogleImages} from "@/lib/getGoogleImages";
 import {GetWiktionaryAudio} from "@/lib/getAudio";
 import {Progress} from "@/components/ui/progress";
 import {toast} from "sonner";
+import {extractImagesFromPasteEvent, filterImageFiles} from "@/lib/clipboardUtils";
 
 const languages = [
     "Spanish",
@@ -102,6 +103,50 @@ const CustomFlashcardParameters = () => {
     const showErrorToast = (message: string) => {
         toast.error(message, {position: "bottom-right"})
     }
+
+    const addImagesToState = (files: File[]) => {
+        const availableSlots = 4 - imagePath.length
+        if (availableSlots <= 0) {
+            showErrorToast("Maximum 4 images allowed")
+            return
+        }
+        const toAdd = files.slice(0, availableSlots)
+        setImageFiles([...imageFiles, ...toAdd])
+        setImagePath([...imagePath, ...toAdd.map(f => URL.createObjectURL(f))])
+    }
+
+    useEffect(() => {
+        const handlePaste = (e: ClipboardEvent) => {
+            // Don't intercept paste inside text inputs / textareas
+            const target = e.target as HTMLElement
+            if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return
+
+            const files = extractImagesFromPasteEvent(e)
+            if (files.length > 0) addImagesToState(files)
+        }
+
+        const handleDragOver = (e: DragEvent) => {
+            if (Array.from(e.dataTransfer?.items ?? []).some(i => i.kind === "file" && i.type.startsWith("image/"))) {
+                e.preventDefault()
+            }
+        }
+
+        const handleDrop = (e: DragEvent) => {
+            const images = filterImageFiles(e.dataTransfer?.files ?? [])
+            if (images.length === 0) return
+            e.preventDefault()
+            addImagesToState(images)
+        }
+
+        document.addEventListener("paste", handlePaste)
+        document.addEventListener("dragover", handleDragOver)
+        document.addEventListener("drop", handleDrop)
+        return () => {
+            document.removeEventListener("paste", handlePaste)
+            document.removeEventListener("dragover", handleDragOver)
+            document.removeEventListener("drop", handleDrop)
+        }
+    }, [imagePath, imageFiles])
 
     const handleTranslate = async () => {
         if (!currentWord.trim() || !language) {

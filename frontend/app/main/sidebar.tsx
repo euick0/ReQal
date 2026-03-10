@@ -6,9 +6,29 @@ import Breadcrumbs from "./breadcrumbs";
 import SidebarHeader from "@/app/main/sidebarHeader";
 import SidebarFooter from "@/app/main/sidebarFooter";
 import SidebarGroup, {GroupItem} from "@/app/main/sidebarGroup";
+import {usePathname} from "next/navigation";
 
 const Sidebar = () => {
     const [isExpanded, setIsExpanded] = React.useState(false);
+    const sidebarRef = React.useRef<HTMLDivElement>(null);
+    const pathname = usePathname();
+
+    // Collapse sidebar on route change
+    React.useEffect(() => {
+        setIsExpanded(false);
+    }, [pathname]);
+
+    // Collapse sidebar when clicking outside
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+                setIsExpanded(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
     
     const flashcardGroup: GroupItem[] = [
         {text: "The 600 words", redirectUrl: "/main/flashcards/600-words"},
@@ -23,7 +43,7 @@ const Sidebar = () => {
 
     return (
         <SidebarContext.Provider value={{isExpanded, setIsExpanded}}>
-            <div className="flex h-screen fixed z-3">
+            <div ref={sidebarRef} className="flex h-screen fixed z-3">
                 <div className={clsx(`group bg-backgroundLight w-20 h-full fixed top-0 left-0 rounded-r-lg z-10 transition-all duration-300 ease-in-out flex flex-col justify-between`, {
                         "w-64": isExpanded,
                     })}>
