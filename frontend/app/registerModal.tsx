@@ -88,7 +88,7 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
         const error = await RegisterHandler(formData);
 
         if (error) {
-            if (error.message === "User already registered") {
+            if (error.code === "email_exists" || error.code === "user_already_exists") {
                 toast.error("An account with this email already exists.");
             } else {
                 toast.error("Registration failed. Please try again.");

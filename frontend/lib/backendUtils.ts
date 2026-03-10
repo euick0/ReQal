@@ -2,7 +2,6 @@
 import {createClient} from "./supabase/server";
 import {pathways} from "@/lib/pathways";
 
-
 // Neste ficheiro não e preciso verificar pelo id do utilizador ja que a BD tem politicas de acesso (RLP)
 
 const InsertWordFlashcardsDeck = async () => {

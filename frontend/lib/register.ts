@@ -8,7 +8,7 @@ const RegisterHandler = async (formData: FormData) => {
     const password = formData.get("password") as string
     const name = formData.get("name") as string
 
-    const {error} = await supabase.auth.signUp({
+    const {data, error} = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -20,8 +20,11 @@ const RegisterHandler = async (formData: FormData) => {
     })
 
     if (error) {
-        console.error("Error during registration:", error.message);
         return { message: error.message, code: error.code ?? "unknown" }
+    }
+
+    if (!data.user || data.user.identities?.length === 0) {
+        return { message: "User already registered", code: "email_exists" }
     }
 };
 
