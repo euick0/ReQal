@@ -5,12 +5,15 @@ import HeroText from "@/app/heroText";
 import LoginModal from "@/app/loginModal";
 import RegisterModal from "@/app/registerModal";
 import ForgotPasswordModal from "@/app/forgotPasswordModal";
+import EmailConfirmationDialog from "@/components/emailConfirmationDialog";
 import {Button} from "@/components/ui/button";
 
 const Header = () => {
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
     const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
+    const [isEmailConfirmationOpen, setIsEmailConfirmationOpen] = useState(false);
+    const [registeredEmail, setRegisteredEmail] = useState("");
 
     const ToggleLoginModal = () => {
         if (isRegisterModalOpen) {
@@ -46,7 +49,8 @@ const Header = () => {
     return (
         <>
             {isLoginModalOpen && <LoginModal onClose={ToggleLoginModal} onClickRegister={ToggleRegisterModal} onClickForgotPassword={ToggleForgotPasswordModal}/>}
-            {isRegisterModalOpen && <RegisterModal onClose={ToggleRegisterModal} onClickLogin={ToggleLoginModal}/>}
+            {isRegisterModalOpen && <RegisterModal onClose={ToggleRegisterModal} onClickLogin={ToggleLoginModal} onRegistered={(email) => { setRegisteredEmail(email); setIsEmailConfirmationOpen(true); }}/>}
+            <EmailConfirmationDialog email={registeredEmail} isOpen={isEmailConfirmationOpen} onClose={() => setIsEmailConfirmationOpen(false)}/>
             {isForgotPasswordModalOpen && <ForgotPasswordModal onClose={ToggleForgotPasswordModal} onClickLogin={() => {
                 setIsForgotPasswordModalOpen(false);
                 setIsLoginModalOpen(true);

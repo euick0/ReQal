@@ -5,7 +5,8 @@ export const GoogleOAuthHandler = async () => {
     const {error} = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: `${window.location.origin}/auth/callback`,
+            // Pass remember_me=1 so the callback route can set localStorage via a bridge cookie
+            redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?remember_me=1`,
             queryParams: {
                 access_type: 'offline',
                 prompt: 'consent',
