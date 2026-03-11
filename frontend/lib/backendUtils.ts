@@ -369,6 +369,79 @@ const DeleteFlashcard = async (flashcardId: number) => {
     return {data: true, error: null}
 }
 
+const DeleteFlashcardsBulk = async (flashcardIds: number[]) => {
+    const supabase = await createClient()
+
+    const {error} = await supabase
+        .from("flashcards")
+        .delete()
+        .in("id", flashcardIds)
+
+    if (error) {
+        console.error("Error bulk-deleting flashcards:", error)
+        return {data: null, error}
+    }
+
+    return {data: true, error: null}
+}
+
+export type FlashcardSortColumn = "translated_word" | "gender" | "review_date"
+export type SortOrder = "asc" | "desc"
+
+export interface FlashcardRow {
+    id: string
+    translated_word: string
+    IPA_translation: string
+    gender: string | null
+    image_paths: string[]
+    audio_path: string
+    translation_caption: string | null
+    image_caption: string | null
+    pathway: number
+    review_date: string | null
+}
+
+const PAGE_SIZE = 10
+
+const GetFlashcardsFiltered = async (
+    deckId: string,
+    search?: string,
+    sortBy: FlashcardSortColumn = "translated_word",
+    sortOrder: SortOrder = "asc",
+    page: number = 1
+) => {
+    const supabase = await createClient()
+
+    const from = (page - 1) * PAGE_SIZE
+    const to = from + PAGE_SIZE - 1
+
+    let query = supabase
+        .from("flashcards")
+        .select(
+            "id, translated_word, IPA_translation, gender, image_paths, audio_path, translation_caption, image_caption, pathway, review_date",
+            {count: "exact"}
+        )
+        .eq("deck_id", deckId)
+
+    if (search && search.trim() !== "") {
+        const term = `%${search.trim()}%`
+        query = query.or(
+            `translated_word.ilike.${term},IPA_translation.ilike.${term},translation_caption.ilike.${term},image_caption.ilike.${term},gender.ilike.${term}`
+        )
+    }
+
+    query = query.order(sortBy, {ascending: sortOrder === "asc"}).range(from, to)
+
+    const {data, error, count} = await query
+
+    if (error) {
+        console.error("Error fetching filtered flashcards:", error)
+        return {data: null, count: 0, error}
+    }
+
+    return {data: data as FlashcardRow[], count: count ?? 0, error: null}
+}
+
 export {
     InsertWordsFlashcard,
     GetCurrentWordIndex,
@@ -384,4 +457,6 @@ export {
     GetFlashcardsByDeckId,
     UpdateFlashcard,
     DeleteFlashcard,
+    DeleteFlashcardsBulk,
+    GetFlashcardsFiltered,
 }

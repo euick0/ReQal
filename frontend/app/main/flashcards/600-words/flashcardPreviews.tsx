@@ -191,5 +191,7 @@ export type FlashcardContextType = {
     setPathway: (path: { pathName: string, pathDescription: string } | null) => void;
     language: string;
     setLanguage: (language: string) => void;
+    pastedImages: { url: string; file: File }[];
+    setPastedImages: Dispatch<SetStateAction<{ url: string; file: File }[]>>;
 }
 export const FlashcardContext = React.createContext<FlashcardContextType | undefined>(undefined);

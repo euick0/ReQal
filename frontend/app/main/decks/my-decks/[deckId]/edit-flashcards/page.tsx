@@ -1,47 +1,49 @@
-import React from 'react';
-import FlascardList from "@/app/main/decks/my-decks/[deckId]/edit-flashcards/flascardList";
-import {GetDeckById, GetFlashcardsByDeckId} from "@/lib/backendUtils";
-import {toast} from "sonner";
+import React from "react"
+import FlashcardList from "@/app/main/decks/my-decks/[deckId]/edit-flashcards/flascardList"
+import { GetDeckById, GetFlashcardsFiltered, FlashcardSortColumn, SortOrder } from "@/lib/backendUtils"
+import { notFound } from "next/navigation"
 
-const GetFlashcards = async (deckId: string) => {
-    const {data: deck, error} = await GetDeckById(deckId);
-
-    if(error || !deck) {
-        toast.error("Failed to load deck");
-        return {data: null, error: error};
-    }
-
-    const   {data: flashcards, error: flashcardsError} = await GetFlashcardsByDeckId(deckId);
-
-    if (flashcardsError || !flashcards) {
-        toast.error("Failed to load flashcards");
-        return {data: null, error: flashcardsError};
-    }
-
-    return {data: flashcards, error: null};
-
+interface PageProps {
+    params: Promise<{ deckId: string }>
+    searchParams: Promise<{ search?: string; sortBy?: string; sortOrder?: string; page?: string }>
 }
 
+const EditFlashcardsPage = async ({ params, searchParams }: PageProps) => {
+    const { deckId } = await params
+    const { search, sortBy, sortOrder, page } = await searchParams
 
-const EditFlashcardsPage = async ({params}:any) => {
+    const { data: deck, error: deckError } = await GetDeckById(deckId)
+    if (deckError || !deck) notFound()
 
-    const deckId = params.deckId;
-    const {data: flashcards, error} = await GetFlashcards(deckId);
+    const validSortColumns: FlashcardSortColumn[] = ["translated_word", "gender", "review_date"]
+    const resolvedSortBy: FlashcardSortColumn = validSortColumns.includes(sortBy as FlashcardSortColumn)
+        ? (sortBy as FlashcardSortColumn)
+        : "translated_word"
+    const resolvedSortOrder: SortOrder = sortOrder === "desc" ? "desc" : "asc"
+    const resolvedPage = Math.max(1, Number(page ?? "1"))
 
-    if (error) {
-        toast.error("Failed to load flashcards");
-        return;
-    }
+    const { data: flashcards, count, error: flashcardsError } = await GetFlashcardsFiltered(
+        deckId,
+        search,
+        resolvedSortBy,
+        resolvedSortOrder,
+        resolvedPage
+    )
+
+    if (flashcardsError || !flashcards) notFound()
 
     return (
         <div className="flex flex-col pl-20 w-full h-screen right-0 overflow-visible">
-            <h1 className="text-center text-5xl text-white font-semibold py-10"></h1>
-            <div className="flex flex-col gap-10 w-full h-full overflow-y-auto">
-                <FlascardList flashcards={flashcards}></FlascardList>
-                <div className="flex-1"></div>
+            <h1 className="text-center text-5xl text-white font-semibold py-10">{deck.name}</h1>
+            <div className="flex flex-col gap-4 w-full h-full overflow-y-auto pb-10">
+                <FlashcardList
+                    flashcards={flashcards}
+                    totalCount={count}
+                    deckId={deckId}
+                />
             </div>
         </div>
-    );
-};
+    )
+}
 
-export default EditFlashcardsPage;
+export default EditFlashcardsPage

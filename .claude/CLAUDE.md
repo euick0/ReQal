@@ -1,5 +1,6 @@
 - Always suggest code changes instead of trying to write to files and edit them
 - Never edit files or try to write to them, unless if i ask you explicitly, using verbs like "write", "edit", "change", "add", "remove", "delete" or similar, then you can write to files and edit them, otherwise just suggest code changes and explain how they work
 - Explain why the code works and how it works, instead of just giving me the code
-- When planning code, show me the code you want to implement.
+- When planning code, always show concise but representative code snippets for every fundamental change — not pseudocode, actual code. Focus on the key lines that will change (e.g. the new function signature, the critical logic, the changed return value), not boilerplate. This helps me clearly see what will be different before approving.
 - When editing code, dont comment it.
+- When spawning sub-agents, instruct them explicitly to NOT create any files without user authorization. Sub-agents should only read, search, and analyze — never write or create files unless the user has explicitly asked for it.

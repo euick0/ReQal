@@ -1,59 +1,28 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
+    const { origin } = new URL(request.url);
+
     try {
         const { email } = await request.json();
 
-        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            return Response.json(
-                { error: "Invalid email format" },
-                { status: 400 }
-            );
+        if (!email) {
+            return NextResponse.json({ error: 'Email is required' }, { status: 400 });
         }
 
-        const cookieStore = await cookies();
-        const supabase = createServerClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-            {
-                cookies: {
-                    getAll() {
-                        return cookieStore.getAll();
-                    },
-                    setAll(cookiesToSet) {
-                        try {
-                            cookiesToSet.forEach(({ name, value, options }) =>
-                                cookieStore.set(name, value, options)
-                            );
-                        } catch {
-                            
-                        }
-                    },
-                },
-            }
-        );
+        const supabase = await createClient();
 
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/callback`,
+            redirectTo: `${origin}/auth/callback?type=recovery`,
         });
 
         if (error) {
-            return Response.json(
-                { error: error.message || "Failed to send reset email" },
-                { status: 400 }
-            );
+            return NextResponse.json({ error: error.message }, { status: 400 });
         }
 
-        return Response.json(
-            { message: "Password reset email sent successfully" },
-            { status: 200 }
-        );
-    } catch (error) {
-        console.error("Forgot password error:", error);
-        return Response.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        );
+        return NextResponse.json({ success: true });
+    } catch {
+        return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 });
     }
 }

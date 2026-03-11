@@ -90,11 +90,58 @@ const CustomFlashcardParameters = () => {
         pathway,
         setPathway,
         language,
-        setLanguage
+        setLanguage,
+        pastedImages,
+        setPastedImages,
     } = customFlashcardContext;
 
+    useEffect(() => {
+        const handlePaste = (e: ClipboardEvent) => {
+            const items = e.clipboardData?.items
+            if (!items) return
+
+            const imageFiles: File[] = []
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.startsWith("image/")) {
+                    const file = items[i].getAsFile()
+                    if (file) imageFiles.push(file)
+                }
+            }
+
+            if (imageFiles.length === 0) return
+
+            setPastedImages(prev => {
+                prev.forEach(img => URL.revokeObjectURL(img.url))
+                const newPasted = imageFiles.map(file => ({ url: URL.createObjectURL(file), file }))
+
+                const selected = newPasted.slice(0, 4)
+                const unselected = newPasted.slice(4)
+
+                setImagePath(p => [
+                    ...selected.map(img => img.url),
+                    ...p.filter(url => !prev.some(old => old.url === url)),
+                ])
+
+                const selectedCount = selected.length
+                const unselectedCount = unselected.length
+                const total = imageFiles.length
+                toast.info(
+                    `Pasted ${total} ${total === 1 ? "image" : "images"}, ${selectedCount} selected, ${unselectedCount} unselected`,
+                    { position: "bottom-right" }
+                )
+
+                return selected
+            })
+        }
+
+        document.addEventListener("paste", handlePaste)
+        return () => {
+            document.removeEventListener("paste", handlePaste)
+        }
+    }, [setPastedImages, setImagePath])
+
     const track = {
-        id: "track-1",
+        id: customFlashcardContext.audioPath || "empty-track",
         src: customFlashcardContext.audioPath,
         data: {}
     }
@@ -155,6 +202,7 @@ const CustomFlashcardParameters = () => {
         setImageCaption("")
         setTranslationCaption("")
         setIPATranslation(translationData.ipa ?? "")
+        setPastedImages(prev => { prev.forEach(img => URL.revokeObjectURL(img.url)); return [] })
         setProgress(100)
         setIsTranslating(false)
     }
@@ -172,6 +220,7 @@ const CustomFlashcardParameters = () => {
         setImageCaption("")
         setTranslationCaption("")
         setIPATranslation("")
+        setPastedImages(prev => { prev.forEach(img => URL.revokeObjectURL(img.url)); return [] })
     }
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -190,7 +239,13 @@ const CustomFlashcardParameters = () => {
 
         imagePath.filter(url => !url.startsWith("blob:")).forEach(url => formData.append("imagePath", url))
 
-        const uploadedImageResults = await Promise.all(imageFiles.map(f => uploadFile(f, "flashcard-images")))
+        const selectedPastedFiles = pastedImages
+            .filter(img => imagePath.includes(img.url))
+            .map(img => img.file)
+
+        const uploadedImageResults = await Promise.all(
+            [...imageFiles, ...selectedPastedFiles].map(f => uploadFile(f, "flashcard-images"))
+        )
         uploadedImageResults.forEach(({data: url}) => {
             if (url) formData.append("imagePath", url)
         })
@@ -365,7 +420,7 @@ const CustomFlashcardParameters = () => {
                                     onChange={(e) => {
                                         const files = Array.from(e.target.files ?? [])
                                         setImageFiles(files)
-                                        setImagePath([...imagePath, ...files.map(f => URL.createObjectURL(f))])
+                                        setImagePath([...files.map(f => URL.createObjectURL(f)), ...imagePath])
                                     }}/>
                             </div>
                         </ImageParameter>

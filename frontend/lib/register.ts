@@ -20,12 +20,14 @@ const RegisterHandler = async (formData: FormData) => {
     })
 
     if (error) {
-        return { message: error.message, code: error.code ?? "unknown" }
+        return { success: false, message: error.message, code: error.code ?? "unknown" }
     }
 
     if (!data.user || data.user.identities?.length === 0) {
-        return { message: "User already registered", code: "email_exists" }
+        return { success: false, message: "User already registered", code: "email_exists" }
     }
+
+    return { success: true, email }
 };
 
 export default RegisterHandler;

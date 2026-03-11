@@ -8,6 +8,7 @@ import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {GoogleOAuthHandler} from "@/lib/googleAuth";
 import {toast} from "sonner";
+import EmailConfirmationDialog from "@/components/email-confirmation-dialog";
 
 interface RegisterModalProps {
     onClose: () => void;
@@ -22,6 +23,9 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
     const [registerError, setRegisterError] = useState({
         email: "", password: "", name: ""
     })
+
+    const [showConfirmation, setShowConfirmation] = useState(false)
+    const [registeredEmail, setRegisteredEmail] = useState<string>("")
 
 
     const handleUserInput = (name: string, value: string) => {
@@ -85,91 +89,104 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
             name: ""
         })
 
-        const error = await RegisterHandler(formData);
+        const result = await RegisterHandler(formData);
 
-        if (error) {
-            if (error.code === "email_exists" || error.code === "user_already_exists") {
+        if (result && !result.success) {
+            if (result.code === "email_exists" || result.code === "user_already_exists") {
                 toast.error("An account with this email already exists.");
             } else {
                 toast.error("Registration failed. Please try again.");
             }
+        } else if (result?.success) {
+            if (result.email) {
+                setRegisteredEmail(result.email)
+            }
+            setShowConfirmation(true)
         }
     }
 
     return (
-        <div className="z-2 fixed top-0 left-0 w-screen h-screen bg-black/70 flex justify-center items-center">
-            <div className="bg-backgroundLight rounded-md w-8/12 h-8/12 relative flex overflow-hidden">
-                <div className="w-0 h-0">
-                    <CustomButton style="secondary"
-                                  reactNode={<Image src="/svgs/x.svg" width="25" height="25"
-                                                    alt="Close Login Modal Button"
-                                                    className="transition duration-200 ease-in-out hover:invert-30 cursor-pointer absolute top-2 right-2 active:scale-105 active:duration-0"/>}
-                                  onClick={onClose}/>
-                </div>
-                <div className="w-5/12 h-full p-0 top-0 left-0">
-                    <Image src="/images/person mountains.webp" alt="img.png" width="1499" height="1000"
-                           className="object-cover w-full h-full"></Image>
-                </div>
-                <form className="flex-1 flex-col flex justify-center" noValidate onSubmit={(event) => {
-                    validateFormInput(event)
-                }}>
-                    <FieldSet className="mx-36">
-                        <FieldTitle className="text-4xl antialiased font-semibold text-stone-200">Register</FieldTitle>
-                        <FieldGroup>
+        <>
+            <EmailConfirmationDialog isOpen={showConfirmation} email={registeredEmail} onClose={() => {
+                setShowConfirmation(false);
+                onClose()
+            }}/>
+            <div className="z-2 fixed top-0 left-0 w-screen h-screen bg-black/70 flex justify-center items-center">
+                <div className="bg-backgroundLight rounded-md w-8/12 h-8/12 relative flex overflow-hidden">
+                    <div className="w-0 h-0">
+                        <CustomButton style="secondary"
+                                      reactNode={<Image src="/svgs/x.svg" width="25" height="25"
+                                                        alt="Close Login Modal Button"
+                                                        className="transition duration-200 ease-in-out hover:invert-30 cursor-pointer absolute top-2 right-2 active:scale-105 active:duration-0"/>}
+                                      onClick={onClose}/>
+                    </div>
+                    <div className="w-5/12 h-full p-0 top-0 left-0">
+                        <Image src="/images/person mountains.webp" alt="img.png" width="1499" height="1000"
+                               className="object-cover w-full h-full"></Image>
+                    </div>
+                    <form className="flex-1 flex-col flex justify-center" noValidate onSubmit={(event) => {
+                        validateFormInput(event)
+                    }}>
+                        <FieldSet className="mx-36">
+                            <FieldTitle
+                                className="text-4xl antialiased font-semibold text-stone-200">Register</FieldTitle>
+                            <FieldGroup>
+                                <Field>
+                                    <FieldLegend variant="legend"
+                                                 className="antialiased text-stone-200 mb-0 pt-3">Name</FieldLegend>
+                                    <Input placeholder="" value={registerInput.name}
+                                           onChange={({target}) => handleUserInput(target.name, target.value)}
+                                           name="name"
+                                           aria-invalid={registerError.name !== "" ? true : undefined}></Input>
+                                    {registerError.name &&
+                                        <FieldError className="">{registerError.name}</FieldError>}
+                                </Field>
+                                <Field>
+                                    <FieldLegend variant="legend"
+                                                 className="antialiased text-stone-200 mb-0">Email</FieldLegend>
+                                    <Input placeholder="" value={registerInput.email}
+                                           onChange={({target}) => handleUserInput(target.name, target.value)}
+                                           name="email"
+                                           type="email"
+                                           aria-invalid={registerError.email !== "" ? true : undefined}></Input>
+                                    {registerError.email &&
+                                        <FieldError className="">{registerError.email}</FieldError>}
+                                </Field>
+                                <Field>
+                                    <FieldLegend variant="legend"
+                                                 className="antialiased text-stone-200 mb-0">Password</FieldLegend>
+                                    <Input placeholder="" value={registerInput.password}
+                                           onChange={({target}) => handleUserInput(target.name, target.value)}
+                                           name="password"
+                                           type="password"
+                                           aria-invalid={registerError.password !== "" ? true : undefined}></Input>
+                                    {registerError.password &&
+                                        <FieldError className="">{registerError.password}</FieldError>}
+                                </Field>
+                            </FieldGroup>
+                            <FieldSeparator className="my-1"/>
                             <Field>
-                                <FieldLegend variant="legend"
-                                             className="antialiased text-stone-200 mb-0 pt-3">Name</FieldLegend>
-                                <Input placeholder="" value={registerInput.name}
-                                       onChange={({target}) => handleUserInput(target.name, target.value)}
-                                       name="name"
-                                       aria-invalid={registerError.name !== "" ? true : undefined}></Input>
-                                {registerError.name &&
-                                    <FieldError className="">{registerError.name}</FieldError>}
+                                <Button className="text-white font-normal py-5" type="submit">Register</Button>
+                                <Button variant="outline" className="text-white font-normal py-5"
+                                        onClick={GoogleOAuthHandler} type="button"><Image
+                                    src="/svgs/Google%20Logo.svg" width="20" height="20"
+                                    alt="Google Logo"
+                                    className="m-full"></Image> Continue with Google</Button>
                             </Field>
-                            <Field>
-                                <FieldLegend variant="legend"
-                                             className="antialiased text-stone-200 mb-0">Email</FieldLegend>
-                                <Input placeholder="" value={registerInput.email}
-                                       onChange={({target}) => handleUserInput(target.name, target.value)} name="email"
-                                       type="email"
-                                       aria-invalid={registerError.email !== "" ? true : undefined}></Input>
-                                {registerError.email &&
-                                    <FieldError className="">{registerError.email}</FieldError>}
-                            </Field>
-                            <Field>
-                                <FieldLegend variant="legend"
-                                             className="antialiased text-stone-200 mb-0">Password</FieldLegend>
-                                <Input placeholder="" value={registerInput.password}
-                                       onChange={({target}) => handleUserInput(target.name, target.value)}
-                                       name="password"
-                                       type="password"
-                                       aria-invalid={registerError.password !== "" ? true : undefined}></Input>
-                                {registerError.password &&
-                                    <FieldError className="">{registerError.password}</FieldError>}
-                            </Field>
-                        </FieldGroup>
-                        <FieldSeparator className="my-1"/>
-                        <Field>
-                            <Button className="text-white font-normal py-5" type="submit">Register</Button>
-                            <Button variant="outline" className="text-white font-normal py-5"
-                                    onClick={GoogleOAuthHandler} type="button"><Image
-                                src="/svgs/Google%20Logo.svg" width="20" height="20"
-                                alt="Google Logo"
-                                className="m-full"></Image> Continue with Google</Button>
-                        </Field>
-                        <div className="flex mx-10 justify-center items-center">
-                            <p>Already have an account?</p>
-                            <CustomButton content="Login"
-                                          customCSS="text-blue-300 underline"
-                                          style="secondary"
-                                          onClick={onClickLogin}></CustomButton>
-                        </div>
+                            <div className="flex mx-10 justify-center items-center">
+                                <p>Already have an account?</p>
+                                <CustomButton content="Login"
+                                              customCSS="text-blue-300 underline"
+                                              style="secondary"
+                                              onClick={onClickLogin}></CustomButton>
+                            </div>
 
-                    </FieldSet>
+                        </FieldSet>
 
-                </form>
+                    </form>
+                </div>
             </div>
-        </div>)
+        </>)
         ;
 };
 

@@ -19,6 +19,7 @@ interface LoginModalProps {
 const LoginModal = ({onClose, onClickRegister, onClickForgotPassword}: LoginModalProps) => {
     const [loginInput, setLoginInput] = useState({email: "", password: ""})
     const [loginError, setLoginError] = useState({email: "", password: ""})
+    const [rememberMe, setRememberMe] = useState(false)
 
     const handleUserInput = (name: string, value: string) => {
         setLoginInput({...loginInput, [name]: value})
@@ -44,6 +45,7 @@ const LoginModal = ({onClose, onClickRegister, onClickForgotPassword}: LoginModa
         const formData = new FormData()
         formData.append("email", loginInput.email)
         formData.append("password", loginInput.password)
+        formData.append("rememberMe", rememberMe.toString())
 
         setLoginInput({email: "", password: ""})
         const error = await Login(formData)
@@ -93,7 +95,7 @@ const LoginModal = ({onClose, onClickRegister, onClickForgotPassword}: LoginModa
                         <FieldSeparator className="mt-1"></FieldSeparator>
                         <div className="flex justify-between">
                             <Field orientation="horizontal" className="">
-                                <Checkbox className="size-4.5"></Checkbox>
+                                <Checkbox className="size-4.5" checked={rememberMe} onCheckedChange={(val) => setRememberMe(val === true)}></Checkbox>
                                 <Label className=" text-stone-200 text-sm font-normal">Remember me</Label>
                             </Field>
                             <CustomButton content="Forgot Password?"

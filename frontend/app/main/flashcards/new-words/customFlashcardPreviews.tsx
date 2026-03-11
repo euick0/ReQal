@@ -191,5 +191,7 @@ export type CustomFlashcardContextType = {
     setPathway: (path: { pathName: string, pathDescription: string } | null) => void;
     language: string | null;
     setLanguage: (language: string | null) => void;
+    pastedImages: { url: string; file: File }[];
+    setPastedImages: Dispatch<SetStateAction<{ url: string; file: File }[]>>;
 }
 export const CustomFlashcardContext = React.createContext<CustomFlashcardContextType | undefined>(undefined);

@@ -25,6 +25,7 @@ const FlashcardCreation = () => {
     const [usePathway, setUsePathway] = React.useState<{ pathName: string, pathDescription: string } | null>(null)
     const [useIPATranslation, setUseIPATranslation] = React.useState("");
     const [useLanguage, setUseLanguage] = React.useState("");
+    const [usePastedImages, setUsePastedImages] = React.useState<{ url: string; file: File }[]>([]);
 
     const contextValue: FlashcardContextType = {
         translatedWord: useTranslatedWord,
@@ -49,6 +50,8 @@ const FlashcardCreation = () => {
         setPathway: setUsePathway,
         language: useLanguage,
         setLanguage: setUseLanguage,
+        pastedImages: usePastedImages,
+        setPastedImages: setUsePastedImages,
     };
 
     return (

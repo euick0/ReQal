@@ -1,29 +1,25 @@
-"use client";
+"use client"
 
-import React from 'react';
-import {ScrollArea, ScrollBar} from "@/components/ui/scroll-area";
+import React from "react"
+import { FlashcardRow } from "@/lib/backendUtils"
+import FlashcardDataTable from "./flashcardDataTable"
 
-interface Flashcard {
-    id: string;
-    translated_word: string;
-    IPA_translation: string;
-    gender: string | null;
-    image_paths: string[];
-    audio_path: string;
-    translation_caption: string | null;
-    image_caption: string | null;
-    pathway: number;
+interface FlashcardListProps {
+    flashcards: FlashcardRow[]
+    totalCount: number
+    deckId: string
 }
 
-const FlashcardList =  ({ flashcards }: { flashcards: Flashcard[] }) => {
-
-
+const FlashcardList = ({ flashcards, totalCount, deckId }: FlashcardListProps) => {
     return (
-        <ScrollArea>
-            <div></div>
-            <ScrollBar></ScrollBar>
-        </ScrollArea>
-    );
-};
+        <div className="px-4 pt-3 w-full">
+            <FlashcardDataTable
+                initialData={flashcards}
+                initialCount={totalCount}
+                deckId={deckId}
+            />
+        </div>
+    )
+}
 
-export default FlashcardList;
+export default FlashcardList
