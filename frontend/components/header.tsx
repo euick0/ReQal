@@ -49,7 +49,7 @@ const Header = () => {
     return (
         <>
             {isLoginModalOpen && <LoginModal onClose={ToggleLoginModal} onClickRegister={ToggleRegisterModal} onClickForgotPassword={ToggleForgotPasswordModal}/>}
-            {isRegisterModalOpen && <RegisterModal onClose={ToggleRegisterModal} onClickLogin={ToggleLoginModal} onRegistered={(email) => { setRegisteredEmail(email); setIsEmailConfirmationOpen(true); }}/>}
+             {isRegisterModalOpen && <RegisterModal onClose={ToggleRegisterModal} onClickLogin={ToggleLoginModal}/>}
             <EmailConfirmationDialog email={registeredEmail} isOpen={isEmailConfirmationOpen} onClose={() => setIsEmailConfirmationOpen(false)}/>
             {isForgotPasswordModalOpen && <ForgotPasswordModal onClose={ToggleForgotPasswordModal} onClickLogin={() => {
                 setIsForgotPasswordModalOpen(false);

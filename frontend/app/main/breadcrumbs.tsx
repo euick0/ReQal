@@ -4,6 +4,7 @@ import Image from "next/image";
 import clsx from "clsx";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
+import {isValidRoute} from "@/lib/validRoutes";
 
 const Breadcrumbs =() => {
     const sidebarContext = useContext(SidebarContext);
@@ -12,15 +13,17 @@ const Breadcrumbs =() => {
     const generateBreadcrumbs = () => {
 
         const segments = pathname.split('/').filter(Boolean);
-        return segments.map((segment, index) => {
-            const url = '/' + segments.slice(0, index + 1).join('/');
+        return segments
+            .map((segment, index) => {
+                const url = '/' + segments.slice(0, index + 1).join('/');
 
-            const text = segment
-                .replace(/-/g, ' ')
-                .replace(/\b\w/g, char => char.toUpperCase());
+                const text = segment
+                    .replace(/-/g, ' ')
+                    .replace(/\b\w/g, char => char.toUpperCase());
 
-            return { text, url };
-        });
+                return { text, url };
+            })
+            .filter(crumb => isValidRoute(crumb.url));
 
     }
 

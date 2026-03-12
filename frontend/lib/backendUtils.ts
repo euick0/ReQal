@@ -271,6 +271,75 @@ const InsertCustomFlashcard = async (formData: FormData) => {
 }
 
 
+const InsertConjugationFlashcardsDeck = async () => {
+    const supabase = await createClient()
+    const {data: {user}} = await supabase.auth.getUser()
+
+    const {data, error} = await supabase
+        .from("deck")
+        .insert({name: "Conjugation", user_id: user?.id})
+        .select("id")
+        .single()
+
+    if (error || !data) {
+        console.error("Error inserting conjugation deck:", error)
+        return {data: null, error: error ?? new Error("Failed to insert conjugation deck")}
+    }
+
+    return {data: data.id as string, error: null}
+}
+
+const GetConjugationFlashcardsDeckID = async () => {
+    const supabase = await createClient()
+    const {data: {user}} = await supabase.auth.getUser()
+
+    if (!user) return {data: null, error: new Error("User not authenticated")}
+
+    const {data, error} = await supabase
+        .from("deck")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("name", "Conjugation")
+        .single()
+
+    if (error || !data) return await InsertConjugationFlashcardsDeck()
+
+    return {data: data.id as string, error: null}
+}
+
+const InsertConjugationFlashcard = async (formData: FormData) => {
+    const supabase = await createClient()
+
+    const {data: deckId, error: deckError} = await GetConjugationFlashcardsDeckID()
+
+    if (deckError || deckId === null) {
+        console.error("Custom deck ID error:", deckError)
+        return {data: null, error: deckError ?? new Error("Custom deck ID is undefined")}
+    }
+
+    const payload = {
+        phrase: formData.get("phrase"),
+        missing_word: formData.get("missingWord"),
+        IPA_translation: formData.get("IPATranslation"),
+        gender: formData.get("translatedWordGender"),
+        image_paths: formData.getAll("imagePath"),
+        audio_path: formData.get("audioPath"),
+        translation_caption: formData.get("translationCaption"),
+        image_caption: formData.get("imageCaption"),
+        pathway: Number(formData.get("pathway")),
+        deck_id: deckId,
+    }
+
+    const {error} = await supabase.from("conjugation_flashcards").insert(payload)
+
+    if (error) {
+        console.error("Error inserting conjugation flashcard:", error)
+        return {data: null, error}
+    }
+
+    return {data: true, error: null}
+}
+
 const GetDeckById = async (deckId: string) => {
     const supabase = await createClient()
     const {data, error} = await supabase
@@ -386,6 +455,7 @@ const DeleteFlashcardsBulk = async (flashcardIds: number[]) => {
 }
 
 export type FlashcardSortColumn = "translated_word" | "gender" | "review_date"
+export type ConjugationFlashcardSortColumn = "phrase" | "missing_word" | "review_date"
 export type SortOrder = "asc" | "desc"
 
 export interface FlashcardRow {
@@ -442,8 +512,173 @@ const GetFlashcardsFiltered = async (
     return {data: data as FlashcardRow[], count: count ?? 0, error: null}
 }
 
+export interface ConjugationFlashcardRow {
+    id: string
+    phrase: string
+    missing_word: string
+    IPA_translation: string
+    gender: string | null
+    image_paths: string[]
+    audio_path: string
+    translation_caption: string | null
+    image_caption: string | null
+    pathway: number
+    review_date: string | null
+}
+
+const GetConjugationFlashcards = async (deckId: string) => {
+    const supabase = await createClient()
+    const {data, error} = await supabase
+        .from("conjugation_flashcards")
+        .select("id, phrase, missing_word, IPA_translation, gender, image_paths, audio_path, translation_caption, image_caption, pathway, review_date")
+        .eq("deck_id", deckId)
+
+    if (error) {
+        console.error("Error fetching conjugation flashcards:", error)
+        return {data: null, error}
+    }
+
+    return {data: data as ConjugationFlashcardRow[], error: null}
+}
+
+const GetConjugationFlashcardsFiltered = async (
+    deckId: string,
+    search?: string,
+    sortBy: ConjugationFlashcardSortColumn = "phrase",
+    sortOrder: SortOrder = "asc",
+    page: number = 1
+) => {
+    const supabase = await createClient()
+
+    const from = (page - 1) * PAGE_SIZE
+    const to = from + PAGE_SIZE - 1
+
+    let query = supabase
+        .from("conjugation_flashcards")
+        .select(
+            "id, phrase, missing_word, IPA_translation, gender, image_paths, audio_path, translation_caption, image_caption, pathway, review_date",
+            {count: "exact"}
+        )
+        .eq("deck_id", deckId)
+
+    if (search && search.trim() !== "") {
+        const term = `%${search.trim()}%`
+        query = query.or(
+            `phrase.ilike.${term},missing_word.ilike.${term},IPA_translation.ilike.${term},translation_caption.ilike.${term},image_caption.ilike.${term},gender.ilike.${term}`
+        )
+    }
+
+    query = query.order(sortBy, {ascending: sortOrder === "asc"}).range(from, to)
+
+    const {data, error, count} = await query
+
+    if (error) {
+        console.error("Error fetching filtered conjugation flashcards:", error)
+        return {data: null, count: 0, error}
+    }
+
+    return {data: data as ConjugationFlashcardRow[], count: count ?? 0, error: null}
+}
+
+const UpdateConjugationFlashcard = async (flashcardId: string, payload: {
+    phrase?: string
+    missing_word?: string
+    IPA_translation?: string | null
+    gender?: string | null
+    image_paths?: string[]
+    audio_path?: string | null
+    translation_caption?: string | null
+    image_caption?: string | null
+    pathway?: number
+}) => {
+    const supabase = await createClient()
+
+    const {error} = await supabase
+        .from("conjugation_flashcards")
+        .update(payload)
+        .eq("id", flashcardId)
+
+    if (error) {
+        console.error("Error updating conjugation flashcard:", error)
+        return {data: null, error}
+    }
+
+    return {data: true, error: null}
+}
+
+const DeleteConjugationFlashcard = async (flashcardId: string) => {
+    const supabase = await createClient()
+
+    const {error} = await supabase
+        .from("conjugation_flashcards")
+        .delete()
+        .eq("id", flashcardId)
+
+    if (error) {
+        console.error("Error deleting conjugation flashcard:", error)
+        return {data: null, error}
+    }
+
+    return {data: true, error: null}
+}
+
+const DeleteConjugationFlashcardsBulk = async (flashcardIds: string[]) => {
+    const supabase = await createClient()
+
+    const {error} = await supabase
+        .from("conjugation_flashcards")
+        .delete()
+        .in("id", flashcardIds)
+
+    if (error) {
+        console.error("Error bulk-deleting conjugation flashcards:", error)
+        return {data: null, error}
+    }
+
+    return {data: true, error: null}
+}
+
+const GetLastFlashcard = async (deckId: string) => {
+    const supabase = await createClient()
+
+    const {data, error} = await supabase
+        .from("flashcards")
+        .select("id")
+        .eq("deck_id", deckId)
+        .order("created_at", {ascending: false})
+        .limit(1)
+        .maybeSingle()
+
+    if (error) {
+        console.error("Error fetching last flashcard:", error)
+        return {data: null, error}
+    }
+
+    return {data: data?.id as string ?? null, error: null}
+}
+
+const GetLastConjugationFlashcard = async (deckId: string) => {
+    const supabase = await createClient()
+
+    const {data, error} = await supabase
+        .from("conjugation_flashcards")
+        .select("id")
+        .eq("deck_id", deckId)
+        .order("created_at", {ascending: false})
+        .limit(1)
+        .maybeSingle()
+
+    if (error) {
+        console.error("Error fetching last conjugation flashcard:", error)
+        return {data: null, error}
+    }
+
+    return {data: data?.id as string ?? null, error: null}
+}
+
 export {
     InsertWordsFlashcard,
+    InsertConjugationFlashcard,
     GetCurrentWordIndex,
     IncrementCurrentWordIndex,
     GetDeckPreferences,
@@ -452,6 +687,7 @@ export {
     DeleteDeck,
     InsertCustomFlashcard,
     GetCustomFlashcardsDeckID,
+    GetConjugationFlashcardsDeckID,
     GetDeckById,
     GetDeckFlashcards,
     GetFlashcardsByDeckId,
@@ -459,4 +695,12 @@ export {
     DeleteFlashcard,
     DeleteFlashcardsBulk,
     GetFlashcardsFiltered,
+    GetConjugationFlashcards,
+    GetConjugationFlashcardsFiltered,
+    UpdateConjugationFlashcard,
+    DeleteConjugationFlashcard,
+    DeleteConjugationFlashcardsBulk,
+    GetLastFlashcard,
+    GetLastConjugationFlashcard,
+    GetWordFlashcardsDeckID,
 }

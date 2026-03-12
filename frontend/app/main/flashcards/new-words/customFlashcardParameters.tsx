@@ -25,8 +25,9 @@ import {
 } from "@/components/ui/audio-player";
 import {CustomFlashcardContext} from "@/app/main/flashcards/new-words/customFlashcardPreviews";
 import {pathways} from "@/app/main/flashcards/new-words/customFlashcardCreation";
-import {InsertCustomFlashcard, GetDeckPreferences, UpdateDeckPreference, GetCustomFlashcardsDeckID} from "@/lib/backendUtils";
-import GeminiSendTranslationQuery from "@/lib/geminiQueries";
+import {InsertCustomFlashcard, GetDeckPreferences, UpdateDeckPreference, GetCustomFlashcardsDeckID, GetLastFlashcard} from "@/lib/backendUtils"
+import {useRouter} from "next/navigation";
+import {GeminiSendTranslationQuery} from "@/lib/geminiQueries";
 import {uploadFile} from "@/lib/uploadToStorage";
 import {GetGoogleImages} from "@/lib/getGoogleImages";
 import {GetWiktionaryAudio} from "@/lib/getAudio";
@@ -48,12 +49,14 @@ const languages = [
 
 const CustomFlashcardParameters = () => {
     const customFlashcardContext = React.useContext(CustomFlashcardContext);
+    const router = useRouter()
     const [isSubmitting, setIsSubmitting] = React.useState(false)
     const [isTranslating, setIsTranslating] = React.useState(false)
     const [progress, setProgress] = React.useState<number>(100)
     const [imageSearchResults, setImageSearchResults] = React.useState<string[]>([])
     const [imageAlts, setImageAlts] = React.useState<string[]>([])
     const [currentWord, setCurrentWord] = React.useState<string>("")
+    const [deckId, setDeckId] = React.useState<string | null>(null)
 
     if (!customFlashcardContext) {
         throw new Error("CustomFlashcardParameters must be used within CustomFlashcardContext.Provider");
@@ -61,7 +64,8 @@ const CustomFlashcardParameters = () => {
 
     useEffect(() => {
         const loadPreferences = async () => {
-            await GetCustomFlashcardsDeckID()
+            const {data: fetchedDeckId} = await GetCustomFlashcardsDeckID()
+            if (fetchedDeckId) setDeckId(fetchedDeckId)
             const {data: prefs} = await GetDeckPreferences("Custom Words")
             if (prefs?.language) setLanguage(prefs.language)
             if (prefs?.pathway) setPathway(pathways.find(p => p.pathName === prefs?.pathway?.pathName) ?? pathways[0])
@@ -268,6 +272,22 @@ const CustomFlashcardParameters = () => {
         setPastedImages(prev => { prev.forEach(img => URL.revokeObjectURL(img.url)); return [] })
     }
 
+    const handleEditLast = async () => {
+        if (!deckId) {
+            showErrorToast("Unable to load your deck")
+            return
+        }
+
+        const {data: lastFlashcardId, error} = await GetLastFlashcard(deckId)
+
+        if (error || !lastFlashcardId) {
+            showErrorToast("No flashcards created yet")
+            return
+        }
+
+        router.push(`/main/decks/my-decks/${deckId}/edit-flashcards?flashcardId=${lastFlashcardId}&autoOpen=true`)
+    }
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         setIsSubmitting(true)
@@ -385,7 +405,7 @@ const CustomFlashcardParameters = () => {
                             </Combobox>
 
                             <HoverCard openDelay={100} closeDelay={200}>
-                                <HoverCardTrigger><Button variant="outline" size="icon">
+                                <HoverCardTrigger><Button variant="outline" size="icon" type="button">
                                     ?
                                 </Button>
                                 </HoverCardTrigger>
@@ -513,7 +533,7 @@ const CustomFlashcardParameters = () => {
                         <div>
                             <Button className="text-white mr-4 rounded-md!  antialiased" size="default"
                                     type="submit" disabled={isLoading}>Create</Button>
-                            <Button className="text-white " variant="ghost" size="default" type="button">Edit Last</Button>
+                            <Button className="text-white " variant="ghost" size="default" type="button" onClick={handleEditLast} disabled={isLoading}>Edit Last</Button>
                         </div>
                     </form>
                 </Field>

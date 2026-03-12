@@ -33,8 +33,11 @@ import {
     GetDeckPreferences,
     IncrementCurrentWordIndex,
     UpdateDeckPreference,
-} from "@/lib/backendUtils";
-import GeminiSendTranslationQuery from "@/lib/geminiQueries";
+    GetWordFlashcardsDeckID,
+    GetLastFlashcard,
+} from "@/lib/backendUtils"
+import {useRouter} from "next/navigation";
+import {GeminiSendTranslationQuery} from "@/lib/geminiQueries";
 import {uploadFile} from "@/lib/uploadToStorage";
 import {createClient} from "@/lib/supabase/client";
 import {GetGoogleImages} from "@/lib/getGoogleImages";
@@ -69,6 +72,7 @@ const languages = [
 
 const FlashcardParameters = () => {
     const flashcardContext = React.useContext(FlashcardContext);
+    const router = useRouter()
     const [isSubmitting, setIsSubmitting] = React.useState(true)
     const [wordList, setWordList] = React.useState<string[]>([])
     const [currentWordIndex, setCurrentWordIndex] = React.useState<number>(0)
@@ -78,6 +82,7 @@ const FlashcardParameters = () => {
     const [progress, setProgress] = React.useState<number>(0)
     const [showLanguageDialog, setShowLanguageDialog] = React.useState(false)
     const [dialogLanguage, setDialogLanguage] = React.useState("")
+    const [deckId, setDeckId] = React.useState<string | null>(null)
 
     useEffect(() => {
         initialLoad()
@@ -266,11 +271,15 @@ const FlashcardParameters = () => {
             words,
             {data: wordIndex},
             {data: prefs},
+            {data: fetchedDeckId},
         ] = await Promise.all([
             getWordList(),
             GetCurrentWordIndex(),
-            GetDeckPreferences("600 Words")
+            GetDeckPreferences("600 Words"),
+            GetWordFlashcardsDeckID(),
         ])
+
+        if (fetchedDeckId) setDeckId(fetchedDeckId)
         setProgress(25)
 
         const lang = prefs?.language ?? ""
@@ -356,6 +365,22 @@ const FlashcardParameters = () => {
             setIsSubmitting(false)
         }
         setProgress(100)
+    }
+
+    const handleEditLast = async () => {
+        if (!deckId) {
+            showErrorToast("Unable to load your deck")
+            return
+        }
+
+        const {data: lastFlashcardId, error} = await GetLastFlashcard(deckId)
+
+        if (error || !lastFlashcardId) {
+            showErrorToast("No flashcards created yet")
+            return
+        }
+
+        router.push(`/main/decks/my-decks/${deckId}/edit-flashcards?flashcardId=${lastFlashcardId}&autoOpen=true`)
     }
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -471,7 +496,7 @@ const FlashcardParameters = () => {
                             </Combobox>
 
                             <HoverCard openDelay={100} closeDelay={200}>
-                                <HoverCardTrigger><Button variant="outline" size="icon">
+                                <HoverCardTrigger><Button variant="outline" size="icon" type="button">
                                     ?
                                 </Button>
                                 </HoverCardTrigger>
@@ -580,7 +605,7 @@ const FlashcardParameters = () => {
                         <div>
                             <Button className="text-white mr-4 rounded-md!  antialiased" size="default"
                                     type="submit" disabled={isSubmitting}>Create</Button>
-                            <Button className="text-white " variant="ghost" size="default">Edit Last</Button>
+                            <Button className="text-white " variant="ghost" size="default" type="button" onClick={handleEditLast} disabled={isSubmitting}>Edit Last</Button>
                             <Dialog>
                                 <DialogTrigger asChild>
                                     <Button className="text-white mr-4 " variant="ghost"

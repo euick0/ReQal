@@ -35,3 +35,4 @@
 - When planning code, always show concise but representative code snippets for every fundamental change - not pseudocode, actual code. Focus on the key lines that will change (e.g. the new function signature, the critical logic, the changed return value), not boilerplate. This helps me clearly see what will be different before approving.
 - When editing code, dont comment it.
 - When spawning sub-agents, instruct them explicitly to NOT create any files without user authorization. Sub-agents should only read, search, and analyze - never write or create files unless the user has explicitly asked for it.
+- Warn the user if you find anything rtk related, as rtk (rust token killer or similar)

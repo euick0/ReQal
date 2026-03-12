@@ -44,19 +44,34 @@ import {
     MoreHorizontalIcon,
     Trash2Icon,
 } from "lucide-react"
-import { FlashcardRow, FlashcardSortColumn, SortOrder, DeleteFlashcard, DeleteFlashcardsBulk } from "@/lib/backendUtils"
+import {
+    FlashcardRow,
+    ConjugationFlashcardRow,
+    FlashcardSortColumn,
+    ConjugationFlashcardSortColumn,
+    SortOrder,
+    DeleteFlashcard,
+    DeleteFlashcardsBulk,
+    DeleteConjugationFlashcard,
+    DeleteConjugationFlashcardsBulk,
+} from "@/lib/backendUtils"
 import { pathways } from "@/lib/pathways"
 import { toast } from "sonner"
 import FlashcardEditSheet from "./flashcardEditSheet"
+
+type AnyFlashcard = FlashcardRow | ConjugationFlashcardRow
+type AnySortColumn = FlashcardSortColumn | ConjugationFlashcardSortColumn
 
 type DeleteTarget =
     | { type: "single"; id: string; label: string }
     | { type: "bulk"; ids: string[] }
 
 interface FlashcardDataTableProps {
-    initialData: FlashcardRow[]
+    initialData: AnyFlashcard[]
     initialCount: number
     deckId: string
+    deckType: "standard" | "conjugation"
+    autoOpenFlashcardId?: string | null
 }
 
 const PAGE_SIZE = 10
@@ -66,8 +81,8 @@ function SortIcon({
     sortBy,
     sortOrder,
 }: {
-    column: FlashcardSortColumn
-    sortBy: FlashcardSortColumn
+    column: AnySortColumn
+    sortBy: AnySortColumn
     sortOrder: SortOrder
 }) {
     if (sortBy !== column) return <ArrowUpDownIcon className="ml-1.5 size-3.5 text-neutral-500 inline" />
@@ -75,28 +90,29 @@ function SortIcon({
     return <ArrowDownIcon className="ml-1.5 size-3.5 text-neutral-200 inline" />
 }
 
-// Map 1-indexed pathway number to its display name
 function pathwayLabel(pathway: number | null): string {
     if (pathway == null) return "—"
     const p = pathways[pathway - 1]
     return p ? p.pathName : String(pathway)
 }
 
-export default function FlashcardDataTable({ initialData, initialCount }: FlashcardDataTableProps) {
+export default function FlashcardDataTable({ initialData, initialCount, deckId, deckType, autoOpenFlashcardId }: FlashcardDataTableProps) {
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
 
+    const defaultSortBy: AnySortColumn = deckType === "conjugation" ? "phrase" : "translated_word"
+
     const currentSearch = searchParams.get("search") ?? ""
-    const currentSortBy = (searchParams.get("sortBy") as FlashcardSortColumn) ?? "translated_word"
+    const currentSortBy = (searchParams.get("sortBy") as AnySortColumn) ?? defaultSortBy
     const currentSortOrder = (searchParams.get("sortOrder") as SortOrder) ?? "asc"
     const currentPage = Number(searchParams.get("page") ?? "1")
 
     const [searchInput, setSearchInput] = React.useState(currentSearch)
     const [debouncedSearch] = useDebounce(searchInput, 400)
-    const [selectedFlashcard, setSelectedFlashcard] = React.useState<FlashcardRow | null>(null)
+    const [selectedFlashcard, setSelectedFlashcard] = React.useState<AnyFlashcard | null>(null)
     const [sheetOpen, setSheetOpen] = React.useState(false)
-    const [rows, setRows] = React.useState<FlashcardRow[]>(initialData)
+    const [rows, setRows] = React.useState<AnyFlashcard[]>(initialData)
     const [totalCount, setTotalCount] = React.useState(initialCount)
     const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
     const [deleteTarget, setDeleteTarget] = React.useState<DeleteTarget | null>(null)
@@ -105,7 +121,6 @@ export default function FlashcardDataTable({ initialData, initialCount }: Flashc
 
     const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
-    // Derived selection state
     const allPageSelected = rows.length > 0 && rows.every(r => selectedIds.has(r.id))
     const somePageSelected = rows.some(r => selectedIds.has(r.id))
 
@@ -130,7 +145,6 @@ export default function FlashcardDataTable({ initialData, initialCount }: Flashc
         [pathname, buildParams, router]
     )
 
-    // Sync debounced search → URL
     React.useEffect(() => {
         if (debouncedSearch !== currentSearch) {
             navigate({ search: debouncedSearch, page: "1" })
@@ -138,11 +152,9 @@ export default function FlashcardDataTable({ initialData, initialCount }: Flashc
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch])
 
-    // Sync rows when server re-fetches
     React.useEffect(() => {
         setRows(initialData)
         setTotalCount(initialCount)
-        // Clear selection for ids no longer on the page
         setSelectedIds(prev => {
             const pageIds = new Set(initialData.map(r => r.id))
             const next = new Set<string>()
@@ -151,8 +163,23 @@ export default function FlashcardDataTable({ initialData, initialCount }: Flashc
         })
     }, [initialData, initialCount])
 
-    // --- Sort ---
-    const handleSort = (column: FlashcardSortColumn) => {
+    // Auto-open sheet for a specific flashcard when navigated via "Edit Last"
+    const autoOpenHandled = React.useRef(false)
+    React.useEffect(() => {
+        if (!autoOpenFlashcardId || autoOpenHandled.current) return
+        const flashcard = initialData.find(r => r.id === autoOpenFlashcardId)
+        if (!flashcard) return
+        autoOpenHandled.current = true
+        setSelectedFlashcard(flashcard)
+        setSheetOpen(true)
+        // Scroll the row into view after a brief paint delay
+        setTimeout(() => {
+            const el = document.getElementById(`flashcard-row-${autoOpenFlashcardId}`)
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" })
+        }, 100)
+    }, [initialData, autoOpenFlashcardId])
+
+    const handleSort = (column: AnySortColumn) => {
         if (currentSortBy === column) {
             navigate({ sortBy: column, sortOrder: currentSortOrder === "asc" ? "desc" : "asc", page: "1" })
         } else {
@@ -160,7 +187,6 @@ export default function FlashcardDataTable({ initialData, initialCount }: Flashc
         }
     }
 
-    // --- Selection ---
     const toggleSelectAll = () => {
         if (allPageSelected) {
             setSelectedIds(prev => {
@@ -187,13 +213,14 @@ export default function FlashcardDataTable({ initialData, initialCount }: Flashc
         })
     }
 
-    // --- Confirm delete (called after dialog confirmation) ---
     const confirmDelete = async () => {
         if (!deleteTarget) return
         setIsDeleting(true)
 
         if (deleteTarget.type === "single") {
-            const { error } = await DeleteFlashcard(Number(deleteTarget.id))
+            const { error } = deckType === "conjugation"
+                ? await DeleteConjugationFlashcard(deleteTarget.id)
+                : await DeleteFlashcard(Number(deleteTarget.id))
             setIsDeleting(false)
             setDeleteTarget(null)
             if (error) { toast.error("Failed to delete flashcard."); return }
@@ -204,7 +231,9 @@ export default function FlashcardDataTable({ initialData, initialCount }: Flashc
             if (sheetOpen && selectedFlashcard?.id === deleteTarget.id) setSheetOpen(false)
         } else {
             const ids = deleteTarget.ids
-            const { error } = await DeleteFlashcardsBulk(ids.map(Number))
+            const { error } = deckType === "conjugation"
+                ? await DeleteConjugationFlashcardsBulk(ids)
+                : await DeleteFlashcardsBulk(ids.map(Number))
             setIsDeleting(false)
             setDeleteTarget(null)
             if (error) { toast.error("Failed to delete selected flashcards."); return }
@@ -217,14 +246,12 @@ export default function FlashcardDataTable({ initialData, initialCount }: Flashc
         }
     }
 
-    // --- Row click (opens sheet) ---
-    const handleRowClick = (row: FlashcardRow) => {
+    const handleRowClick = (row: AnyFlashcard) => {
         setSelectedFlashcard(row)
         setSheetOpen(true)
     }
 
-    // --- Save callback from sheet ---
-    const handleSheetSave = (updatedFlashcard: FlashcardRow) => {
+    const handleSheetSave = (updatedFlashcard: AnyFlashcard) => {
         setRows(prev => prev.map(r => r.id === updatedFlashcard.id ? updatedFlashcard : r))
         setSelectedFlashcard(updatedFlashcard)
     }
@@ -238,7 +265,12 @@ export default function FlashcardDataTable({ initialData, initialCount }: Flashc
         })
     }
 
-    const sortableHeader = (label: string, column: FlashcardSortColumn) => (
+    const rowLabel = (row: AnyFlashcard): string => {
+        if (deckType === "conjugation") return (row as ConjugationFlashcardRow).phrase
+        return (row as FlashcardRow).translated_word
+    }
+
+    const sortableHeader = (label: string, column: AnySortColumn) => (
         <TableHead
             className="cursor-pointer select-none hover:text-neutral-100 text-neutral-400 transition-colors"
             onClick={() => handleSort(column)}
@@ -269,7 +301,6 @@ export default function FlashcardDataTable({ initialData, initialCount }: Flashc
                 <Table>
                     <TableHeader>
                         <TableRow className="border-neutral-800 hover:bg-transparent">
-                            {/* Select-all checkbox */}
                             <TableHead className="w-10 pr-0" onClick={e => e.stopPropagation()}>
                                 <Checkbox
                                     checked={allPageSelected ? true : somePageSelected ? "indeterminate" : false}
@@ -278,8 +309,19 @@ export default function FlashcardDataTable({ initialData, initialCount }: Flashc
                                     className="border-neutral-600 data-[state=checked]:bg-neutral-100 data-[state=checked]:border-neutral-100 data-[state=indeterminate]:bg-neutral-100 data-[state=indeterminate]:border-neutral-100"
                                 />
                             </TableHead>
-                            {sortableHeader("Translated Word", "translated_word")}
-                            {sortableHeader("Gender", "gender")}
+
+                            {deckType === "conjugation" ? (
+                                <>
+                                    {sortableHeader("Phrase", "phrase")}
+                                    {sortableHeader("Missing Word", "missing_word")}
+                                </>
+                            ) : (
+                                <>
+                                    {sortableHeader("Translated Word", "translated_word")}
+                                    {sortableHeader("Gender", "gender")}
+                                </>
+                            )}
+
                             <TableHead className="text-neutral-400">Pathway</TableHead>
                             {sortableHeader("Review Date", "review_date")}
                             <TableHead className="w-12" />
@@ -288,7 +330,7 @@ export default function FlashcardDataTable({ initialData, initialCount }: Flashc
                     <TableBody>
                         {rows.length === 0 ? (
                             <TableRow className="border-neutral-800">
-                                <TableCell colSpan={6} className="text-center text-neutral-500 py-10">
+                                <TableCell colSpan={deckType === "conjugation" ? 6 : 6} className="text-center text-neutral-500 py-10">
                                     No flashcards found.
                                 </TableCell>
                             </TableRow>
@@ -298,25 +340,40 @@ export default function FlashcardDataTable({ initialData, initialCount }: Flashc
                                 return (
                                     <TableRow
                                         key={row.id}
+                                        id={`flashcard-row-${row.id}`}
                                         onClick={() => handleRowClick(row)}
                                         data-state={isSelected ? "selected" : undefined}
                                         className="border-neutral-800 hover:bg-neutral-800/60 data-[state=selected]:bg-neutral-800/40 cursor-pointer transition-colors"
                                     >
-                                        {/* Row checkbox */}
                                         <TableCell className="pr-0" onClick={e => toggleSelectRow(row.id, e)}>
                                             <Checkbox
                                                 checked={isSelected}
                                                 onCheckedChange={() => {}}
-                                                aria-label={`Select ${row.translated_word}`}
+                                                aria-label={`Select ${rowLabel(row)}`}
                                                 className="border-neutral-600 data-[state=checked]:bg-neutral-100 data-[state=checked]:border-neutral-100"
                                             />
                                         </TableCell>
-                                        <TableCell className="text-neutral-100 font-medium">
-                                            {row.translated_word}
-                                        </TableCell>
-                                        <TableCell className="text-neutral-300">
-                                            {row.gender ?? "—"}
-                                        </TableCell>
+
+                                        {deckType === "conjugation" ? (
+                                            <>
+                                                <TableCell className="text-neutral-100 font-medium">
+                                                    {(row as ConjugationFlashcardRow).phrase}
+                                                </TableCell>
+                                                <TableCell className="text-neutral-300">
+                                                    {(row as ConjugationFlashcardRow).missing_word}
+                                                </TableCell>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <TableCell className="text-neutral-100 font-medium">
+                                                    {(row as FlashcardRow).translated_word}
+                                                </TableCell>
+                                                <TableCell className="text-neutral-300">
+                                                    {(row as FlashcardRow).gender ?? "—"}
+                                                </TableCell>
+                                            </>
+                                        )}
+
                                         <TableCell className="text-neutral-300">
                                             {pathwayLabel(row.pathway)}
                                         </TableCell>
@@ -353,7 +410,7 @@ export default function FlashcardDataTable({ initialData, initialCount }: Flashc
                                                     ) : (
                                                         <DropdownMenuItem
                                                             className="text-red-400 focus:text-red-300 focus:bg-red-900/30 cursor-pointer"
-                                                            onClick={() => setDeleteTarget({ type: "single", id: row.id, label: row.translated_word })}
+                                                            onClick={() => setDeleteTarget({ type: "single", id: row.id, label: rowLabel(row) })}
                                                         >
                                                             <Trash2Icon className="mr-2 size-4" />
                                                             Delete
@@ -452,6 +509,7 @@ export default function FlashcardDataTable({ initialData, initialCount }: Flashc
                 isOpen={sheetOpen}
                 onOpenChange={setSheetOpen}
                 onSave={handleSheetSave}
+                deckType={deckType}
             />
         </div>
     )

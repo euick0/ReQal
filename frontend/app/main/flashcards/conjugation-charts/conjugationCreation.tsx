@@ -8,10 +8,8 @@ import FirstPathPreview, {
 } from "@/app/main/flashcards/conjugation-charts/conjugationPreviews";
 import ConjugationParameters from "@/app/main/flashcards/conjugation-charts/conjugationParameters";
 import {ScrollArea, ScrollBar} from "@/components/ui/scroll-area";
-import {pathways} from "@/lib/pathways";
+import {conjugationPathways as pathways} from "@/lib/pathways";
 
-
-export {pathways} from "@/lib/pathways"
 
 const ConjugationCreation = () => {
     const [useTranslatedWord, setUseTranslatedWord] = React.useState("");
@@ -26,6 +24,8 @@ const ConjugationCreation = () => {
     const [useIPATranslation, setUseIPATranslation] = React.useState("");
     const [useLanguage, setUseLanguage] = React.useState("");
     const [usePastedImages, setUsePastedImages] = React.useState<{ url: string; file: File }[]>([]);
+    const [useOriginalPhrase, setUseOriginalPhrase] = React.useState("");
+    const [useTranslatedPhrase, setUseTranslatedPhrase] = React.useState("");
 
     const contextValue: ConjugationContextType = {
         translatedWord: useTranslatedWord,
@@ -52,6 +52,10 @@ const ConjugationCreation = () => {
         setLanguage: setUseLanguage,
         pastedImages: usePastedImages,
         setPastedImages: setUsePastedImages,
+        originalPhrase: useOriginalPhrase,
+        setOriginalPhrase: setUseOriginalPhrase,
+        translatedPhrase: useTranslatedPhrase,
+        setTranslatedPhrase: setUseTranslatedPhrase,
     };
 
     return (

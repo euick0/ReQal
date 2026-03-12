@@ -39,14 +39,28 @@ import {
     AudioPlayerDuration,
 } from "@/components/ui/audio-player"
 import { Trash2Icon, ImagePlusIcon, MusicIcon, XIcon, UploadIcon, Loader2Icon } from "lucide-react"
-import { FlashcardRow, UpdateFlashcard } from "@/lib/backendUtils"
+import {
+    FlashcardRow,
+    ConjugationFlashcardRow,
+    UpdateFlashcard,
+    UpdateConjugationFlashcard,
+} from "@/lib/backendUtils"
 import { uploadFile } from "@/lib/uploadToStorage"
 import { pathways } from "@/lib/pathways"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
+type AnyFlashcard = FlashcardRow | ConjugationFlashcardRow
+
+// ─── Edited-data shape ───────────────────────────────────────────────────────
+
 interface EditedData {
+    // Standard-only
     translated_word: string
+    // Conjugation-only
+    phrase: string
+    missing_word: string
+    // Common
     IPA_translation: string
     gender: string
     pathway: number
@@ -57,15 +71,17 @@ interface EditedData {
 }
 
 interface FlashcardEditSheetProps {
-    flashcard: FlashcardRow | null
+    flashcard: AnyFlashcard | null
     isOpen: boolean
     onOpenChange: (open: boolean) => void
-    onSave?: (updatedFlashcard: FlashcardRow) => void
+    onSave?: (updatedFlashcard: AnyFlashcard) => void
+    deckType: "standard" | "conjugation"
 }
 
-function makeEditedData(flashcard: FlashcardRow): EditedData {
-    return {
-        translated_word: flashcard.translated_word ?? "",
+// ─── Initializers ────────────────────────────────────────────────────────────
+
+function makeEditedData(flashcard: AnyFlashcard, deckType: "standard" | "conjugation"): EditedData {
+    const common = {
         IPA_translation: flashcard.IPA_translation ?? "",
         gender: flashcard.gender ?? "",
         pathway: flashcard.pathway ?? 1,
@@ -74,10 +90,28 @@ function makeEditedData(flashcard: FlashcardRow): EditedData {
         image_paths: flashcard.image_paths ?? [],
         audio_path: flashcard.audio_path ?? "",
     }
+    if (deckType === "conjugation") {
+        const c = flashcard as ConjugationFlashcardRow
+        return { ...common, translated_word: "", phrase: c.phrase ?? "", missing_word: c.missing_word ?? "" }
+    }
+    const s = flashcard as FlashcardRow
+    return { ...common, translated_word: s.translated_word ?? "", phrase: "", missing_word: "" }
 }
 
-function hasUnsavedChanges(original: FlashcardRow, edited: EditedData): boolean {
-    if (edited.translated_word !== (original.translated_word ?? "")) return true
+function emptyEditedData(): EditedData {
+    return {
+        translated_word: "", phrase: "", missing_word: "",
+        IPA_translation: "", gender: "",
+        pathway: 1, translation_caption: "", image_caption: "",
+        image_paths: [], audio_path: "",
+    }
+}
+
+function hasUnsavedChanges(
+    original: AnyFlashcard,
+    edited: EditedData,
+    deckType: "standard" | "conjugation"
+): boolean {
     if (edited.IPA_translation !== (original.IPA_translation ?? "")) return true
     if (edited.gender !== (original.gender ?? "")) return true
     if (edited.pathway !== (original.pathway ?? 1)) return true
@@ -88,10 +122,19 @@ function hasUnsavedChanges(original: FlashcardRow, edited: EditedData): boolean 
         edited.image_paths.length !== (original.image_paths ?? []).length ||
         edited.image_paths.some((p, i) => p !== (original.image_paths ?? [])[i])
     ) return true
+
+    if (deckType === "conjugation") {
+        const c = original as ConjugationFlashcardRow
+        if (edited.phrase !== (c.phrase ?? "")) return true
+        if (edited.missing_word !== (c.missing_word ?? "")) return true
+    } else {
+        const s = original as FlashcardRow
+        if (edited.translated_word !== (s.translated_word ?? "")) return true
+    }
     return false
 }
 
-// ─── Audio Player Inner ──────────────────────────────────────────────────────
+// ─── Audio Section ───────────────────────────────────────────────────────────
 
 function AudioSection({
     audioPath,
@@ -185,20 +228,17 @@ function AudioSection({
     )
 }
 
-// ─── Main Component ──────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function FlashcardEditSheet({
     flashcard,
     isOpen,
     onOpenChange,
     onSave,
+    deckType,
 }: FlashcardEditSheetProps) {
     const [editedData, setEditedData] = useState<EditedData>(
-        flashcard ? makeEditedData(flashcard) : {
-            translated_word: "", IPA_translation: "", gender: "",
-            pathway: 1, translation_caption: "", image_caption: "",
-            image_paths: [], audio_path: "",
-        }
+        flashcard ? makeEditedData(flashcard, deckType) : emptyEditedData()
     )
     const [isSaving, setIsSaving] = useState(false)
     const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
@@ -206,19 +246,16 @@ export default function FlashcardEditSheet({
     const [isUploadingAudio, setIsUploadingAudio] = useState(false)
     const imageFileInputRef = useRef<HTMLInputElement>(null)
 
-    // Reset editedData whenever a new flashcard is loaded into the sheet
     useEffect(() => {
-        if (flashcard) setEditedData(makeEditedData(flashcard))
-    }, [flashcard])
+        if (flashcard) setEditedData(makeEditedData(flashcard, deckType))
+    }, [flashcard, deckType])
 
-    const isDirty = flashcard ? hasUnsavedChanges(flashcard, editedData) : false
+    const isDirty = flashcard ? hasUnsavedChanges(flashcard, editedData, deckType) : false
 
-    // ── field helpers ──
     const setField = useCallback(<K extends keyof EditedData>(key: K, value: EditedData[K]) => {
         setEditedData(prev => ({ ...prev, [key]: value }))
     }, [])
 
-    // ── sheet close guard ──
     const handleOpenChange = (open: boolean) => {
         if (!open && isDirty) {
             setShowUnsavedDialog(true)
@@ -228,18 +265,16 @@ export default function FlashcardEditSheet({
     }
 
     const handleDiscard = () => {
-        if (flashcard) setEditedData(makeEditedData(flashcard))
+        if (flashcard) setEditedData(makeEditedData(flashcard, deckType))
         setShowUnsavedDialog(false)
         onOpenChange(false)
     }
 
-    // ── save ──
     const handleSave = async () => {
         if (!flashcard) return
         setIsSaving(true)
 
-        const payload = {
-            translated_word: editedData.translated_word || null,
+        const commonPayload = {
             IPA_translation: editedData.IPA_translation || null,
             gender: editedData.gender || null,
             pathway: editedData.pathway,
@@ -249,7 +284,28 @@ export default function FlashcardEditSheet({
             audio_path: editedData.audio_path || null,
         }
 
-        const { error } = await UpdateFlashcard(Number(flashcard.id), payload)
+        let error: unknown = null
+        let updatedFlashcard: AnyFlashcard
+
+        if (deckType === "conjugation") {
+            const payload = {
+                ...commonPayload,
+                phrase: editedData.phrase || undefined,
+                missing_word: editedData.missing_word || undefined,
+            }
+            const result = await UpdateConjugationFlashcard(flashcard.id, payload)
+            error = result.error
+            updatedFlashcard = { ...flashcard, ...payload } as ConjugationFlashcardRow
+        } else {
+            const payload = {
+                ...commonPayload,
+                translated_word: editedData.translated_word || null,
+            }
+            const result = await UpdateFlashcard(Number(flashcard.id), payload)
+            error = result.error
+            updatedFlashcard = { ...flashcard, ...payload } as FlashcardRow
+        }
+
         setIsSaving(false)
 
         if (error) {
@@ -258,12 +314,9 @@ export default function FlashcardEditSheet({
         }
 
         toast.success("Flashcard updated.")
-        onSave?.({ ...flashcard, ...payload } as FlashcardRow)
-        // Reset dirty state by syncing editedData as the new baseline
-        // (parent will have updated the row; we just reflect new values)
+        onSave?.(updatedFlashcard)
     }
 
-    // ── image helpers ──
     const handleRemoveImage = (index: number) => {
         setField("image_paths", editedData.image_paths.filter((_, i) => i !== index))
     }
@@ -276,7 +329,6 @@ export default function FlashcardEditSheet({
             toast.error("Image upload failed.")
             return
         }
-        // Use functional updater to avoid stale closure
         setEditedData(prev => ({ ...prev, image_paths: [...prev.image_paths, url] }))
         toast.success("Image uploaded.")
     }
@@ -302,7 +354,6 @@ export default function FlashcardEditSheet({
         return () => document.removeEventListener("paste", handleImagePaste)
     }, [handleImagePaste])
 
-    // ── audio helpers ──
     const handleAudioFileUpload = async (file: File) => {
         setIsUploadingAudio(true)
         const { data: url, error } = await uploadFile(file, "flashcard-audio")
@@ -320,6 +371,12 @@ export default function FlashcardEditSheet({
         return new Date(dateStr).toLocaleDateString(undefined, {
             year: "numeric", month: "short", day: "numeric",
         })
+    }
+
+    const sheetTitle = () => {
+        if (!flashcard) return "Flashcard"
+        if (deckType === "conjugation") return (flashcard as ConjugationFlashcardRow).phrase ?? "Flashcard"
+        return (flashcard as FlashcardRow).translated_word ?? "Flashcard"
     }
 
     if (!flashcard) return null
@@ -340,7 +397,7 @@ export default function FlashcardEditSheet({
                     {/* Header */}
                     <SheetHeader className="shrink-0 border-b border-neutral-800 px-6 py-4">
                         <SheetTitle className="text-neutral-100 text-lg">
-                            {flashcard.translated_word ?? "Flashcard"}
+                            {sheetTitle()}
                         </SheetTitle>
                         <SheetDescription className="text-neutral-400 text-sm">
                             Edit flashcard details
@@ -351,55 +408,125 @@ export default function FlashcardEditSheet({
                     <div className="flex-1 overflow-y-auto px-6 py-5">
                         <FieldGroup className="gap-5">
 
-                            {/* ── Text fields ──────────────────────────────── */}
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                <Field>
-                                    <FieldLabel className="text-neutral-400 text-xs uppercase tracking-wide">
-                                        Translated Word
-                                    </FieldLabel>
-                                    <Input
-                                        value={editedData.translated_word}
-                                        onChange={e => setField("translated_word", e.target.value)}
-                                        className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
-                                        placeholder="e.g. el gato"
-                                    />
-                                </Field>
+                            {/* ── Type-specific text fields ─────────────────── */}
+                            {deckType === "conjugation" ? (
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <Field>
+                                        <FieldLabel className="text-neutral-400 text-xs uppercase tracking-wide">
+                                            Phrase
+                                        </FieldLabel>
+                                        <Input
+                                            value={editedData.phrase}
+                                            onChange={e => setField("phrase", e.target.value)}
+                                            className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
+                                            placeholder="e.g. Yo ___ al mercado"
+                                        />
+                                    </Field>
+                                    <Field>
+                                        <FieldLabel className="text-neutral-400 text-xs uppercase tracking-wide">
+                                            Missing Word
+                                        </FieldLabel>
+                                        <Input
+                                            value={editedData.missing_word}
+                                            onChange={e => setField("missing_word", e.target.value)}
+                                            className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
+                                            placeholder="e.g. fui"
+                                        />
+                                    </Field>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <Field>
+                                        <FieldLabel className="text-neutral-400 text-xs uppercase tracking-wide">
+                                            Translated Word
+                                        </FieldLabel>
+                                        <Input
+                                            value={editedData.translated_word}
+                                            onChange={e => setField("translated_word", e.target.value)}
+                                            className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
+                                            placeholder="e.g. el gato"
+                                        />
+                                    </Field>
+                                    <Field>
+                                        <FieldLabel className="text-neutral-400 text-xs uppercase tracking-wide">
+                                            IPA Translation
+                                        </FieldLabel>
+                                        <Input
+                                            value={editedData.IPA_translation}
+                                            onChange={e => setField("IPA_translation", e.target.value)}
+                                            className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
+                                            placeholder="e.g. /el ˈɡato/"
+                                        />
+                                    </Field>
+                                </div>
+                            )}
 
-                                <Field>
-                                    <FieldLabel className="text-neutral-400 text-xs uppercase tracking-wide">
-                                        IPA Translation
-                                    </FieldLabel>
-                                    <Input
-                                        value={editedData.IPA_translation}
-                                        onChange={e => setField("IPA_translation", e.target.value)}
-                                        className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
-                                        placeholder="e.g. /el ˈɡato/"
-                                    />
-                                </Field>
-                            </div>
+                            {/* ── IPA (conjugation only, shown below phrase row) ── */}
+                            {deckType === "conjugation" && (
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <Field>
+                                        <FieldLabel className="text-neutral-400 text-xs uppercase tracking-wide">
+                                            IPA Translation
+                                        </FieldLabel>
+                                        <Input
+                                            value={editedData.IPA_translation}
+                                            onChange={e => setField("IPA_translation", e.target.value)}
+                                            className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
+                                            placeholder="e.g. /fwi/"
+                                        />
+                                    </Field>
+                                    <Field>
+                                        <FieldLabel className="text-neutral-400 text-xs uppercase tracking-wide">
+                                            Gender
+                                        </FieldLabel>
+                                        <Input
+                                            value={editedData.gender}
+                                            onChange={e => setField("gender", e.target.value)}
+                                            className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
+                                            placeholder="e.g. masculine"
+                                        />
+                                    </Field>
+                                </div>
+                            )}
 
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                <Field>
-                                    <FieldLabel className="text-neutral-400 text-xs uppercase tracking-wide">
-                                        Gender
-                                    </FieldLabel>
-                                    <Input
-                                        value={editedData.gender}
-                                        onChange={e => setField("gender", e.target.value)}
-                                        className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
-                                        placeholder="e.g. masculine"
-                                    />
-                                </Field>
+                            {/* ── Gender + Review Date (standard) ──────────── */}
+                            {deckType === "standard" && (
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <Field>
+                                        <FieldLabel className="text-neutral-400 text-xs uppercase tracking-wide">
+                                            Gender
+                                        </FieldLabel>
+                                        <Input
+                                            value={editedData.gender}
+                                            onChange={e => setField("gender", e.target.value)}
+                                            className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
+                                            placeholder="e.g. masculine"
+                                        />
+                                    </Field>
+                                    <Field>
+                                        <FieldLabel className="text-neutral-400 text-xs uppercase tracking-wide">
+                                            Review Date
+                                        </FieldLabel>
+                                        <div className="flex h-9 items-center rounded-md border border-neutral-800 bg-neutral-900/40 px-3 text-sm text-neutral-500 select-none cursor-default">
+                                            {formatDate(flashcard.review_date)}
+                                        </div>
+                                    </Field>
+                                </div>
+                            )}
 
-                                <Field>
-                                    <FieldLabel className="text-neutral-400 text-xs uppercase tracking-wide">
-                                        Review Date
-                                    </FieldLabel>
-                                    <div className="flex h-9 items-center rounded-md border border-neutral-800 bg-neutral-900/40 px-3 text-sm text-neutral-500 select-none cursor-default">
-                                        {formatDate(flashcard.review_date)}
-                                    </div>
-                                </Field>
-                            </div>
+                            {/* ── Review Date (conjugation only) ───────────── */}
+                            {deckType === "conjugation" && (
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <Field>
+                                        <FieldLabel className="text-neutral-400 text-xs uppercase tracking-wide">
+                                            Review Date
+                                        </FieldLabel>
+                                        <div className="flex h-9 items-center rounded-md border border-neutral-800 bg-neutral-900/40 px-3 text-sm text-neutral-500 select-none cursor-default">
+                                            {formatDate(flashcard.review_date)}
+                                        </div>
+                                    </Field>
+                                </div>
+                            )}
 
                             {/* ── Pathway ──────────────────────────────────── */}
                             <Field>
@@ -473,7 +600,6 @@ export default function FlashcardEditSheet({
                                     </span>
                                 </FieldLabel>
 
-                                {/* Image grid */}
                                 {editedData.image_paths.length > 0 ? (
                                     <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                                         {editedData.image_paths.map((src, idx) => (
@@ -508,7 +634,6 @@ export default function FlashcardEditSheet({
                                     </div>
                                 )}
 
-                                {/* File upload */}
                                 <div className="flex gap-2">
                                     <Button
                                         type="button"
@@ -603,7 +728,7 @@ export default function FlashcardEditSheet({
             >
                 <AlertDialogContent className="bg-neutral-950 border-neutral-800 text-neutral-100">
                     <AlertDialogHeader>
-                        <AlertDialogTitle className="text-neutral-100 ">Unsaved Changes</AlertDialogTitle>
+                        <AlertDialogTitle className="text-neutral-100">Unsaved Changes</AlertDialogTitle>
                         <AlertDialogDescription className="text-neutral-400">
                             You have unsaved changes. They will be lost if you close this panel.
                         </AlertDialogDescription>

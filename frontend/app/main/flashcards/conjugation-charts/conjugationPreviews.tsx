@@ -193,5 +193,9 @@ export type ConjugationContextType = {
     setLanguage: (language: string) => void;
     pastedImages: { url: string; file: File }[];
     setPastedImages: Dispatch<SetStateAction<{ url: string; file: File }[]>>;
+    originalPhrase: string;
+    setOriginalPhrase: (phrase: string) => void;
+    translatedPhrase: string;
+    setTranslatedPhrase: (phrase: string) => void;
 }
 export const ConjugationContext = React.createContext<ConjugationContextType | undefined>(undefined);

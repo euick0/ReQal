@@ -98,9 +98,6 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
                 toast.error("Registration failed. Please try again.");
             }
         } else if (result?.success) {
-            if (result.email) {
-                setRegisteredEmail(result.email)
-            }
             setShowConfirmation(true)
         }
     }

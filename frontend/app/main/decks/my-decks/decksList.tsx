@@ -6,6 +6,7 @@ import {Card} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
 import {DeleteDeck, GetDeckList} from "@/lib/backendUtils";
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle} from "@/components/ui/dialog";
+import {Skeleton} from "@/components/ui/skeleton";
 import {toast} from "sonner";
 
 const getDecks = async () => {
@@ -23,12 +24,14 @@ const getDecks = async () => {
 const DeckList = () => {
     const router = useRouter()
     const [decks, setDecks] = React.useState<{ id: number, name: string }[]>([])
+    const [isLoading, setIsLoading] = React.useState(true)
     const [deckToDelete, setDeckToDelete] = React.useState<string | null>(null)
 
     React.useEffect(() => {
         (async () => {
             const data = await getDecks()
             if (data) setDecks(data)
+            setIsLoading(false)
         })()
     }, [])
 
@@ -79,19 +82,27 @@ const DeckList = () => {
     return (
         <div className="flex flex-col pl-20 w-full h-screen right-0 overflow-visible">
             <h1 className="text-center text-5xl text-white font-semibold py-10">My decks</h1>
-            {decks.map((deck) => (
-                <Card className="mx-10 flex flex-col my-2" key={deck.id}>
-                    <div className="flex flex-row items-center justify-between">
-                        <h2 className="pl-5">{deck.name}</h2>
-                        <div>
-                            <Button className="mr-5 text-neutral-200" variant="ghost" onClick={() => handleExport(deck.id, deck.name)}>Export to Anki</Button>
-                            <Button className="mr-5 text-neutral-200" variant="ghost" onClick={() => router.push(`/main/decks/my-decks/${deck.id}/edit-flashcards`)}>Edit Flashcards</Button>
-                            <Button className="mr-5 text-neutral-200 bg-red-700! hover:bg-red-800!"
-                                    variant="destructive" onClick={() => setDeckToDelete(deck.name)}>Delete</Button>
+            {isLoading ? (
+                <div className="flex flex-col mx-10">
+                    {[...Array(8)].map((_, i) => (
+                        <Skeleton className="h-22 my-2 rounded-xl" key={`skeleton-${i}`} />
+                    ))}
+                </div>
+            ) : (
+                decks.map((deck) => (
+                    <Card className="mx-10 flex flex-col my-2" key={deck.id}>
+                        <div className="flex flex-row items-center justify-between">
+                            <h2 className="pl-5">{deck.name}</h2>
+                            <div>
+                                <Button className="mr-5 text-neutral-200" variant="ghost" onClick={() => handleExport(deck.id, deck.name)}>Export to Anki</Button>
+                                <Button className="mr-5 text-neutral-200" variant="ghost" onClick={() => router.push(`/main/decks/my-decks/${deck.id}/edit-flashcards`)}>Edit Flashcards</Button>
+                                <Button className="mr-5 text-neutral-200 bg-red-700! hover:bg-red-800!"
+                                        variant="destructive" onClick={() => setDeckToDelete(deck.name)}>Delete</Button>
+                            </div>
                         </div>
-                    </div>
-                </Card>
-            ))}
+                    </Card>
+                ))
+            )}
 
             <Dialog open={deckToDelete !== null} onOpenChange={(open) => { if (!open) setDeckToDelete(null) }}>
                 <DialogContent>

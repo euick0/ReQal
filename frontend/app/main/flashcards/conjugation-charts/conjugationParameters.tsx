@@ -23,37 +23,24 @@ import {
     AudioPlayerProvider,
     AudioPlayerTime
 } from "@/components/ui/audio-player";
-import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog";
-import ProgressDialog from "@/app/main/flashcards/conjugation-charts/progressDialog";
+import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {ConjugationContext} from "@/app/main/flashcards/conjugation-charts/conjugationPreviews";
-import {pathways} from "@/app/main/flashcards/conjugation-charts/conjugationCreation";
+import {conjugationPathways as pathways} from "@/lib/pathways";
 import {
-    InsertWordsFlashcard,
-    GetCurrentWordIndex,
+    InsertConjugationFlashcard,
     GetDeckPreferences,
-    IncrementCurrentWordIndex,
     UpdateDeckPreference,
-} from "@/lib/backendUtils";
-import GeminiSendTranslationQuery from "@/lib/geminiQueries";
+    GetConjugationFlashcardsDeckID,
+    GetLastConjugationFlashcard,
+} from "@/lib/backendUtils"
+import {useRouter} from "next/navigation";
+import {GeminiSendPhraseTranslationQuery} from "@/lib/geminiQueries";
 import {uploadFile} from "@/lib/uploadToStorage";
-import {createClient} from "@/lib/supabase/client";
 import {GetGoogleImages} from "@/lib/getGoogleImages";
 import {GetWiktionaryAudio} from "@/lib/getAudio";
 import {Progress} from "@/components/ui/progress";
 import {toast} from "sonner";
 import {extractImagesFromPasteEvent, filterImageFiles} from "@/lib/clipboardUtils";
-
-const getWordList = async () => {
-    const supabase = createClient()
-    const {data, error} = await supabase.from("words_list").select("words_list")
-
-    if (error || !data) {
-        console.error("Error fetching word list:", error)
-        return []
-    }
-
-    return data[0].words_list as string[]
-}
 
 const languages = [
     "Spanish",
@@ -69,15 +56,16 @@ const languages = [
 
 const ConjugationParameters = () => {
     const conjugationContext = React.useContext(ConjugationContext);
+    const router = useRouter()
     const [isSubmitting, setIsSubmitting] = React.useState(true)
-    const [wordList, setWordList] = React.useState<string[]>([])
-    const [currentWordIndex, setCurrentWordIndex] = React.useState<number>(0)
+    const [isTranslating, setIsTranslating] = React.useState(false)
+    const [progress, setProgress] = React.useState<number>(0)
     const [imageSearchResults, setImageSearchResults] = React.useState<string[]>([])
     const [imageAlts, setImageAlts] = React.useState<string[]>([])
-    const [currentWord, setCurrentWord] = React.useState<string>("")
-    const [progress, setProgress] = React.useState<number>(0)
+    const [missingWord, setMissingWord] = React.useState<string>("")
     const [showLanguageDialog, setShowLanguageDialog] = React.useState(false)
     const [dialogLanguage, setDialogLanguage] = React.useState("")
+    const [deckId, setDeckId] = React.useState<string | null>(null)
 
     useEffect(() => {
         initialLoad()
@@ -112,6 +100,10 @@ const ConjugationParameters = () => {
         setLanguage,
         pastedImages,
         setPastedImages,
+        originalPhrase,
+        setOriginalPhrase,
+        translatedPhrase,
+        setTranslatedPhrase,
     } = conjugationContext;
 
     useEffect(() => {
@@ -212,13 +204,49 @@ const ConjugationParameters = () => {
         }
     }, [imagePath, imageFiles])
 
-    const loadParameters = async (lang: string, word: string) => {
-        const {data: translationData, error: translationError} = await GeminiSendTranslationQuery(word, lang)
+    const initialLoad = async () => {
+        setIsSubmitting(false)
+        setProgress(100)
+
+        const [{data: prefs}, {data: fetchedDeckId}] = await Promise.all([
+            GetDeckPreferences("600 Words"),
+            GetConjugationFlashcardsDeckID(),
+        ])
+
+        if (fetchedDeckId) setDeckId(fetchedDeckId)
+
+        const lang = prefs?.language ?? ""
+        setLanguage(lang)
+        setPathway(pathways.find(p => p.pathName === prefs?.pathway?.pathName) ?? pathways[0])
+
+        if (!lang) {
+            setShowLanguageDialog(true)
+            return
+        }
+    }
+
+    const handleTranslate = async () => {
+        if (!missingWord.trim() || !originalPhrase.trim()) {
+            showErrorToast("Please enter both the word and phrase before translating.")
+            return
+        }
+        if (!language) {
+            showErrorToast("Please select a language before translating.")
+            return
+        }
+
+        setIsTranslating(true)
+        setProgress(0)
+
+        const {
+            data: translationData,
+            error: translationError
+        } = await GeminiSendPhraseTranslationQuery(missingWord.trim(), originalPhrase.trim(), language)
 
         if (translationError || !translationData) {
-            setProgress(100)
-            setIsSubmitting(false)
             showErrorToast("Error fetching translation. Please try again.")
+            setProgress(100)
+            setIsTranslating(false)
             return
         }
         setProgress(60)
@@ -227,14 +255,14 @@ const ConjugationParameters = () => {
             {data: googleImagesData, error: googleImagesError},
             {data: audioData, error: audioError}
         ] = await Promise.all([
-            GetGoogleImages(translationData.translation),
-            GetWiktionaryAudio(translationData.translation, lang)
+            GetGoogleImages(translationData.word_translation),
+            GetWiktionaryAudio(translationData.word_translation, language)
         ])
 
         if (googleImagesError) {
             showErrorToast("Error fetching images. Please try again.")
             setProgress(100)
-            setIsSubmitting(false)
+            setIsTranslating(false)
             return
         }
         if (audioError) {
@@ -242,53 +270,21 @@ const ConjugationParameters = () => {
             toast.warning("Conjugation audio unavailable", {position: "bottom-right"})
         }
 
-        setTranslatedWord(translationData.translation)
-        setTranslatedWordGender(translationData.gender ?? "")
+        setTranslatedWord(translationData.word_translation)
+        setTranslatedWordGender(translationData.word_gender ?? "")
+        setTranslatedPhrase(translationData.phrase_translation)
         setImageSearchResults(googleImagesData.map(img => img.src))
         setImageAlts(googleImagesData.map(img => img.alt))
         setImageFiles([])
+        setImagePath([])
         setAudioPath(audioData?.audioUrl ?? "")
         setAudioFile(null)
         setImageCaption("")
         setTranslationCaption("")
-        setIPATranslation(translationData.ipa ?? "")
+        setIPATranslation(translationData.word_ipa ?? "")
         setPastedImages(prev => { prev.forEach(img => URL.revokeObjectURL(img.url)); return [] })
         setProgress(100)
-        setIsSubmitting(false)
-    }
-
-    const initialLoad = async () => {
-        setIsSubmitting(true)
-        setProgress(0)
-
-        const [
-            words,
-            {data: wordIndex},
-            {data: prefs},
-        ] = await Promise.all([
-            getWordList(),
-            GetCurrentWordIndex(),
-            GetDeckPreferences("600 Words")
-        ])
-        setProgress(25)
-
-        const lang = prefs?.language ?? ""
-        setWordList(words)
-        setCurrentWordIndex(wordIndex ?? 0)
-        setLanguage(lang)
-        setPathway(pathways.find(p => p.pathName === prefs?.pathway?.pathName) ?? pathways[0])
-
-        const word = words[wordIndex ?? 0] ?? ""
-        setCurrentWord(word)
-
-        if (!lang) {
-            setShowLanguageDialog(true)
-            setProgress(100)
-            setIsSubmitting(false)
-            return
-        }
-
-        await loadParameters(lang, word)
+        setIsTranslating(false)
     }
 
     const handleLanguageConfirm = async () => {
@@ -296,65 +292,24 @@ const ConjugationParameters = () => {
         setLanguage(dialogLanguage)
         await UpdateDeckPreference("600 Words", "prefered_language", dialogLanguage)
         setShowLanguageDialog(false)
-        setIsSubmitting(true)
-        setProgress(0)
-        await loadParameters(dialogLanguage, currentWord)
     }
 
-    const updateParameters = async () => {
-        const nextWordIndex = currentWordIndex + 1
-        setProgress(0)
 
-        const [
-            {data: newCurrentWordIndex, error: incrementIndexError},
-            {data: translationData, error: translationError},
-        ] = await Promise.all([
-            IncrementCurrentWordIndex(),
-            GeminiSendTranslationQuery(wordList[nextWordIndex], language),
-        ])
-        setProgress(50)
 
-        setCurrentWordIndex(newCurrentWordIndex ?? currentWordIndex)
-
-        if (translationError || incrementIndexError) {
-            showErrorToast("Error fetching translation or updating progress. Please try again.")
-            setIsSubmitting(false)
-        } else if (translationData) {
-            const [
-                {data: googleImagesData, error: googleImagesError},
-                {data: audioData, error: audioError},
-            ] = await Promise.all([
-                GetGoogleImages(translationData.translation),
-                GetWiktionaryAudio(translationData.translation, language),
-            ])
-
-            if (googleImagesError) {
-                showErrorToast("Error fetching images for the next word. Please try again.")
-                setIsSubmitting(false)
-            } else {
-                setTranslatedWord(translationData.translation)
-                setTranslatedWordGender(translationData.gender ?? "")
-                setImageSearchResults(googleImagesData.map(img => img.src))
-                setImageAlts(googleImagesData.map(img => img.alt))
-                setImageFiles([])
-                setAudioPath(audioData?.audioUrl ?? "")
-                setAudioFile(null)
-                setImagePath([])
-                setImageCaption("")
-                setTranslationCaption("")
-                setIPATranslation(translationData.ipa ?? "")
-                setCurrentWord(wordList[newCurrentWordIndex])
-                setPastedImages(prev => { prev.forEach(img => URL.revokeObjectURL(img.url)); return [] })
-            }
-
-            if (audioError) {
-                console.warn("Conjugation audio unavailable")
-                toast.warning("Conjugation audio unavailable", {position: "bottom-right"})
-            }
-
-            setIsSubmitting(false)
+    const handleEditLast = async () => {
+        if (!deckId) {
+            showErrorToast("Unable to load your deck")
+            return
         }
-        setProgress(100)
+
+        const {data: lastFlashcardId, error} = await GetLastConjugationFlashcard(deckId)
+
+        if (error || !lastFlashcardId) {
+            showErrorToast("No flashcards created yet")
+            return
+        }
+
+        router.push(`/main/decks/my-decks/${deckId}/edit-flashcards?flashcardId=${lastFlashcardId}&autoOpen=true`)
     }
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -369,6 +324,9 @@ const ConjugationParameters = () => {
         } else {
             formData.set("pathway", "1")
         }
+
+        formData.set("phrase", translatedPhrase)
+        formData.set("missingWord", translatedWord)
 
         imagePath.filter(url => !url.startsWith("blob:")).forEach(url => formData.append("imagePath", url))
 
@@ -390,15 +348,32 @@ const ConjugationParameters = () => {
             formData.set("audioPath", audioPath)
         }
 
-        const {error: insertWordsFlashcardError} = await InsertWordsFlashcard(formData)
+        const {error: insertConjugationFlashcardError} = await InsertConjugationFlashcard(formData)
 
-        if (insertWordsFlashcardError) {
+        if (insertConjugationFlashcardError) {
             showErrorToast("Error creating conjugation. Please try again.")
             setIsSubmitting(false)
             return
         }
 
-        await updateParameters()
+        // Reset all fields after successful submission
+        setMissingWord("")
+        setTranslatedWord("")
+        setTranslatedWordGender("")
+        setIPATranslation("")
+        setOriginalPhrase("")  // Clear UI field (not sent to DB)
+        setTranslatedPhrase("")  // Clear UI field (sent as "phrase" to DB)
+        setImageFiles([])
+        setImagePath([])
+        setImageSearchResults([])
+        setImageAlts([])
+        setAudioPath("")
+        setAudioFile(null)
+        setImageCaption("")
+        setTranslationCaption("")
+        setPastedImages(prev => { prev.forEach(img => URL.revokeObjectURL(img.url)); return [] })
+        
+        setIsSubmitting(false)
     }
 
     return (
@@ -407,32 +382,29 @@ const ConjugationParameters = () => {
                 <Progress value={progress} className="w-full h-2 mb-4 mx-auto"></Progress>
                 <Field className="w-auto p-1 pr-6 pb-4">
                     <form className="" onSubmit={handleSubmit}>
-                        <Combobox items={languages} name="language" value={language}
-                                  onValueChange={(value) => {
-                                      if (value !== null) {
-                                          setLanguage(value);
-                                          UpdateDeckPreference("600 Words", "prefered_language", value);
-                                          setIsSubmitting(true);
-                                          setProgress(0);
-                                          loadParameters(value, currentWord);
-                                      }
-                                  }}
-                                  required={true}>
-                            <ComboboxInput placeholder="Select a language" className="w-64 mb-4"
-                                           disabled={isSubmitting}/>
-                            <ComboboxContent>
-                                <ComboboxEmpty>No items found.</ComboboxEmpty>
-                                <ComboboxList>
-                                    {(item) => (
-                                        <ComboboxItem key={item} value={item}>
-                                            {item}
-                                        </ComboboxItem>
-                                    )}
-                                </ComboboxList>
-                            </ComboboxContent>
-                        </Combobox>
-
                         <div className="flex gap-2">
+                            <Combobox items={languages} name="language" value={language}
+                                      onValueChange={(value) => {
+                                          if (value !== null) {
+                                              setLanguage(value);
+                                              UpdateDeckPreference("600 Words", "prefered_language", value);
+                                          }
+                                      }}
+                                      required={true}>
+                                <ComboboxInput placeholder="Select a language" className="w-64"
+                                               disabled={isSubmitting || isTranslating}/>
+                                <ComboboxContent>
+                                    <ComboboxEmpty>No items found.</ComboboxEmpty>
+                                    <ComboboxList>
+                                        {(item) => (
+                                            <ComboboxItem key={item} value={item}>
+                                                {item}
+                                            </ComboboxItem>
+                                        )}
+                                    </ComboboxList>
+                                </ComboboxContent>
+                            </Combobox>
+
                             <Combobox
                                 items={pathways}
                                 value={pathway}
@@ -447,7 +419,7 @@ const ConjugationParameters = () => {
                                 itemToStringValue={(pathway: (typeof pathways)[number]) => pathway.pathName}
                                 itemToStringLabel={(pathway: (typeof pathways)[number]) => pathway.pathName}>
                                 <ComboboxInput placeholder="Select a pathway" className="w-64 mb-4"
-                                               disabled={isSubmitting}/>
+                                               disabled={isSubmitting || isTranslating}/>
                                 <ComboboxContent>
                                     <ComboboxEmpty>No items found.</ComboboxEmpty>
                                     <ComboboxList>
@@ -470,7 +442,7 @@ const ConjugationParameters = () => {
                             </Combobox>
 
                             <HoverCard openDelay={100} closeDelay={200}>
-                                <HoverCardTrigger><Button variant="outline" size="icon">
+                                <HoverCardTrigger><Button variant="outline" size="icon" type="button">
                                     ?
                                 </Button>
                                 </HoverCardTrigger>
@@ -485,36 +457,74 @@ const ConjugationParameters = () => {
                                     <p className="text-sm">For hard languages (especially those with logograms)</p>
                                 </HoverCardContent>
                             </HoverCard>
-                            <Input
-                                className="w-60 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
-                                placeholder="Original Word"
-                                value={currentWord ?? ""}
-                                disabled={isSubmitting}
-                                readOnly/>
                         </div>
 
-                        <div>
+                        <div className="flex items-center gap-2 mb-4">
                             <Input
-                                className="w-96 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-60 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                placeholder="Original Word"
+                                value={missingWord}
+                                disabled={isSubmitting || isTranslating}
+                                onChange={({target}) => setMissingWord(target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        e.preventDefault()
+                                        handleTranslate()
+                                    }
+                                }}
+                            />
+                            
+
+                            <Input
+                                className="w-96 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                placeholder="Original Phrase"
+                                name="originalPhrase"
+                                value={originalPhrase}
+                                disabled={isSubmitting || isTranslating}
+                                onChange={({target}) => setOriginalPhrase(target.value)}/>
+                            
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30! font-normal! text-sm!"
+                                disabled={isSubmitting || isTranslating || !missingWord.trim() || !originalPhrase.trim() || !language}
+                                onClick={handleTranslate}>
+                                {isTranslating ? "Translating..." : "Translate"}
+                            </Button>
+                        </div>
+
+                        <div className="flex gap-2 mb-4">
+                            <Input
+                                className="w-96 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Translated word"
                                 name="translatedWord"
                                 value={translatedWord}
-                                disabled={isSubmitting}
+                                disabled={isSubmitting || isTranslating}
                                 onChange={({target}) => setTranslatedWord(target.value)}/>
                             <Input
-                                className="w-20 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
-                                placeholder="Gender"
-                                name="translatedWordGender"
-                                value={translatedWordGender}
-                                disabled={isSubmitting}
-                                onChange={({target}) => setTranslatedWordGender(target.value)}/>
+                                className="w-96 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                placeholder="Translated Phrase"
+                                name="translatedPhrase"
+                                value={translatedPhrase}
+                                disabled={isSubmitting || isTranslating}
+                                onChange={({target}) => setTranslatedPhrase(target.value)}/>
+                        </div>
+
+                        <div className="flex gap-2 mb-4">
                             <Input
-                                className="w-70 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-70 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="IPA translation"
                                 name="IPATranslation"
                                 value={IPATranslation}
-                                disabled={isSubmitting}
+                                disabled={isSubmitting || isTranslating}
                                 onChange={({target}) => setIPATranslation(target.value)}/>
+                            <Input
+                                className="w-20 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                placeholder="Gender"
+                                name="translatedWordGender"
+                                value={translatedWordGender}
+                                disabled={isSubmitting || isTranslating}
+                                onChange={({target}) => setTranslatedWordGender(target.value)}/>
                         </div>
 
                         <ImageParameter src={imageSearchResults} alt={imageAlts}>
@@ -579,20 +589,7 @@ const ConjugationParameters = () => {
                         <div>
                             <Button className="text-white mr-4 rounded-md!  antialiased" size="default"
                                     type="submit" disabled={isSubmitting}>Create</Button>
-                            <Button className="text-white " variant="ghost" size="default">Edit Last</Button>
-                            <Dialog>
-                                <DialogTrigger asChild>
-                                    <Button className="text-white mr-4 " variant="ghost"
-                                            size="default">Progress</Button>
-                                </DialogTrigger>
-                                <DialogContent className="w-300 h-100">
-                                    <DialogHeader className="">
-                                        <DialogTitle className="mb-5">{currentWordIndex} out of 604
-                                            completed</DialogTitle>
-                                        <ProgressDialog words={wordList} nextWord={wordList[currentWordIndex]}/>
-                                    </DialogHeader>
-                                </DialogContent>
-                            </Dialog>
+                            <Button className="text-white " variant="ghost" size="default" type="button" onClick={handleEditLast} disabled={isSubmitting || isTranslating}>Edit Last</Button>
 
                             <Dialog open={showLanguageDialog} onOpenChange={setShowLanguageDialog}>
                                 <DialogContent showCloseButton={false} onInteractOutside={(e) => e.preventDefault()}>
