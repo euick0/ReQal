@@ -204,9 +204,6 @@ export default function FlashcardEditSheet({
     const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
     const [isUploadingImage, setIsUploadingImage] = useState(false)
     const [isUploadingAudio, setIsUploadingAudio] = useState(false)
-    const [newImageUrl, setNewImageUrl] = useState("")
-    const [imageUrlError, setImageUrlError] = useState<string | null>(null)
-    const [isValidatingUrl, setIsValidatingUrl] = useState(false)
     const imageFileInputRef = useRef<HTMLInputElement>(null)
 
     // Reset editedData whenever a new flashcard is loaded into the sheet
@@ -267,45 +264,6 @@ export default function FlashcardEditSheet({
     }
 
     // ── image helpers ──
-    const handleAddImageUrl = async () => {
-        const trimmed = newImageUrl.trim()
-        if (!trimmed) return
-
-        // 1. Parse as URL
-        let parsed: URL
-        try {
-            parsed = new URL(trimmed)
-        } catch {
-            setImageUrlError("Not a valid URL.")
-            return
-        }
-
-        // 2. Must be http/https
-        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-            setImageUrlError("URL must start with http:// or https://")
-            return
-        }
-
-        // 3. Try to confirm it's an image via HEAD request (best-effort)
-        setIsValidatingUrl(true)
-        setImageUrlError(null)
-        try {
-            const res = await fetch(trimmed, { method: "HEAD", mode: "no-cors" })
-            // no-cors won't expose headers but won't throw for reachable resources
-            // fall through — we can't read Content-Type in no-cors, so trust the URL
-            void res
-        } catch {
-            setIsValidatingUrl(false)
-            setImageUrlError("Could not reach this URL. Check it is publicly accessible.")
-            return
-        }
-        setIsValidatingUrl(false)
-
-        setEditedData(prev => ({ ...prev, image_paths: [...prev.image_paths, trimmed] }))
-        setNewImageUrl("")
-        setImageUrlError(null)
-    }
-
     const handleRemoveImage = (index: number) => {
         setField("image_paths", editedData.image_paths.filter((_, i) => i !== index))
     }
@@ -580,48 +538,6 @@ export default function FlashcardEditSheet({
                                         }}
                                     />
                                 </div>
-
-                                {/* URL input */}
-                                <div className="flex flex-col gap-1">
-                                    <div className="flex gap-2">
-                                        <Input
-                                            value={newImageUrl}
-                                            onChange={e => {
-                                                setNewImageUrl(e.target.value)
-                                                setImageUrlError(null)
-                                            }}
-                                            onKeyDown={e => {
-                                                if (e.key === "Enter") {
-                                                    e.preventDefault()
-                                                    handleAddImageUrl()
-                                                }
-                                            }}
-                                            placeholder="Paste image URL and press Enter…"
-                                            aria-invalid={!!imageUrlError}
-                                            className={cn(
-                                                "flex-1 bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500 text-xs",
-                                                imageUrlError && "border-red-500 focus-visible:border-red-500"
-                                            )}
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            disabled={!newImageUrl.trim() || isValidatingUrl}
-                                            onClick={handleAddImageUrl}
-                                            className="shrink-0 border-neutral-700 bg-neutral-900 text-neutral-300 hover:bg-neutral-800 hover:text-neutral-100 disabled:opacity-40"
-                                        >
-                                            {isValidatingUrl ? (
-                                                <Loader2Icon className="size-4 animate-spin" />
-                                            ) : (
-                                                "Add"
-                                            )}
-                                        </Button>
-                                    </div>
-                                    {imageUrlError && (
-                                        <p className="text-xs text-red-400">{imageUrlError}</p>
-                                    )}
-                                </div>
                             </Field>
 
                             {/* ── Audio ────────────────────────────────────── */}
@@ -687,7 +603,7 @@ export default function FlashcardEditSheet({
             >
                 <AlertDialogContent className="bg-neutral-950 border-neutral-800 text-neutral-100">
                     <AlertDialogHeader>
-                        <AlertDialogTitle className="text-neutral-100">Unsaved Changes</AlertDialogTitle>
+                        <AlertDialogTitle className="text-neutral-100 ">Unsaved Changes</AlertDialogTitle>
                         <AlertDialogDescription className="text-neutral-400">
                             You have unsaved changes. They will be lost if you close this panel.
                         </AlertDialogDescription>

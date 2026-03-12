@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/User/Documents/pap/pap/frontend -path */node_modules -prune -o -type f \\\\\\(-name *context* -o -name *hook* -o -name *util* \\\\\\) -print)"
+    ]
+  }
+}

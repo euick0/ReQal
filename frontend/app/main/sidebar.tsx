@@ -33,7 +33,7 @@ const Sidebar = () => {
     const flashcardGroup: GroupItem[] = [
         {text: "The 600 words", redirectUrl: "/main/flashcards/600-words"},
         {text: "New words", redirectUrl: "/main/flashcards/new-words"},
-        {text: "Conjugations charts", redirectUrl: "/settings"},
+        {text: "Conjugations charts", redirectUrl: "/main/flashcards/conjugation-charts"},
     ];
     
     const decksGroup: GroupItem[] = [

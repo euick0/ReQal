@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "vexp": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "c:\\Users\\User\\.vscode\\extensions\\vexp.vexp-vscode-1.2.25\\dist\\mcp-server.cjs"
+      ]
+    }
+  }
+}

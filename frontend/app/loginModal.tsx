@@ -1,16 +1,12 @@
 "use client"
 import React, {FormEvent, useState} from 'react';
-import {useRouter} from "next/navigation";
 import CustomButton from "@/components/customButton";
 import Image from "next/image";
 import Login from "@/lib/login";
 import {Input} from "@/components/ui/input";
 import {Field, FieldError, FieldGroup, FieldLegend, FieldSeparator, FieldSet, FieldTitle} from "@/components/ui/field";
-import {Checkbox} from "@/components/ui/checkbox";
-import {Label} from "@/components/ui/label";
 import {Button} from "@/components/ui/button";
 import {GoogleOAuthHandler} from "@/lib/googleAuth";
-import {setRememberMe} from "@/lib/auth/rememberMe";
 
 interface LoginModalProps {
     onClose: () => void;
@@ -19,10 +15,8 @@ interface LoginModalProps {
 }
 
 const LoginModal = ({onClose, onClickRegister, onClickForgotPassword}: LoginModalProps) => {
-    const router = useRouter()
     const [loginInput, setLoginInput] = useState({email: "", password: ""})
     const [loginError, setLoginError] = useState({email: "", password: ""})
-    const [rememberMe, setRememberMeChecked] = useState(false)
 
     const handleUserInput = (name: string, value: string) => {
         setLoginInput({...loginInput, [name]: value})
@@ -56,12 +50,6 @@ const LoginModal = ({onClose, onClickRegister, onClickForgotPassword}: LoginModa
             setLoginError({...loginError , password: "Invalid email or password"})
             return
         }
-
-        if (rememberMe) {
-            setRememberMe()
-        }
-
-        router.push("/main")
     }
 
     return (
@@ -101,13 +89,9 @@ const LoginModal = ({onClose, onClickRegister, onClickForgotPassword}: LoginModa
                             </Field>
                         </FieldGroup>
                         <FieldSeparator className="mt-1"></FieldSeparator>
-                        <div className="flex justify-between">
-                            <Field orientation="horizontal" className="">
-                                <Checkbox className="size-4.5" checked={rememberMe} onCheckedChange={(checked) => setRememberMeChecked(checked === true)}></Checkbox>
-                                <Label className=" text-stone-200 text-sm font-normal">Remember me</Label>
-                            </Field>
+                        <div className="flex">
                             <CustomButton content="Forgot Password?"
-                                          customCSS="text-blue-300 underline max-w-full whitespace-nowrap"
+                                          customCSS="text-blue-300 underline max-w-full whitespace-nowrap pl-0!"
                                           style="secondary"
                                           onClick={onClickForgotPassword}
                             ></CustomButton>
@@ -151,11 +135,7 @@ export default LoginModal;
                            placeholder=""
                            required
                            name="password"></input>
-                    <div className="flex justify-between mx-36 mb-5">
-                        <div className="flex items-center">
-                            <input type="checkbox" className="size-3.5 min-m-auto" name="remember"></input>
-                            <label className="px-2 antialiased">Remember me</label>
-                        </div>
+                    <div className="flex justify-end mx-36 mb-5">
                         <p className="text-blue-300 underline">Forgot Password?</p>
                     </div>
                     <div className="mx-36 max-w-full mb-5">
