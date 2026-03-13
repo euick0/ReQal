@@ -179,23 +179,26 @@ function buildModel(deckId: number) {
     }
 
     // Card 3 — "How do you spell this?" (pathway 3)
-    // Front: prompt + image(s) + audio
-    // Back:  word + IPA + gender + translation caption
+    // Front: prompt + IPA + audio + image(s)
+    // Back:  word + gender
     const tmpl3 = {
         name: "Card 3 – Spelling",
         ord: 2,
         qfmt: `{{#EnableCard3}}
 <div class="card-front">
   <p class="prompt">How do you spell this?</p>
+  <div class="ipa-audio-row">
+    {{#IPA}}<span class="ipa">/{{IPA}}/</span>{{/IPA}}
+    {{#Gender}}<span class="gender">{{Gender}}</span>{{/Gender}}
+    {{#Audio}}<div class="audio">{{Audio}}</div>{{/Audio}}
+  </div>
   {{#Image}}<div class="image-wrap">{{Image}}</div>{{/Image}}
-  {{#Audio}}<div class="audio">{{Audio}}</div>{{/Audio}}
 </div>
 {{/EnableCard3}}`,
         afmt: `{{FrontSide}}
 <hr id="answer">
 <div class="card-back">
-  <p class="word">{{Word}}{{#IPA}} <span class="ipa">/{{IPA}}/</span>{{/IPA}}{{#Gender}} <span class="gender">({{Gender}})</span>{{/Gender}}</p>
-  {{#TranslationCaption}}<p class="caption">{{TranslationCaption}}</p>{{/TranslationCaption}}
+  <p class="word">{{Word}}</p>
 </div>`,
         bqfmt: "",
         bafmt: "",
@@ -210,7 +213,8 @@ function buildModel(deckId: number) {
 .ipa { color: #555; font-style: italic; font-size: 0.85em; }
 .gender { color: #888; font-size: 0.8em; }
 .caption { color: #666; font-size: 0.9em; margin: 4px 0; }
-.prompt { font-size: 1.2em; color: #444; margin-bottom: 12px; }
+.prompt { font-size: 1.2em; color: #444; margin-bottom: 8px; }
+.ipa-audio-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .image-wrap img { max-width: 100%; max-height: 280px; object-fit: cover; border-radius: 6px; margin: 4px; }
 hr#answer { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
 `

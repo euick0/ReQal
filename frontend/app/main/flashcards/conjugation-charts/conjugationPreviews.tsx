@@ -23,6 +23,7 @@ const FirstPathPreview = () => {
     return (
         <div className="flex flex-row gap-4 h-100 pt-8">
             <Card className="w-full flex-1 h-full  bg-input/10">
+                {conjugationContext?.translatedPhrase && <p className="text-center text-xl">{conjugationContext.translatedPhrase}</p>}
                 {!!conjugationContext?.imagePath.length && <div className={clsx("grid gap-4 w-full flex-1 p-4 pb-1",
                     {"grid-cols-1 max-w-full mx-auto": conjugationContext?.imagePath.length <= 2},
                     {"grid-cols-2": conjugationContext?.imagePath.length > 2})}>
@@ -93,6 +94,7 @@ export const SecondPathPreview = () => {
                     <p className="text-xl">{conjugationContext.translationCaption}</p>}
             </Card>
             <Card className="w-full flex-1 h-full  bg-input/10">
+                {conjugationContext?.translatedPhrase && <p className="text-center text-xl">{conjugationContext.translatedPhrase}</p>}
                 {!!conjugationContext?.imagePath.length && <div className={clsx("grid gap-4 w-full flex-1 p-4 pb-1",
                     {"grid-cols-1 max-w-md mx-auto": conjugationContext?.imagePath.length <= 2},
                     {"grid-cols-2": conjugationContext?.imagePath.length > 2})}>
@@ -123,43 +125,39 @@ export const ThirdPathPreview = () => {
 
     return (
         <div className="flex flex-row gap-4 h-100 pt-8">
-            <Card className="w-full flex-1 h-full flex  bg-input/10">
-                <p className="text-xl text-center">How do you spell this?</p>
-                {!!conjugationContext?.imagePath.length && <div className={clsx("grid gap-4 flex-1 pb-2",
+            <Card className="w-full flex-1 h-full flex flex-col bg-input/10">
+                <p className="text-xl text-center pt-2">How do you spell this?</p>
+                <div className="flex items-center justify-between px-4 py-2">
+                    {conjugationContext?.IPATranslation &&
+                        <span className="text-xl">/{conjugationContext.IPATranslation}/</span>}
+                    {conjugationContext?.translatedWordGender &&
+                        <span className="text-xl">{conjugationContext.translatedWordGender}</span>}
+                    {conjugationContext?.audioPath && <AudioPlayerProvider>
+                        <div className="flex items-center gap-2">
+                            <AudioPlayerButton className="bg-primary [&>svg]:invert" item={track}/>
+                            <AudioPlayerProgress className="w-24"/>
+                            <AudioPlayerTime/>
+                            <AudioPlayerDuration/>
+                        </div>
+                    </AudioPlayerProvider>}
+                </div>
+                {!!conjugationContext?.imagePath.length && <div className={clsx("grid gap-4 flex-1 px-4 pb-2",
                     {"grid-cols-1": conjugationContext?.imagePath.length <= 2},
                     {"grid-cols-2": conjugationContext?.imagePath.length > 2})}>
 
                     {conjugationContext?.imagePath[0] && conjugationContext.imagePath.slice(0, 4).map(((path, i) => (
-                        <div className="relative " key={i}>
+                        <div className="relative" key={i}>
                             <Image alt="Conjugation Image Preview" src={conjugationContext?.imagePath[i]} fill
                                    className="object-cover" priority/>
                         </div>
                     )))}
                 </div>}
                 {conjugationContext?.imageCaption &&
-                    <p className="text-xl text-center">{conjugationContext.imageCaption}</p>}
-
-
+                    <p className="text-xl text-center pb-2">{conjugationContext.imageCaption}</p>}
             </Card>
-            <Card className="flex-1 flex flex-col items-center justify-center  bg-input/10">
-                <p>
-                    {conjugationContext?.translatedWord &&
-                        <span className="text-2xl">{conjugationContext.translatedWord} </span>}
-                    {conjugationContext?.IPATranslation &&
-                        <span className="text-2xl">/{conjugationContext.IPATranslation}/</span>}
-                    {conjugationContext?.translatedWordGender &&
-                        <span className="text-2xl"> {conjugationContext.translatedWordGender}</span>}
-                </p>
-                {conjugationContext?.audioPath && <AudioPlayerProvider>
-                    <div className="flex items-center gap-4 w-4/5">
-                        <AudioPlayerButton className="bg-primary  [&>svg]:invert" item={track}/>
-                        <AudioPlayerProgress className="flex-1 "/>
-                        <AudioPlayerTime/>
-                        <AudioPlayerDuration/>
-                    </div>
-                </AudioPlayerProvider>}
-                {conjugationContext?.translationCaption &&
-                    <p className="text-xl">{conjugationContext.translationCaption}</p>}
+            <Card className="flex-1 flex flex-col items-center justify-center bg-input/10">
+                {conjugationContext?.translatedWord &&
+                    <span className="text-2xl">{conjugationContext.translatedWord}</span>}
             </Card>
         </div>
 

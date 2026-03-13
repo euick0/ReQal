@@ -130,8 +130,7 @@ const GeminiSendTranslationQuery = async (word: string, targetLanguage: string) 
 
 const GeminiSendPhraseTranslationQuery = async (word: string, phrase: string, targetLanguage: string) => {
     
-    const prompt = "" +
-        "You are a strict JSON API.\n" +
+    const prompt = "You are a strict JSON API.\n" +
         "\n" +
         "CRITICAL RULES:\n" +
         "\n" +
@@ -158,46 +157,137 @@ const GeminiSendPhraseTranslationQuery = async (word: string, phrase: string, ta
         "Ensure the JSON is syntactically valid and directly parsable.\n" +
         "\n" +
         "INPUT FORMAT:\n" +
-        "The input will provide:\n" +
         "\n" +
-        "Word (with optional context in parentheses): {WORD} ({CONTEXT})\n" +
+        "The request will contain three inputs:\n" +
         "\n" +
-        "Phrase: {PHRASE}\n" +
+        "Word:\n" +
+        "{WORD} ({CONTEXT})\n" +
         "\n" +
-        "Target language: {TARGET_LANGUAGE}\n" +
+        "Phrase:\n" +
+        "{PHRASE}\n" +
         "\n" +
-        "Notes:\n" +
+        "Target language:\n" +
+        "{TARGET_LANGUAGE}\n" +
         "\n" +
-        "If no context is provided for the word, the parentheses are omitted.\n" +
+        "WORD FORMAT:\n" +
         "\n" +
-        "Use the context to disambiguate the word if necessary.\n" +
+        "The word may optionally include context in parentheses.\n" +
+        "\n" +
+        "Format:\n" +
+        "{WORD} ({CONTEXT})\n" +
+        "\n" +
+        "Example:\n" +
+        "bank (financial institution)\n" +
+        "\n" +
+        "If no context is provided, only the word will appear.\n" +
+        "\n" +
+        "You must:\n" +
+        "\n" +
+        "Extract the word.\n" +
+        "\n" +
+        "Extract the context if present.\n" +
+        "\n" +
+        "If no context exists, set \"context\" to null.\n" +
+        "\n" +
+        "RELATIONSHIP BETWEEN WORD AND PHRASE:\n" +
+        "\n" +
+        "The word and phrase are related.\n" +
+        "\n" +
+        "The phrase may contain one or more underscores \"_\" which indicate where the word would normally appear in the sentence.\n" +
+        "\n" +
+        "Example input phrase:\n" +
+        "I _ to go to the doctor.\n" +
+        "\n" +
+        "The underscore represents the location where the word logically fits.\n" +
+        "\n" +
+        "However, the phrase translation must NOT insert the translated word. The underscore must remain in the translated phrase.\n" +
+        "\n" +
+        "UNDERSCORE RULES:\n" +
+        "\n" +
+        "Every underscore \"_\" in the input phrase MUST remain unchanged in the translated phrase.\n" +
+        "\n" +
+        "Do NOT remove underscores.\n" +
+        "\n" +
+        "Do NOT replace underscores with words.\n" +
+        "\n" +
+        "Do NOT add extra underscores.\n" +
+        "\n" +
+        "Keep the same number of underscores as the original phrase.\n" +
+        "\n" +
+        "The translated phrase must keep the underscore exactly as a placeholder.\n" +
+        "\n" +
+        "Example:\n" +
+        "\n" +
+        "Original phrase:\n" +
+        "I _ to go to the doctor.\n" +
+        "\n" +
+        "Correct translated phrase:\n" +
+        "Eu _ de ir ao médico.\n" +
+        "\n" +
+        "Incorrect examples:\n" +
+        "Eu preciso de ir ao médico.\n" +
+        "Eu _preciso de ir ao médico.\n" +
+        "Eu de ir ao médico.\n" +
+        "\n" +
+        "WORD TRANSLATION RULE:\n" +
+        "\n" +
+        "The translated word must be chosen while considering the phrase so that it would fit naturally into the sentence when replacing the underscore.\n" +
+        "\n" +
+        "This means:\n" +
+        "\n" +
+        "Consider grammar and meaning of the phrase.\n" +
+        "\n" +
+        "Choose the most appropriate translation that would work in that sentence.\n" +
+        "\n" +
+        "The word translation should normally be the base or dictionary form when possible.\n" +
+        "\n" +
+        "The word translation is returned separately and must NOT be inserted into the phrase translation.\n" +
         "\n" +
         "TASK:\n" +
         "\n" +
-        "Translate the word and provide its:\n" +
+        "Translate the word into the target language.\n" +
         "\n" +
-        "Grammatical gender: \"M\" = masculine, \"F\" = feminine, \"N\" = neuter, null = not applicable\n" +
+        "Choose the translation while considering the phrase so it fits naturally if inserted into the underscore position.\n" +
         "\n" +
-        "IPA pronunciation in the target language\n" +
+        "Provide the grammatical gender of the translated word:\n" +
         "\n" +
-        "Translate the phrase as a whole into the target language\n" +
+        "\"M\" = masculine\n" +
         "\n" +
-        "Both translations should respect the target language’s grammar and conventions\n" +
+        "\"F\" = feminine\n" +
+        "\n" +
+        "\"N\" = neuter\n" +
+        "\n" +
+        "null = not applicable\n" +
+        "\n" +
+        "Provide the IPA pronunciation of the translated word.\n" +
+        "\n" +
+        "Translate the phrase while keeping the underscore placeholders unchanged.\n" +
         "\n" +
         "REQUIRED JSON SCHEMA:\n" +
         "\n" +
         "{\n" +
-        "  \"original_word\": \"string\",\n" +
-        "  \"context\": \"string or null\",\n" +
-        "  \"word_translation\": \"string\",\n" +
-        "  \"word_gender\": \"M | F | N | null\",\n" +
-        "  \"word_ipa\": \"string\",\n" +
-        "  \"original_phrase\": \"string\",\n" +
-        "  \"phrase_translation\": \"string\",\n" +
-        "  \"target_language\": \"string\"\n" +
+        "\"original_word\": \"string\",\n" +
+        "\"context\": \"string or null\",\n" +
+        "\"word_translation\": \"string\",\n" +
+        "\"word_gender\": \"M | F | N | null\",\n" +
+        "\"word_ipa\": \"string\",\n" +
+        "\"original_phrase\": \"string\",\n" +
+        "\"phrase_translation\": \"string\",\n" +
+        "\"target_language\": \"string\"\n" +
         "}\n" +
         "\n" +
         "Return ONLY the JSON object." +
+        "Expected output format:" +
+        "{\n" +
+        "\"original_word\": \"need\",\n" +
+        "\"context\": null,\n" +
+        "\"word_translation\": \"preciso\",\n" +
+        "\"word_gender\": null,\n" +
+        "\"word_ipa\": \"pɾeˈsizu\",\n" +
+        "\"original_phrase\": \"I _ to go to the doctor.\",\n" +
+        "\"phrase_translation\": \"Eu _ de ir ao médico.\",\n" +
+        "\"target_language\": \"Portuguese\"\n" +
+        "}\n" +
         `Now translate the following word: "${word}" and the following phrase: "${phrase}" into ${targetLanguage} and return the JSON according to the rules above:`
     
     try {
