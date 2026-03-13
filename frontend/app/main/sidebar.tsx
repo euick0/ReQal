@@ -13,12 +13,10 @@ const Sidebar = () => {
     const sidebarRef = React.useRef<HTMLDivElement>(null);
     const pathname = usePathname();
 
-    // Collapse sidebar on route change
     React.useEffect(() => {
         setIsExpanded(false);
     }, [pathname]);
 
-    // Collapse sidebar when clicking outside
     React.useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
@@ -62,7 +60,6 @@ const Sidebar = () => {
     );
 
 };
-
 
 export default Sidebar;
 
