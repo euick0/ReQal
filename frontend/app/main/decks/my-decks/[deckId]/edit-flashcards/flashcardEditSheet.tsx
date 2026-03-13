@@ -39,6 +39,7 @@ import {
     AudioPlayerDuration,
 } from "@/components/ui/audio-player"
 import { Trash2Icon, ImagePlusIcon, MusicIcon, XIcon, UploadIcon, Loader2Icon } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
     FlashcardRow,
     ConjugationFlashcardRow,
@@ -76,6 +77,7 @@ interface FlashcardEditSheetProps {
     onOpenChange: (open: boolean) => void
     onSave?: (updatedFlashcard: AnyFlashcard) => void
     deckType: "standard" | "conjugation"
+    isLoading?: boolean
 }
 
 // ─── Initializers ────────────────────────────────────────────────────────────
@@ -228,6 +230,61 @@ function AudioSection({
     )
 }
 
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
+function EditSheetSkeleton() {
+    return (
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+            <div className="flex flex-col gap-5">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="flex flex-col gap-1.5">
+                        <Skeleton className="h-3 w-24 bg-neutral-800" />
+                        <Skeleton className="h-9 bg-neutral-800" />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <Skeleton className="h-3 w-28 bg-neutral-800" />
+                        <Skeleton className="h-9 bg-neutral-800" />
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="flex flex-col gap-1.5">
+                        <Skeleton className="h-3 w-20 bg-neutral-800" />
+                        <Skeleton className="h-9 bg-neutral-800" />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <Skeleton className="h-3 w-24 bg-neutral-800" />
+                        <Skeleton className="h-9 bg-neutral-800" />
+                    </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                    <Skeleton className="h-3 w-16 bg-neutral-800" />
+                    <Skeleton className="h-9 bg-neutral-800" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                    <Skeleton className="h-3 w-36 bg-neutral-800" />
+                    <Skeleton className="h-20 bg-neutral-800" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                    <Skeleton className="h-3 w-28 bg-neutral-800" />
+                    <Skeleton className="h-20 bg-neutral-800" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                    <Skeleton className="h-3 w-14 bg-neutral-800" />
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                        {[0, 1, 2, 3].map(i => (
+                            <Skeleton key={i} className="aspect-square bg-neutral-800 rounded-md" />
+                        ))}
+                    </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                    <Skeleton className="h-3 w-12 bg-neutral-800" />
+                    <Skeleton className="h-24 bg-neutral-800" />
+                </div>
+            </div>
+        </div>
+    )
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function FlashcardEditSheet({
@@ -236,6 +293,7 @@ export default function FlashcardEditSheet({
     onOpenChange,
     onSave,
     deckType,
+    isLoading = false,
 }: FlashcardEditSheetProps) {
     const [editedData, setEditedData] = useState<EditedData>(
         flashcard ? makeEditedData(flashcard, deckType) : emptyEditedData()
@@ -374,12 +432,13 @@ export default function FlashcardEditSheet({
     }
 
     const sheetTitle = () => {
+        if (isLoading) return "Loading…"
         if (!flashcard) return "Flashcard"
         if (deckType === "conjugation") return (flashcard as ConjugationFlashcardRow).phrase ?? "Flashcard"
         return (flashcard as FlashcardRow).translated_word ?? "Flashcard"
     }
 
-    if (!flashcard) return null
+    if (!flashcard && !isLoading) return null
 
     const pathwayOptions = pathways.map((p, i) => ({
         value: String(i + 1),
@@ -405,6 +464,7 @@ export default function FlashcardEditSheet({
                     </SheetHeader>
 
                     {/* Scrollable body */}
+                    {isLoading ? <EditSheetSkeleton /> : (
                     <div className="flex-1 overflow-y-auto px-6 py-5">
                         <FieldGroup className="gap-5">
 
@@ -508,7 +568,7 @@ export default function FlashcardEditSheet({
                                             Review Date
                                         </FieldLabel>
                                         <div className="flex h-9 items-center rounded-md border border-neutral-800 bg-neutral-900/40 px-3 text-sm text-neutral-500 select-none cursor-default">
-                                            {formatDate(flashcard.review_date)}
+                                            {formatDate(flashcard?.review_date ?? null)}
                                         </div>
                                     </Field>
                                 </div>
@@ -522,7 +582,7 @@ export default function FlashcardEditSheet({
                                             Review Date
                                         </FieldLabel>
                                         <div className="flex h-9 items-center rounded-md border border-neutral-800 bg-neutral-900/40 px-3 text-sm text-neutral-500 select-none cursor-default">
-                                            {formatDate(flashcard.review_date)}
+                                            {formatDate(flashcard?.review_date ?? null)}
                                         </div>
                                     </Field>
                                 </div>
@@ -681,6 +741,7 @@ export default function FlashcardEditSheet({
 
                         </FieldGroup>
                     </div>
+                    )}
 
                     {/* Footer */}
                     <SheetFooter className="shrink-0 flex-row justify-between gap-3 border-t border-neutral-800 px-6 py-4">
@@ -694,14 +755,14 @@ export default function FlashcardEditSheet({
                                 type="button"
                                 variant="ghost"
                                 onClick={() => handleOpenChange(false)}
-                                disabled={isSaving}
+                                disabled={isSaving || isLoading}
                                 className="text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
                             >
                                 {isDirty ? "Cancel" : "Close"}
                             </Button>
                             <Button
                                 type="button"
-                                disabled={!isDirty || isSaving}
+                                disabled={!isDirty || isSaving || isLoading}
                                 onClick={handleSave}
                                 className={cn(
                                     "min-w-20 bg-neutral-100 text-neutral-950 hover:bg-neutral-200 disabled:opacity-40",

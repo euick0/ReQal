@@ -11,11 +11,14 @@ const Breadcrumbs =() => {
     const pathname = usePathname();
 
     const generateBreadcrumbs = () => {
-
         const segments = pathname.split('/').filter(Boolean);
-        return segments
+        const validSegments = segments.filter(
+            seg => !(seg.startsWith('[') && seg.endsWith(']'))
+        );
+
+        return validSegments
             .map((segment, index) => {
-                const url = '/' + segments.slice(0, index + 1).join('/');
+                const url = '/' + validSegments.slice(0, index + 1).join('/');
 
                 const text = segment
                     .replace(/-/g, ' ')
@@ -24,7 +27,6 @@ const Breadcrumbs =() => {
                 return { text, url };
             })
             .filter(crumb => isValidRoute(crumb.url));
-
     }
 
     if (!sidebarContext) {

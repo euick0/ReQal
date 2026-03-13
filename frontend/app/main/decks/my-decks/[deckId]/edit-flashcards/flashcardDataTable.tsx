@@ -54,6 +54,8 @@ import {
     DeleteFlashcardsBulk,
     DeleteConjugationFlashcard,
     DeleteConjugationFlashcardsBulk,
+    GetFlashcardById,
+    GetConjugationFlashcardById,
 } from "@/lib/backendUtils"
 import { pathways } from "@/lib/pathways"
 import { toast } from "sonner"
@@ -112,6 +114,7 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
     const [debouncedSearch] = useDebounce(searchInput, 400)
     const [selectedFlashcard, setSelectedFlashcard] = React.useState<AnyFlashcard | null>(null)
     const [sheetOpen, setSheetOpen] = React.useState(false)
+    const [isLoadingFlashcard, setIsLoadingFlashcard] = React.useState(false)
     const [rows, setRows] = React.useState<AnyFlashcard[]>(initialData)
     const [totalCount, setTotalCount] = React.useState(initialCount)
     const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
@@ -167,17 +170,47 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
     const autoOpenHandled = React.useRef(false)
     React.useEffect(() => {
         if (!autoOpenFlashcardId || autoOpenHandled.current) return
-        const flashcard = initialData.find(r => r.id === autoOpenFlashcardId)
-        if (!flashcard) return
         autoOpenHandled.current = true
-        setSelectedFlashcard(flashcard)
-        setSheetOpen(true)
-        // Scroll the row into view after a brief paint delay
-        setTimeout(() => {
-            const el = document.getElementById(`flashcard-row-${autoOpenFlashcardId}`)
-            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" })
-        }, 100)
-    }, [initialData, autoOpenFlashcardId])
+
+        const handleAutoOpen = async () => {
+            // First try: find in current page data (no fetch needed)
+            let flashcard: AnyFlashcard | null = initialData.find(r => r.id === autoOpenFlashcardId) ?? null
+
+            if (!flashcard) {
+                // Open sheet immediately with skeleton while fetching
+                setSheetOpen(true)
+                setIsLoadingFlashcard(true)
+                const result = deckType === "conjugation"
+                    ? await GetConjugationFlashcardById(autoOpenFlashcardId)
+                    : await GetFlashcardById(autoOpenFlashcardId)
+                setIsLoadingFlashcard(false)
+                flashcard = result.data
+            }
+
+            if (!flashcard) return
+
+            setSelectedFlashcard(flashcard)
+            setSheetOpen(true)
+
+            // Clean URL: remove flashcardId and autoOpen params
+            startTransition(() => {
+                const params = new URLSearchParams(searchParams.toString())
+                params.delete("flashcardId")
+                params.delete("autoOpen")
+                const newQuery = params.toString()
+                router.replace(`${pathname}${newQuery ? "?" + newQuery : ""}`)
+            })
+
+            // Scroll row into view if it's on the current page
+            setTimeout(() => {
+                const el = document.getElementById(`flashcard-row-${autoOpenFlashcardId}`)
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" })
+            }, 100)
+        }
+
+        handleAutoOpen()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [autoOpenFlashcardId])
 
     const handleSort = (column: AnySortColumn) => {
         if (currentSortBy === column) {
@@ -510,6 +543,7 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
                 onOpenChange={setSheetOpen}
                 onSave={handleSheetSave}
                 deckType={deckType}
+                isLoading={isLoadingFlashcard}
             />
         </div>
     )

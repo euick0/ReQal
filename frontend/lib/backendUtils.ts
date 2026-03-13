@@ -676,6 +676,40 @@ const GetLastConjugationFlashcard = async (deckId: string) => {
     return {data: data?.id as string ?? null, error: null}
 }
 
+const GetFlashcardById = async (flashcardId: string) => {
+    const supabase = await createClient()
+
+    const {data, error} = await supabase
+        .from("flashcards")
+        .select("id, translated_word, IPA_translation, gender, image_paths, audio_path, translation_caption, image_caption, pathway, review_date")
+        .eq("id", flashcardId)
+        .single()
+
+    if (error) {
+        console.error("Error fetching flashcard by ID:", error)
+        return {data: null, error}
+    }
+
+    return {data: data as FlashcardRow | null, error: null}
+}
+
+const GetConjugationFlashcardById = async (flashcardId: string) => {
+    const supabase = await createClient()
+
+    const {data, error} = await supabase
+        .from("conjugation_flashcards")
+        .select("id, phrase, missing_word, IPA_translation, gender, image_paths, audio_path, translation_caption, image_caption, pathway, review_date")
+        .eq("id", flashcardId)
+        .single()
+
+    if (error) {
+        console.error("Error fetching conjugation flashcard by ID:", error)
+        return {data: null, error}
+    }
+
+    return {data: data as ConjugationFlashcardRow | null, error: null}
+}
+
 export {
     InsertWordsFlashcard,
     InsertConjugationFlashcard,
@@ -703,4 +737,6 @@ export {
     GetLastFlashcard,
     GetLastConjugationFlashcard,
     GetWordFlashcardsDeckID,
+    GetFlashcardById,
+    GetConjugationFlashcardById,
 }
