@@ -1,7 +1,6 @@
 'use server';
 
 import {createClient} from "@/lib/supabase/server";
-import {redirect} from "next/navigation";
 
 const RegisterHandler = async (formData: FormData) => {
     const supabase = await createClient();
@@ -28,7 +27,7 @@ const RegisterHandler = async (formData: FormData) => {
         return { success: false, message: "User already registered", code: "email_exists" }
     }
 
-    redirect("/main")
+    return { success: true }
 };
 
 export default RegisterHandler;

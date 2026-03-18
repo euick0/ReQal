@@ -105,7 +105,7 @@ const GeminiSendTranslationQuery = async (word: string, targetLanguage: string) 
         
     try {
         const response = await ai.models.generateContent({
-            model: "gemma-3-4b-it",
+            model: "gemma-3-27b-it",
             contents: prompt,
         });
 
@@ -292,7 +292,7 @@ const GeminiSendPhraseTranslationQuery = async (word: string, phrase: string, ta
     
     try {
         const response = await ai.models.generateContent({
-            model: "gemma-3-4b-it",
+            model: "gemma-3-27b-it",
             contents: prompt,
         });
 

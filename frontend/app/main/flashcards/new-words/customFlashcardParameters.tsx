@@ -29,7 +29,7 @@ import {InsertCustomFlashcard, GetDeckPreferences, UpdateDeckPreference, GetCust
 import {useRouter} from "next/navigation";
 import {GeminiSendTranslationQuery} from "@/lib/geminiQueries";
 import {uploadFile} from "@/lib/uploadToStorage";
-import {GetGoogleImages} from "@/lib/getGoogleImages";
+import {GetSearchImages} from "@/lib/getSearchImages";
 import {GetWiktionaryAudio} from "@/lib/getAudio";
 import {Progress} from "@/components/ui/progress";
 import {toast} from "sonner";
@@ -225,7 +225,7 @@ const CustomFlashcardParameters = () => {
             {data: googleImagesData, error: googleImagesError},
             {data: audioData, error: audioError}
         ] = await Promise.all([
-            GetGoogleImages(translationData.translation),
+            GetSearchImages(translationData.translation),
             GetWiktionaryAudio(translationData.translation, language!)
         ])
 

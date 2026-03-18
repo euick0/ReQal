@@ -125,8 +125,9 @@ export const ThirdPathPreview = () => {
 
     return (
         <div className="flex flex-row gap-4 h-100 pt-8">
-            <Card className="w-full flex-1 h-full flex flex-col bg-input/10">
+            <Card className="w-full flex-1 h-full flex flex-col bg-input/10 gap-2">
                 <p className="text-xl text-center pt-2">How do you spell this?</p>
+                {conjugationContext?.translatedPhrase && <p className="text-center text-xl">{conjugationContext.translatedPhrase}</p>}
                 <div className="flex items-center justify-between px-4 py-2">
                     {conjugationContext?.IPATranslation &&
                         <span className="text-xl">/{conjugationContext.IPATranslation}/</span>}

@@ -8,7 +8,7 @@ import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {GoogleOAuthHandler} from "@/lib/googleAuth";
 import {toast} from "sonner";
-import EmailConfirmationDialog from "@/components/email-confirmation-dialog";
+import EmailConfirmationDialog from "@/components/emailConfirmationDialog";
 
 interface RegisterModalProps {
     onClose: () => void;
@@ -98,6 +98,7 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
                 toast.error("Registration failed. Please try again.");
             }
         } else if (result?.success) {
+            setRegisteredEmail(registerInput.email)
             setShowConfirmation(true)
         }
     }

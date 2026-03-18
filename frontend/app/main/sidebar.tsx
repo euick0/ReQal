@@ -36,7 +36,7 @@ const Sidebar = () => {
     
     const decksGroup: GroupItem[] = [
         {text: "My decks", redirectUrl: "/main/decks/my-decks"},
-        {text: "Review Flashcards", redirectUrl: "/settings"},
+        {text: "Review Flashcards", redirectUrl: "/main/decks/review-flashcards"},
     ];
 
     return (

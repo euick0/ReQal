@@ -1,7 +1,7 @@
 import {NextRequest, NextResponse} from "next/server"
 import Database from "better-sqlite3"
 import JSZip from "jszip"
-import {GetDeckById, GetDeckFlashcards} from "@/lib/backendUtils"
+import {GetDeckById, GetDeckFlashcards, GetConjugationFlashcards} from "@/lib/backendUtils"
 import {createClient} from "@/lib/supabase/server"
 
 // ---------------------------------------------------------------------------
@@ -98,9 +98,10 @@ function fieldChecksum(str: string): number {
 }
 
 // ---------------------------------------------------------------------------
-// Anki note-model (card type) definition
+// Anki note-model (card type) definitions
 // ---------------------------------------------------------------------------
-// Fields:
+//
+// Regular flashcard fields (600-words & new-words):
 //   0  Word
 //   1  IPA
 //   2  Gender
@@ -110,10 +111,42 @@ function fieldChecksum(str: string): number {
 //   6  TranslationCaption
 //   7  EnableCard2     — non-empty string → card 2 is generated (pathway ≥ 2)
 //   8  EnableCard3     — non-empty string → card 3 is generated (pathway = 3)
+//
+// Conjugation flashcard fields (conjugation-charts):
+//   0  Word
+//   1  IPA
+//   2  Gender
+//   3  Audio
+//   4  Image
+//   5  ImageCaption
+//   6  TranslationCaption
+//   7  TranslatedPhrase — shown on front of Card 1 & Card 3
+//   8  EnableCard2
+//   9  EnableCard3
+//   10 EnableCard4      — non-empty string → card 3 (spelling) generated
 
-const MODEL_ID = 1698765432100  // fixed stable ID for our note type
+const MODEL_ID_REGULAR     = 1698765432100  // fixed stable ID for regular note type
+const MODEL_ID_CONJUGATION = 1698765432101  // fixed stable ID for conjugation note type
 
-function buildModel(deckId: number) {
+// Shared CSS for both models
+const SHARED_CSS = `
+.card { font-family: Arial, sans-serif; font-size: 18px; text-align: center; color: #222; background: #fff; padding: 16px; }
+.word { font-size: 1.6em; font-weight: bold; margin: 8px 0; }
+.ipa { color: #555; font-style: italic; font-size: 0.85em; }
+.gender { color: #888; font-size: 0.8em; }
+.caption { color: #666; font-size: 0.9em; margin: 4px 0; }
+.phrase { font-size: 1.1em; margin: 8px 0; }
+.prompt { font-size: 1.2em; color: #444; margin-bottom: 8px; }
+.ipa-audio-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.image-wrap img { max-width: 100%; max-height: 280px; object-fit: cover; border-radius: 6px; margin: 4px; }
+hr#answer { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
+`
+
+// ---------------------------------------------------------------------------
+// Regular flashcard model (600-words & new-words)
+// ---------------------------------------------------------------------------
+
+function buildRegularModel(deckId: number) {
     const now = Math.floor(Date.now() / 1000)
 
     const fields = [
@@ -128,7 +161,7 @@ function buildModel(deckId: number) {
         {name: "EnableCard3", ord: 8, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
     ]
 
-    // Card 1 — "What's the image called?" (pathway 1, 2, 3)
+    // Card 1 — Image → Word (pathway 1, 2, 3)
     // Front: image(s) + image caption
     // Back:  word + IPA + gender + audio + translation caption
     const tmpl1 = {
@@ -152,7 +185,7 @@ function buildModel(deckId: number) {
         bsize: 0,
     }
 
-    // Card 2 — "What's the word about?" inverted (pathway 2, 3)
+    // Card 2 — Word → Image (pathway 2, 3)
     // Front: word + IPA + gender + audio + translation caption
     // Back:  image(s) + image caption
     const tmpl2 = {
@@ -178,9 +211,9 @@ function buildModel(deckId: number) {
         bsize: 0,
     }
 
-    // Card 3 — "How do you spell this?" (pathway 3)
-    // Front: prompt + IPA + audio + image(s)
-    // Back:  word + gender
+    // Card 3 — Spelling (pathway 3)
+    // Front: prompt + IPA + gender + audio + image(s)
+    // Back:  word
     const tmpl3 = {
         name: "Card 3 – Spelling",
         ord: 2,
@@ -207,20 +240,8 @@ function buildModel(deckId: number) {
         bsize: 0,
     }
 
-    const css = `
-.card { font-family: Arial, sans-serif; font-size: 18px; text-align: center; color: #222; background: #fff; padding: 16px; }
-.word { font-size: 1.6em; font-weight: bold; margin: 8px 0; }
-.ipa { color: #555; font-style: italic; font-size: 0.85em; }
-.gender { color: #888; font-size: 0.8em; }
-.caption { color: #666; font-size: 0.9em; margin: 4px 0; }
-.prompt { font-size: 1.2em; color: #444; margin-bottom: 8px; }
-.ipa-audio-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-.image-wrap img { max-width: 100%; max-height: 280px; object-fit: cover; border-radius: 6px; margin: 4px; }
-hr#answer { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
-`
-
     return {
-        id: MODEL_ID,
+        id: MODEL_ID_REGULAR,
         name: "ReQal Flashcard",
         type: 0,
         mod: now,
@@ -229,13 +250,137 @@ hr#answer { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
         did: deckId,
         tmpls: [tmpl1, tmpl2, tmpl3],
         flds: fields,
-        css,
+        css: SHARED_CSS,
         latexPre: "\\documentclass[12pt]{article}\n\\special{papersize=3in,5in}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amssymb,amsmath}\n\\pagestyle{empty}\n\\setlength{\\parindent}{0in}\n\\begin{document}\n",
         latexPost: "\\end{document}",
         req: [
             [0, "any", [0, 4]],   // Card 1: Word OR Image must be non-empty
             [1, "all", [7]],       // Card 2: EnableCard2 must be non-empty
             [2, "all", [8]],       // Card 3: EnableCard3 must be non-empty
+        ],
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Conjugation flashcard model (conjugation-charts)
+// ---------------------------------------------------------------------------
+
+function buildConjugationModel(deckId: number) {
+    const now = Math.floor(Date.now() / 1000)
+
+    const fields = [
+        {name: "Word", ord: 0, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "IPA", ord: 1, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "Gender", ord: 2, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "Audio", ord: 3, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "Image", ord: 4, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "ImageCaption", ord: 5, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "TranslationCaption", ord: 6, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "TranslatedPhrase", ord: 7, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "EnableCard2", ord: 8, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "EnableCard3", ord: 9, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+        {name: "EnableCard4", ord: 10, sticky: false, rtl: false, font: "Arial", size: 20, media: []},
+    ]
+
+    // Card 1 — Image → Word (pathway 1, 2, 3)
+    // Front: translated phrase + image(s) + image caption
+    // Back:  word + IPA + gender + audio + translation caption
+    const tmpl1 = {
+        name: "Card 1 – Image → Word",
+        ord: 0,
+        qfmt: `<div class="card-front">
+{{#TranslatedPhrase}}<p class="phrase">{{TranslatedPhrase}}</p>{{/TranslatedPhrase}}
+{{#Image}}<div class="image-wrap">{{Image}}</div>{{/Image}}
+{{#ImageCaption}}<p class="caption">{{ImageCaption}}</p>{{/ImageCaption}}
+</div>`,
+        afmt: `{{FrontSide}}
+<hr id="answer">
+<div class="card-back">
+  <p class="word">{{Word}}{{#IPA}} <span class="ipa">/{{IPA}}/</span>{{/IPA}}{{#Gender}} <span class="gender">({{Gender}})</span>{{/Gender}}</p>
+  {{#Audio}}<div class="audio">{{Audio}}</div>{{/Audio}}
+  {{#TranslationCaption}}<p class="caption">{{TranslationCaption}}</p>{{/TranslationCaption}}
+</div>`,
+        bqfmt: "",
+        bafmt: "",
+        did: deckId,
+        bfont: "",
+        bsize: 0,
+    }
+
+    // Card 2 — Word → Image (pathway 2, 3)
+    // Front: word + IPA + gender + audio + translation caption
+    // Back:  translated phrase + image(s) + image caption
+    const tmpl2 = {
+        name: "Card 2 – Word → Image",
+        ord: 1,
+        qfmt: `{{#EnableCard2}}
+<div class="card-front">
+  <p class="word">{{Word}}{{#IPA}} <span class="ipa">/{{IPA}}/</span>{{/IPA}}{{#Gender}} <span class="gender">({{Gender}})</span>{{/Gender}}</p>
+  {{#Audio}}<div class="audio">{{Audio}}</div>{{/Audio}}
+  {{#TranslationCaption}}<p class="caption">{{TranslationCaption}}</p>{{/TranslationCaption}}
+</div>
+{{/EnableCard2}}`,
+        afmt: `{{FrontSide}}
+<hr id="answer">
+<div class="card-back">
+  {{#TranslatedPhrase}}<p class="phrase">{{TranslatedPhrase}}</p>{{/TranslatedPhrase}}
+  {{#Image}}<div class="image-wrap">{{Image}}</div>{{/Image}}
+  {{#ImageCaption}}<p class="caption">{{ImageCaption}}</p>{{/ImageCaption}}
+</div>`,
+        bqfmt: "",
+        bafmt: "",
+        did: deckId,
+        bfont: "",
+        bsize: 0,
+    }
+
+    // Card 3 — Spelling (pathway 3)
+    // Front: prompt + translated phrase + IPA + gender + audio + image(s)
+    // Back:  word
+    const tmpl3 = {
+        name: "Card 3 – Spelling",
+        ord: 2,
+        qfmt: `{{#EnableCard4}}
+<div class="card-front">
+  <p class="prompt">How do you spell this?</p>
+  {{#TranslatedPhrase}}<p class="phrase">{{TranslatedPhrase}}</p>{{/TranslatedPhrase}}
+  <div class="ipa-audio-row">
+    {{#IPA}}<span class="ipa">/{{IPA}}/</span>{{/IPA}}
+    {{#Gender}}<span class="gender">{{Gender}}</span>{{/Gender}}
+    {{#Audio}}<div class="audio">{{Audio}}</div>{{/Audio}}
+  </div>
+  {{#Image}}<div class="image-wrap">{{Image}}</div>{{/Image}}
+</div>
+{{/EnableCard4}}`,
+        afmt: `{{FrontSide}}
+<hr id="answer">
+<div class="card-back">
+  <p class="word">{{Word}}</p>
+</div>`,
+        bqfmt: "",
+        bafmt: "",
+        did: deckId,
+        bfont: "",
+        bsize: 0,
+    }
+
+    return {
+        id: MODEL_ID_CONJUGATION,
+        name: "ReQal Conjugation Flashcard",
+        type: 0,
+        mod: now,
+        usn: -1,
+        sortf: 0,
+        did: deckId,
+        tmpls: [tmpl1, tmpl2, tmpl3],
+        flds: fields,
+        css: SHARED_CSS,
+        latexPre: "\\documentclass[12pt]{article}\n\\special{papersize=3in,5in}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amssymb,amsmath}\n\\pagestyle{empty}\n\\setlength{\\parindent}{0in}\n\\begin{document}\n",
+        latexPost: "\\end{document}",
+        req: [
+            [0, "any", [0, 4]],   // Card 1: Word OR Image must be non-empty
+            [1, "all", [8]],       // Card 2: EnableCard2 must be non-empty
+            [2, "all", [10]],      // Card 3: EnableCard4 must be non-empty
         ],
     }
 }
@@ -282,14 +427,18 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({error: "Missing deckId"}, {status: 400})
     }
 
-    // Fetch deck metadata and flashcards
-    const [{data: deck, error: deckError}, {data: flashcards, error: cardsError}] = await Promise.all([
+    // Fetch deck metadata and flashcards from both tables in parallel
+    const [{data: deck, error: deckError}, {data: regularCards, error: regError}, {data: conjugationCards, error: conjError}] = await Promise.all([
         GetDeckById(deckId),
         GetDeckFlashcards(deckId),
+        GetConjugationFlashcards(deckId),
     ])
 
     if (deckError || !deck) return NextResponse.json({error: "Deck not found"}, {status: 404})
-    if (cardsError || !flashcards) return NextResponse.json({error: "Failed to fetch flashcards"}, {status: 500})
+    if (regError || conjError) return NextResponse.json({error: "Failed to fetch flashcards"}, {status: 500})
+
+    // Use whichever table has cards; regular cards take precedence
+    const flashcards = (regularCards && regularCards.length > 0 ? regularCards : conjugationCards) ?? []
     if (flashcards.length === 0) return NextResponse.json({error: "Deck has no flashcards"}, {status: 400})
 
     // ---------------------------------------------------------------------------
@@ -387,8 +536,12 @@ export async function GET(request: NextRequest) {
         },
     }
 
-    const model = buildModel(deckIdNum)
-    const modelsJson = {[String(MODEL_ID)]: model}
+    // Detect deck type: conjugation cards have a 'phrase' field (stored in conjugation_flashcards table)
+    const isConjugation = flashcards.length > 0 && 'phrase' in flashcards[0]
+
+    const model = isConjugation ? buildConjugationModel(deckIdNum) : buildRegularModel(deckIdNum)
+    const modelId = isConjugation ? MODEL_ID_CONJUGATION : MODEL_ID_REGULAR
+    const modelsJson = {[String(modelId)]: model}
 
     const conf = {
         nextPos: 1,
@@ -402,7 +555,7 @@ export async function GET(request: NextRequest) {
         newBury: true,
         newSpread: 0,
         dueCounts: true,
-        curModel: String(MODEL_ID),
+        curModel: String(modelId),
         collapseTime: 1200,
     }
 
@@ -438,7 +591,7 @@ export async function GET(request: NextRequest) {
         const fc = flashcards[i]
         const cm = cardMedia[i]
 
-        // Build field values
+        // Build shared field values
         const audioTag = cm.audioFilename ? `[sound:${cm.audioFilename}]` : ""
         const imageTags = cm.imageFilenames.map(f => `<img src="${f}">`).join("\n")
         const gender = fc.gender ?? ""
@@ -447,24 +600,49 @@ export async function GET(request: NextRequest) {
         const enableCard3 = fc.pathway >= 3 ? "1" : ""
 
         // Anki field separator is \x1f (unit separator)
-        const flds = [
-            fc.translated_word ?? "",
-            ipa,
-            gender,
-            audioTag,
-            imageTags,
-            fc.image_caption ?? "",
-            fc.translation_caption ?? "",
-            enableCard2,
-            enableCard3,
-        ].join("\x1f")
+        let flds: string
+
+        if (isConjugation) {
+            // 11 fields: Word, IPA, Gender, Audio, Image, ImageCaption,
+            //            TranslationCaption, TranslatedPhrase,
+            //            EnableCard2, EnableCard3, EnableCard4
+            // Conjugation cards store the word in 'missing_word' and the phrase in 'phrase'
+            const conjFc = fc as any
+            flds = [
+                conjFc.missing_word ?? "",
+                ipa,
+                gender,
+                audioTag,
+                imageTags,
+                fc.image_caption ?? "",
+                fc.translation_caption ?? "",
+                conjFc.phrase ?? "",
+                enableCard2,
+                enableCard3,
+                enableCard3,  // EnableCard4 mirrors EnableCard3 (pathway 3)
+            ].join("\x1f")
+        } else {
+            // 9 fields: Word, IPA, Gender, Audio, Image, ImageCaption,
+            //           TranslationCaption, EnableCard2, EnableCard3
+            flds = [
+                fc.translated_word ?? "",
+                ipa,
+                gender,
+                audioTag,
+                imageTags,
+                fc.image_caption ?? "",
+                fc.translation_caption ?? "",
+                enableCard2,
+                enableCard3,
+            ].join("\x1f")
+        }
 
         const noteId = nextId()
         const guid = `reqal_${fc.id}`
         const sfld = fc.translated_word ?? ""
         const csum = fieldChecksum(sfld)
 
-        insertNote.run(noteId, guid, MODEL_ID, now, -1, "", flds, sfld, csum, 0, "")
+        insertNote.run(noteId, guid, modelId, now, -1, "", flds, sfld, csum, 0, "")
 
         // Generate cards based on pathway
         // Card 1 — always

@@ -36,7 +36,7 @@ import {
 import {useRouter} from "next/navigation";
 import {GeminiSendPhraseTranslationQuery} from "@/lib/geminiQueries";
 import {uploadFile} from "@/lib/uploadToStorage";
-import {GetGoogleImages} from "@/lib/getGoogleImages";
+import {GetSearchImages} from "@/lib/getSearchImages";
 import {GetWiktionaryAudio} from "@/lib/getAudio";
 import {Progress} from "@/components/ui/progress";
 import {toast} from "sonner";
@@ -255,7 +255,7 @@ const ConjugationParameters = () => {
             {data: googleImagesData, error: googleImagesError},
             {data: audioData, error: audioError}
         ] = await Promise.all([
-            GetGoogleImages(translationData.word_translation),
+            GetSearchImages(translationData.word_translation),
             GetWiktionaryAudio(translationData.word_translation, language)
         ])
 

@@ -23,12 +23,11 @@ const EmailConfirmationDialog = ({email, isOpen, onClose}: EmailConfirmationDial
                 <DialogHeader>
                     <DialogTitle>Check your email</DialogTitle>
                     <DialogDescription>
-                        We sent a confirmation link to <span className="text-foreground font-medium">{email}</span>.
-                        Please check your inbox and click the link to activate your account.
+                        We sent a confirmation link to <span className="text-foreground font-medium">{email}</span>. Please verify your email to complete the registration.
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-                    <Button onClick={onClose}>Got it</Button>
+                    <Button className="text-white" onClick={onClose}>Got it</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

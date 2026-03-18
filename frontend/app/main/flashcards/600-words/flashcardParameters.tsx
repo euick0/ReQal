@@ -40,7 +40,7 @@ import {useRouter} from "next/navigation";
 import {GeminiSendTranslationQuery} from "@/lib/geminiQueries";
 import {uploadFile} from "@/lib/uploadToStorage";
 import {createClient} from "@/lib/supabase/client";
-import {GetGoogleImages} from "@/lib/getGoogleImages";
+import {GetSearchImages} from "@/lib/getSearchImages";
 import {GetWiktionaryAudio} from "@/lib/getAudio";
 import {Progress} from "@/components/ui/progress";
 import {toast} from "sonner";
@@ -233,7 +233,7 @@ const FlashcardParameters = () => {
             {data: googleImagesData, error: googleImagesError},
             {data: audioData, error: audioError}
         ] = await Promise.all([
-            GetGoogleImages(translationData.translation),
+            GetSearchImages(translationData.translation),
             GetWiktionaryAudio(translationData.translation, lang)
         ])
 
@@ -334,7 +334,7 @@ const FlashcardParameters = () => {
                 {data: googleImagesData, error: googleImagesError},
                 {data: audioData, error: audioError},
             ] = await Promise.all([
-                GetGoogleImages(translationData.translation),
+                GetSearchImages(translationData.translation),
                 GetWiktionaryAudio(translationData.translation, language),
             ])
 
