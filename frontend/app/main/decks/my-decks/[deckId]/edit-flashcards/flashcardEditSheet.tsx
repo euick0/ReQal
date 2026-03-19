@@ -47,6 +47,7 @@ import {
     UpdateConjugationFlashcard,
 } from "@/lib/backendUtils"
 import { uploadFile } from "@/lib/uploadToStorage"
+import { extractImagesFromPasteEvent, filterImageFiles } from "@/lib/clipboardUtils"
 import { pathways } from "@/lib/pathways"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -391,26 +392,39 @@ export default function FlashcardEditSheet({
         toast.success("Image uploaded.")
     }
 
-    const handleImagePaste = useCallback((e: ClipboardEvent) => {
+    useEffect(() => {
         if (!isOpen) return
-        const items = e.clipboardData?.items
-        if (!items) return
-        const imageFiles: File[] = []
-        for (let i = 0; i < items.length; i++) {
-            if (items[i].type.startsWith("image/")) {
-                const file = items[i].getAsFile()
-                if (file) imageFiles.push(file)
+
+        const handlePaste = (e: ClipboardEvent) => {
+            const target = e.target as HTMLElement
+            if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return
+            const files = extractImagesFromPasteEvent(e)
+            files.forEach(file => handleImageFileUpload(file))
+        }
+
+        const handleDragOver = (e: DragEvent) => {
+            if (Array.from(e.dataTransfer?.items ?? []).some(i => i.kind === "file" && i.type.startsWith("image/"))) {
+                e.preventDefault()
             }
         }
-        if (imageFiles.length === 0) return
-        imageFiles.forEach(file => handleImageFileUpload(file))
+
+        const handleDrop = (e: DragEvent) => {
+            const images = filterImageFiles(e.dataTransfer?.files ?? [])
+            if (images.length === 0) return
+            e.preventDefault()
+            images.forEach(file => handleImageFileUpload(file))
+        }
+
+        document.addEventListener("paste", handlePaste)
+        document.addEventListener("dragover", handleDragOver)
+        document.addEventListener("drop", handleDrop)
+        return () => {
+            document.removeEventListener("paste", handlePaste)
+            document.removeEventListener("dragover", handleDragOver)
+            document.removeEventListener("drop", handleDrop)
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen])
-
-    useEffect(() => {
-        document.addEventListener("paste", handleImagePaste)
-        return () => document.removeEventListener("paste", handleImagePaste)
-    }, [handleImagePaste])
 
     const handleAudioFileUpload = async (file: File) => {
         setIsUploadingAudio(true)

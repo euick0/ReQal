@@ -340,6 +340,21 @@ const InsertConjugationFlashcard = async (formData: FormData) => {
     return {data: true, error: null}
 }
 
+const GetLanguages = async (): Promise<{ data: string[] | null, error: string | null }> => {
+    const supabase = await createClient()
+    const {data, error} = await supabase
+        .from("languages")
+        .select("languages")
+        .single()
+
+    if (error || !data) {
+        console.error("Error fetching languages:", error)
+        return {data: null, error: error?.message ?? "Failed to fetch languages"}
+    }
+
+    return {data: data.languages as string[], error: null}
+}
+
 const GetDeckById = async (deckId: string) => {
     const supabase = await createClient()
     const {data, error} = await supabase
@@ -711,6 +726,7 @@ const GetConjugationFlashcardById = async (flashcardId: string) => {
 }
 
 export {
+    GetLanguages,
     InsertWordsFlashcard,
     InsertConjugationFlashcard,
     GetCurrentWordIndex,

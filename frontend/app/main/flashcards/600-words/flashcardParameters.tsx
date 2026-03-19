@@ -35,6 +35,7 @@ import {
     UpdateDeckPreference,
     GetWordFlashcardsDeckID,
     GetLastFlashcard,
+    GetLanguages,
 } from "@/lib/backendUtils"
 import {useRouter} from "next/navigation";
 import {GeminiSendTranslationQuery} from "@/lib/geminiQueries";
@@ -58,18 +59,6 @@ const getWordList = async () => {
     return data[0].words_list as string[]
 }
 
-const languages = [
-    "Spanish",
-    "French",
-    "German",
-    "Chinese",
-    "Japanese",
-    "Portuguese",
-    "Russian",
-    "Italian",
-    "Korean"
-]
-
 const FlashcardParameters = () => {
     const flashcardContext = React.useContext(FlashcardContext);
     const router = useRouter()
@@ -83,6 +72,7 @@ const FlashcardParameters = () => {
     const [showLanguageDialog, setShowLanguageDialog] = React.useState(false)
     const [dialogLanguage, setDialogLanguage] = React.useState("")
     const [deckId, setDeckId] = React.useState<string | null>(null)
+    const [languages, setLanguages] = React.useState<string[]>([])
 
     useEffect(() => {
         initialLoad()
@@ -119,51 +109,6 @@ const FlashcardParameters = () => {
         setPastedImages,
     } = flashcardContext;
 
-    useEffect(() => {
-        const handlePaste = (e: ClipboardEvent) => {
-            const items = e.clipboardData?.items
-            if (!items) return
-
-            const imageFiles: File[] = []
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].type.startsWith("image/")) {
-                    const file = items[i].getAsFile()
-                    if (file) imageFiles.push(file)
-                }
-            }
-
-            if (imageFiles.length === 0) return
-
-            setPastedImages(prev => {
-                prev.forEach(img => URL.revokeObjectURL(img.url))
-                const newPasted = imageFiles.map(file => ({ url: URL.createObjectURL(file), file }))
-
-                const selected = newPasted.slice(0, 4)
-                const unselected = newPasted.slice(4)
-
-                setImagePath(p => [
-                    ...selected.map(img => img.url),
-                    ...p.filter(url => !prev.some(old => old.url === url)),
-                ])
-
-                const selectedCount = selected.length
-                const unselectedCount = unselected.length
-                const total = imageFiles.length
-                toast.info(
-                    `Pasted ${total} ${total === 1 ? "image" : "images"}, ${selectedCount} selected, ${unselectedCount} unselected`,
-                    { position: "bottom-right" }
-                )
-
-                return selected
-            })
-        }
-
-        document.addEventListener("paste", handlePaste)
-        return () => {
-            document.removeEventListener("paste", handlePaste)
-        }
-    }, [setPastedImages, setImagePath])
-
     const track = {
         id: flashcardContext.audioPath || "empty-track",
         src: flashcardContext.audioPath,
@@ -181,8 +126,9 @@ const FlashcardParameters = () => {
             return
         }
         const toAdd = files.slice(0, availableSlots)
-        setImageFiles([...imageFiles, ...toAdd])
-        setImagePath([...imagePath, ...toAdd.map(f => URL.createObjectURL(f))])
+        const newEntries = toAdd.map(f => ({ file: f, url: URL.createObjectURL(f) }))
+        setPastedImages(prev => [...prev, ...newEntries])
+        setImagePath(prev => [...prev, ...newEntries.map(e => e.url)])
     }
 
     useEffect(() => {
@@ -216,7 +162,7 @@ const FlashcardParameters = () => {
             document.removeEventListener("dragover", handleDragOver)
             document.removeEventListener("drop", handleDrop)
         }
-    }, [imagePath, imageFiles])
+    }, [addImagesToState])
 
     const loadParameters = async (lang: string, word: string) => {
         const {data: translationData, error: translationError} = await GeminiSendTranslationQuery(word, lang)
@@ -272,14 +218,17 @@ const FlashcardParameters = () => {
             {data: wordIndex},
             {data: prefs},
             {data: fetchedDeckId},
+            {data: fetchedLanguages},
         ] = await Promise.all([
             getWordList(),
             GetCurrentWordIndex(),
             GetDeckPreferences("600 Words"),
             GetWordFlashcardsDeckID(),
+            GetLanguages(),
         ])
 
         if (fetchedDeckId) setDeckId(fetchedDeckId)
+        if (fetchedLanguages) setLanguages(fetchedLanguages)
         setProgress(25)
 
         const lang = prefs?.language ?? ""

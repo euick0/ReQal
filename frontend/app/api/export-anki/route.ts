@@ -389,12 +389,29 @@ function buildConjugationModel(deckId: number) {
 // Media download helper
 // ---------------------------------------------------------------------------
 
-async function downloadMedia(url: string): Promise<Buffer | null> {
+async function downloadMedia(
+    url: string,
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    supabaseUrl: string,
+): Promise<Buffer | null> {
     try {
+        // Use the Supabase SDK for Storage URLs so auth/RLS is handled correctly
+        const storagePrefix = `${supabaseUrl}/storage/v1/object/public/`
+        if (url.startsWith(storagePrefix)) {
+            const withoutPrefix = url.slice(storagePrefix.length)
+            const slashIdx = withoutPrefix.indexOf("/")
+            if (slashIdx !== -1) {
+                const bucket = withoutPrefix.slice(0, slashIdx)
+                const path = withoutPrefix.slice(slashIdx + 1)
+                const {data, error} = await supabase.storage.from(bucket).download(path)
+                if (error || !data) return null
+                return Buffer.from(await data.arrayBuffer())
+            }
+        }
+        // Plain fetch for external URLs (e.g. Bing image CDN)
         const res = await fetch(url, {signal: AbortSignal.timeout(10000)})
         if (!res.ok) return null
-        const arrayBuf = await res.arrayBuffer()
-        return Buffer.from(arrayBuf)
+        return Buffer.from(await res.arrayBuffer())
     } catch {
         return null
     }
@@ -456,7 +473,8 @@ export async function GET(request: NextRequest) {
         }
     }
 
-    const results = await Promise.allSettled(jobs.map(j => downloadMedia(j.url)))
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
+    const results = await Promise.allSettled(jobs.map(j => downloadMedia(j.url, supabase, supabaseUrl)))
 
     // mediaFiles: maps mediaIndex → { filename, buffer }
     // We assign each downloaded file a sequential number (Anki media convention)
@@ -624,8 +642,9 @@ export async function GET(request: NextRequest) {
         } else {
             // 9 fields: Word, IPA, Gender, Audio, Image, ImageCaption,
             //           TranslationCaption, EnableCard2, EnableCard3
+            const regularFc = fc as any
             flds = [
-                fc.translated_word ?? "",
+                regularFc.translated_word ?? "",
                 ipa,
                 gender,
                 audioTag,
@@ -639,7 +658,8 @@ export async function GET(request: NextRequest) {
 
         const noteId = nextId()
         const guid = `reqal_${fc.id}`
-        const sfld = fc.translated_word ?? ""
+        const regularFc = fc as any
+        const sfld = regularFc.translated_word ?? ""
         const csum = fieldChecksum(sfld)
 
         insertNote.run(noteId, guid, modelId, now, -1, "", flds, sfld, csum, 0, "")

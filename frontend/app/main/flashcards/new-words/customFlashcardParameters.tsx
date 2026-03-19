@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/audio-player";
 import {CustomFlashcardContext} from "@/app/main/flashcards/new-words/customFlashcardPreviews";
 import {pathways} from "@/app/main/flashcards/new-words/customFlashcardCreation";
-import {InsertCustomFlashcard, GetDeckPreferences, UpdateDeckPreference, GetCustomFlashcardsDeckID, GetLastFlashcard} from "@/lib/backendUtils"
+import {InsertCustomFlashcard, GetDeckPreferences, UpdateDeckPreference, GetCustomFlashcardsDeckID, GetLastFlashcard, GetLanguages} from "@/lib/backendUtils"
 import {useRouter} from "next/navigation";
 import {GeminiSendTranslationQuery} from "@/lib/geminiQueries";
 import {uploadFile} from "@/lib/uploadToStorage";
@@ -34,18 +34,6 @@ import {GetWiktionaryAudio} from "@/lib/getAudio";
 import {Progress} from "@/components/ui/progress";
 import {toast} from "sonner";
 import {extractImagesFromPasteEvent, filterImageFiles} from "@/lib/clipboardUtils";
-
-const languages = [
-    "Spanish",
-    "French",
-    "German",
-    "Chinese",
-    "Japanese",
-    "Portuguese",
-    "Russian",
-    "Italian",
-    "Korean"
-]
 
 const CustomFlashcardParameters = () => {
     const customFlashcardContext = React.useContext(CustomFlashcardContext);
@@ -57,6 +45,8 @@ const CustomFlashcardParameters = () => {
     const [imageAlts, setImageAlts] = React.useState<string[]>([])
     const [currentWord, setCurrentWord] = React.useState<string>("")
     const [deckId, setDeckId] = React.useState<string | null>(null)
+    const [languages, setLanguages] = React.useState<string[]>([])
+    const [languagesLoading, setLanguagesLoading] = React.useState(true)
 
     if (!customFlashcardContext) {
         throw new Error("CustomFlashcardParameters must be used within CustomFlashcardContext.Provider");
@@ -64,11 +54,16 @@ const CustomFlashcardParameters = () => {
 
     useEffect(() => {
         const loadPreferences = async () => {
-            const {data: fetchedDeckId} = await GetCustomFlashcardsDeckID()
+            const [{data: fetchedDeckId}, {data: prefs}, {data: fetchedLanguages}] = await Promise.all([
+                GetCustomFlashcardsDeckID(),
+                GetDeckPreferences("Custom Words"),
+                GetLanguages(),
+            ])
             if (fetchedDeckId) setDeckId(fetchedDeckId)
-            const {data: prefs} = await GetDeckPreferences("Custom Words")
             if (prefs?.language) setLanguage(prefs.language)
             if (prefs?.pathway) setPathway(pathways.find(p => p.pathName === prefs?.pathway?.pathName) ?? pathways[0])
+            if (fetchedLanguages) setLanguages(fetchedLanguages)
+            setLanguagesLoading(false)
         }
         loadPreferences()
     }, [])
@@ -100,51 +95,6 @@ const CustomFlashcardParameters = () => {
         setPastedImages,
     } = customFlashcardContext;
 
-    useEffect(() => {
-        const handlePaste = (e: ClipboardEvent) => {
-            const items = e.clipboardData?.items
-            if (!items) return
-
-            const imageFiles: File[] = []
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].type.startsWith("image/")) {
-                    const file = items[i].getAsFile()
-                    if (file) imageFiles.push(file)
-                }
-            }
-
-            if (imageFiles.length === 0) return
-
-            setPastedImages(prev => {
-                prev.forEach(img => URL.revokeObjectURL(img.url))
-                const newPasted = imageFiles.map(file => ({ url: URL.createObjectURL(file), file }))
-
-                const selected = newPasted.slice(0, 4)
-                const unselected = newPasted.slice(4)
-
-                setImagePath(p => [
-                    ...selected.map(img => img.url),
-                    ...p.filter(url => !prev.some(old => old.url === url)),
-                ])
-
-                const selectedCount = selected.length
-                const unselectedCount = unselected.length
-                const total = imageFiles.length
-                toast.info(
-                    `Pasted ${total} ${total === 1 ? "image" : "images"}, ${selectedCount} selected, ${unselectedCount} unselected`,
-                    { position: "bottom-right" }
-                )
-
-                return selected
-            })
-        }
-
-        document.addEventListener("paste", handlePaste)
-        return () => {
-            document.removeEventListener("paste", handlePaste)
-        }
-    }, [setPastedImages, setImagePath])
-
     const track = {
         id: customFlashcardContext.audioPath || "empty-track",
         src: customFlashcardContext.audioPath,
@@ -162,8 +112,9 @@ const CustomFlashcardParameters = () => {
             return
         }
         const toAdd = files.slice(0, availableSlots)
-        setImageFiles([...imageFiles, ...toAdd])
-        setImagePath([...imagePath, ...toAdd.map(f => URL.createObjectURL(f))])
+        const newEntries = toAdd.map(f => ({ file: f, url: URL.createObjectURL(f) }))
+        setPastedImages(prev => [...prev, ...newEntries])
+        setImagePath(prev => [...prev, ...newEntries.map(e => e.url)])
     }
 
     useEffect(() => {
@@ -197,7 +148,7 @@ const CustomFlashcardParameters = () => {
             document.removeEventListener("dragover", handleDragOver)
             document.removeEventListener("drop", handleDrop)
         }
-    }, [imagePath, imageFiles])
+    }, [addImagesToState])
 
     const handleTranslate = async () => {
         if (!currentWord.trim() || !language) {
@@ -354,7 +305,7 @@ const CustomFlashcardParameters = () => {
                                   }}
                                   required={true}>
                             <ComboboxInput placeholder="Select a language" className="w-64 mb-4"
-                                           disabled={isLoading}/>
+                                           disabled={isLoading || languagesLoading}/>
                             <ComboboxContent>
                                 <ComboboxEmpty>No items found.</ComboboxEmpty>
                                 <ComboboxList>

@@ -11,7 +11,7 @@ type ArrangedWords = {
 
 interface ProgressDialogProps {
     words: string[];
-    nextWord?: string;
+    nextWord: string;
 }
 
 const ArrangeWords = (words: string[]) => {
@@ -45,7 +45,9 @@ const ProgressDialog = ({words, nextWord}: ProgressDialogProps) => {
                     <CarouselItem key={arrangedWordsEntry.letter} className="basis-1/6">
                         <Card className="bg-input/10!">
                             <CardContent className="flex h-60 justify-top flex-col">
-                                <h6 className="text-2xl font-semibold text-center ">{arrangedWordsEntry.letter}</h6>
+                                <h6 className={clsx("text-2xl font-semibold text-center", {
+                                    "text-contrast": arrangedWordsEntry.words.includes(nextWord)
+                                })}>{arrangedWordsEntry.letter}</h6>
                                 <div className="h-0.5 w-4/5 items-center bg-neutral-300 mx-auto my-1"></div>
                                 <ScrollArea className="flex-1 h-full max-h-[180px]">
                                     {arrangedWordsEntry.words.map((word, index) => (

@@ -32,6 +32,7 @@ import {
     UpdateDeckPreference,
     GetConjugationFlashcardsDeckID,
     GetLastConjugationFlashcard,
+    GetLanguages,
 } from "@/lib/backendUtils"
 import {useRouter} from "next/navigation";
 import {GeminiSendPhraseTranslationQuery} from "@/lib/geminiQueries";
@@ -41,18 +42,6 @@ import {GetWiktionaryAudio} from "@/lib/getAudio";
 import {Progress} from "@/components/ui/progress";
 import {toast} from "sonner";
 import {extractImagesFromPasteEvent, filterImageFiles} from "@/lib/clipboardUtils";
-
-const languages = [
-    "Spanish",
-    "French",
-    "German",
-    "Chinese",
-    "Japanese",
-    "Portuguese",
-    "Russian",
-    "Italian",
-    "Korean"
-]
 
 const ConjugationParameters = () => {
     const conjugationContext = React.useContext(ConjugationContext);
@@ -66,6 +55,7 @@ const ConjugationParameters = () => {
     const [showLanguageDialog, setShowLanguageDialog] = React.useState(false)
     const [dialogLanguage, setDialogLanguage] = React.useState("")
     const [deckId, setDeckId] = React.useState<string | null>(null)
+    const [languages, setLanguages] = React.useState<string[]>([])
 
     useEffect(() => {
         initialLoad()
@@ -106,51 +96,6 @@ const ConjugationParameters = () => {
         setTranslatedPhrase,
     } = conjugationContext;
 
-    useEffect(() => {
-        const handlePaste = (e: ClipboardEvent) => {
-            const items = e.clipboardData?.items
-            if (!items) return
-
-            const imageFiles: File[] = []
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].type.startsWith("image/")) {
-                    const file = items[i].getAsFile()
-                    if (file) imageFiles.push(file)
-                }
-            }
-
-            if (imageFiles.length === 0) return
-
-            setPastedImages(prev => {
-                prev.forEach(img => URL.revokeObjectURL(img.url))
-                const newPasted = imageFiles.map(file => ({ url: URL.createObjectURL(file), file }))
-
-                const selected = newPasted.slice(0, 4)
-                const unselected = newPasted.slice(4)
-
-                setImagePath(p => [
-                    ...selected.map(img => img.url),
-                    ...p.filter(url => !prev.some(old => old.url === url)),
-                ])
-
-                const selectedCount = selected.length
-                const unselectedCount = unselected.length
-                const total = imageFiles.length
-                toast.info(
-                    `Pasted ${total} ${total === 1 ? "image" : "images"}, ${selectedCount} selected, ${unselectedCount} unselected`,
-                    { position: "bottom-right" }
-                )
-
-                return selected
-            })
-        }
-
-        document.addEventListener("paste", handlePaste)
-        return () => {
-            document.removeEventListener("paste", handlePaste)
-        }
-    }, [setPastedImages, setImagePath])
-
     const track = {
         id: conjugationContext.audioPath || "empty-track",
         src: conjugationContext.audioPath,
@@ -168,8 +113,9 @@ const ConjugationParameters = () => {
             return
         }
         const toAdd = files.slice(0, availableSlots)
-        setImageFiles([...imageFiles, ...toAdd])
-        setImagePath([...imagePath, ...toAdd.map(f => URL.createObjectURL(f))])
+        const newEntries = toAdd.map(f => ({ file: f, url: URL.createObjectURL(f) }))
+        setPastedImages(prev => [...prev, ...newEntries])
+        setImagePath(prev => [...prev, ...newEntries.map(e => e.url)])
     }
 
     useEffect(() => {
@@ -202,18 +148,20 @@ const ConjugationParameters = () => {
             document.removeEventListener("dragover", handleDragOver)
             document.removeEventListener("drop", handleDrop)
         }
-    }, [imagePath, imageFiles])
+    }, [addImagesToState])
 
     const initialLoad = async () => {
         setIsSubmitting(false)
         setProgress(100)
 
-        const [{data: prefs}, {data: fetchedDeckId}] = await Promise.all([
+        const [{data: prefs}, {data: fetchedDeckId}, {data: fetchedLanguages}] = await Promise.all([
             GetDeckPreferences("600 Words"),
             GetConjugationFlashcardsDeckID(),
+            GetLanguages(),
         ])
 
         if (fetchedDeckId) setDeckId(fetchedDeckId)
+        if (fetchedLanguages) setLanguages(fetchedLanguages)
 
         const lang = prefs?.language ?? ""
         setLanguage(lang)
@@ -392,7 +340,7 @@ const ConjugationParameters = () => {
                                       }}
                                       required={true}>
                                 <ComboboxInput placeholder="Select a language" className="w-64"
-                                               disabled={isSubmitting || isTranslating}/>
+                                               disabled={isSubmitting || isTranslating || languages.length === 0}/>
                                 <ComboboxContent>
                                     <ComboboxEmpty>No items found.</ComboboxEmpty>
                                     <ComboboxList>
