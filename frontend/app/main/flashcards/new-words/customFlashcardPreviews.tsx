@@ -10,6 +10,24 @@ import {
     AudioPlayerTime
 } from "@/components/ui/audio-player";
 import clsx from "clsx";
+import {Skeleton} from "@/components/ui/skeleton";
+
+function ImageWithSkeleton({src, alt}: {src: string; alt: string}) {
+    const [loaded, setLoaded] = React.useState(false);
+    return (
+        <div className="relative w-full h-full">
+            {!loaded && <Skeleton className="absolute inset-0 rounded-md"/>}
+            <Image
+                alt={alt}
+                src={src}
+                fill
+                className="object-cover"
+                priority
+                onLoad={() => setLoaded(true)}
+            />
+        </div>
+    );
+}
 
 const FirstPathPreview = () => {
     const customFlashcardContext = React.useContext(CustomFlashcardContext);
@@ -28,8 +46,7 @@ const FirstPathPreview = () => {
                     {"grid-cols-2": customFlashcardContext?.imagePath.length > 2})}>
                     {customFlashcardContext?.imagePath[0] && customFlashcardContext.imagePath.slice(0, 4).map(((path, i) => (
                         <div className="relative " key={i}>
-                            <Image alt="Flashcard Image Preview" src={customFlashcardContext?.imagePath[i]} fill
-                                   className="object-cover" priority/>
+                            <ImageWithSkeleton alt="Flashcard Image Preview" src={customFlashcardContext?.imagePath[i]}/>
                         </div>
                     )))}
                 </div>}
@@ -99,8 +116,7 @@ export const SecondPathPreview = () => {
 
                     {customFlashcardContext?.imagePath[0] && customFlashcardContext.imagePath.slice(0, 4).map(((path, i) => (
                         <div className="relative " key={i}>
-                            <Image alt="Flashcard Image Preview" src={customFlashcardContext?.imagePath[i]} fill
-                                   className="object-cover" priority/>
+                            <ImageWithSkeleton alt="Flashcard Image Preview" src={customFlashcardContext?.imagePath[i]}/>
                         </div>
                     )))}
                 </div>}
@@ -145,8 +161,7 @@ export const ThirdPathPreview = () => {
 
                     {customFlashcardContext?.imagePath[0] && customFlashcardContext.imagePath.slice(0, 4).map(((path, i) => (
                         <div className="relative" key={i}>
-                            <Image alt="Flashcard Image Preview" src={customFlashcardContext?.imagePath[i]} fill
-                                   className="object-cover" priority/>
+                            <ImageWithSkeleton alt="Flashcard Image Preview" src={customFlashcardContext?.imagePath[i]}/>
                         </div>
                     )))}
                 </div>}

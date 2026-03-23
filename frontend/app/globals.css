@@ -51,6 +51,7 @@
     --color-primary: #CC2054;
     --color-primaryDark: #991942;
     --color-contrast: #2FA4A9;
+    --color-contrastDark: #39bfbf;
     --color-complement: #E06A8C;
     --color-complement2: #8E173B;
     --color-contrast2: #F0B429;
@@ -132,6 +133,11 @@
 @layer base {
     * {
         @apply border-border outline-ring/50;
+    }
+
+    html,
+    body {
+        overflow-x: clip;
     }
 
     body {

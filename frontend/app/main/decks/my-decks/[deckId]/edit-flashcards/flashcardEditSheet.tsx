@@ -360,7 +360,7 @@ export default function FlashcardEditSheet({
                 ...commonPayload,
                 translated_word: editedData.translated_word || null,
             }
-            const result = await UpdateFlashcard(Number(flashcard.id), payload)
+            const result = await UpdateFlashcard(flashcard.id, payload)
             error = result.error
             updatedFlashcard = { ...flashcard, ...payload } as FlashcardRow
         }

@@ -15,7 +15,7 @@ export const VALID_ROUTES = new Set([
     'main/flashcards/conjugation-charts',          // app/main/flashcards/conjugation-charts/page.tsx
     'main/flashcards/new-words',                   // app/main/flashcards/new-words/page.tsx
     'main/decks',                                  // app/main/decks/page.tsx
-    'main/decks/my-decks/review-flashcards',       // app/main/decks/my-decks/review-flashcards/page.tsx
+    'main/decks/review-flashcards',                // app/main/decks/review-flashcards/page.tsx
     'main/decks/my-decks',                          // app/main/decks/my-decks/page.tsx
     'main/decks/my-decks/*/edit-flashcards',       // app/main/decks/my-decks/[deckId]/edit-flashcards/page.tsx
     'auth/reset-password',                         // app/auth/reset-password/page.tsx

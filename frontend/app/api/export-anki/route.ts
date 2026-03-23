@@ -417,13 +417,16 @@ async function downloadMedia(
     }
 }
 
+const KNOWN_IMAGE_EXTS = new Set(["jpg", "jpeg", "png", "webp", "gif", "avif"])
+
 function mediaExtension(url: string): string {
     try {
         const pathname = new URL(url).pathname
         const ext = pathname.split(".").pop()?.toLowerCase()
-        return ext ? `.${ext}` : ".bin"
+        if (ext && KNOWN_IMAGE_EXTS.has(ext)) return `.${ext}`
+        return ".jpg"
     } catch {
-        return ".bin"
+        return ".jpg"
     }
 }
 
@@ -468,8 +471,9 @@ export async function GET(request: NextRequest) {
     for (let i = 0; i < flashcards.length; i++) {
         const fc = flashcards[i]
         if (fc.audio_path) jobs.push({cardIndex: i, role: "audio", url: fc.audio_path})
-        for (let j = 0; j < (fc.image_paths ?? []).length; j++) {
-            jobs.push({cardIndex: i, role: "image", imageIndex: j, url: fc.image_paths[j]})
+        const imagePaths = fc.image_paths ?? []
+        for (let j = 0; j < imagePaths.length; j++) {
+            jobs.push({cardIndex: i, role: "image", imageIndex: j, url: imagePaths[j]})
         }
     }
 

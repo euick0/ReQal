@@ -114,7 +114,7 @@ const GeminiSendTranslationQuery = async (word: string, targetLanguage: string) 
         console.log("Raw Gemini response:", text)
 
         const fenceStripped = text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim()
-        const match = fenceStripped.match(/\{[\s\S]*\}/)
+        const match = fenceStripped.match(/\{[\s\S]*1\}/)
         const extracted = match ? match[0] : fenceStripped
         const sanitized = extracted.replace(/\]\s*}/g, "}").replace(/\{\s*\[/g, "{")
         const parsed = JSON.parse(sanitized)

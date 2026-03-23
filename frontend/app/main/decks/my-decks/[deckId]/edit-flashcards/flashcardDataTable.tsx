@@ -253,7 +253,7 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
         if (deleteTarget.type === "single") {
             const { error } = deckType === "conjugation"
                 ? await DeleteConjugationFlashcard(deleteTarget.id)
-                : await DeleteFlashcard(Number(deleteTarget.id))
+                : await DeleteFlashcard(deleteTarget.id)
             setIsDeleting(false)
             setDeleteTarget(null)
             if (error) { toast.error("Failed to delete flashcard."); return }
@@ -266,7 +266,7 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
             const ids = deleteTarget.ids
             const { error } = deckType === "conjugation"
                 ? await DeleteConjugationFlashcardsBulk(ids)
-                : await DeleteFlashcardsBulk(ids.map(Number))
+                : await DeleteFlashcardsBulk(ids)
             setIsDeleting(false)
             setDeleteTarget(null)
             if (error) { toast.error("Failed to delete selected flashcards."); return }

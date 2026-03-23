@@ -10,6 +10,24 @@ import {
     AudioPlayerTime
 } from "@/components/ui/audio-player";
 import clsx from "clsx";
+import {Skeleton} from "@/components/ui/skeleton";
+
+function ImageWithSkeleton({src, alt}: {src: string; alt: string}) {
+    const [loaded, setLoaded] = React.useState(false);
+    return (
+        <div className="relative w-full h-full">
+            {!loaded && <Skeleton className="absolute inset-0 rounded-md"/>}
+            <Image
+                alt={alt}
+                src={src}
+                fill
+                className="object-cover"
+                priority
+                onLoad={() => setLoaded(true)}
+            />
+        </div>
+    );
+}
 
 const FirstPathPreview = () => {
     const conjugationContext = React.useContext(ConjugationContext);
@@ -29,8 +47,7 @@ const FirstPathPreview = () => {
                     {"grid-cols-2": conjugationContext?.imagePath.length > 2})}>
                     {conjugationContext?.imagePath[0] && conjugationContext.imagePath.slice(0, 4).map(((path, i) => (
                         <div className="relative " key={i}>
-                            <Image alt="Conjugation Image Preview" src={conjugationContext?.imagePath[i]} fill
-                                   className="object-cover" priority/>
+                            <ImageWithSkeleton alt="Conjugation Image Preview" src={conjugationContext?.imagePath[i]}/>
                         </div>
                     )))}
                 </div>}
@@ -101,8 +118,7 @@ export const SecondPathPreview = () => {
 
                     {conjugationContext?.imagePath[0] && conjugationContext.imagePath.slice(0, 4).map(((path, i) => (
                         <div className="relative " key={i}>
-                            <Image alt="Conjugation Image Preview" src={conjugationContext?.imagePath[i]} fill
-                                   className="object-cover" priority/>
+                            <ImageWithSkeleton alt="Conjugation Image Preview" src={conjugationContext?.imagePath[i]}/>
                         </div>
                     )))}
                 </div>}
@@ -148,8 +164,7 @@ export const ThirdPathPreview = () => {
 
                     {conjugationContext?.imagePath[0] && conjugationContext.imagePath.slice(0, 4).map(((path, i) => (
                         <div className="relative" key={i}>
-                            <Image alt="Conjugation Image Preview" src={conjugationContext?.imagePath[i]} fill
-                                   className="object-cover" priority/>
+                            <ImageWithSkeleton alt="Conjugation Image Preview" src={conjugationContext?.imagePath[i]}/>
                         </div>
                     )))}
                 </div>}

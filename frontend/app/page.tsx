@@ -1,12 +1,19 @@
-import BackgroundVideo from "@/app/backgroundVideo";
 import Header from "@/components/header";
+import Content from "@/app/main/content";
+import HeroSection from "@/app/heroSection";
+import Footer from "@/app/footer";
 
 const Home = () => {
     return (
-        <main className="overflow-x-hidden ">
+        <>
             <Header/>
-            <BackgroundVideo/>
-        </main>
+            <main className="overflow-x-hidden">
+                <HeroSection/>
+                <Content/>
+
+                <Footer/>
+            </main>
+        </>
     );
 };
 

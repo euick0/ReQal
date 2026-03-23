@@ -412,7 +412,7 @@ const GetFlashcardsByDeckId = async (deckId: string) => {
     return {data, error: null}
 }
 
-const UpdateFlashcard = async (flashcardId: number, payload: {
+const UpdateFlashcard = async (flashcardId: string, payload: {
     translated_word?: string | null
     IPA_translation?: string | null
     gender?: string | null
@@ -437,7 +437,7 @@ const UpdateFlashcard = async (flashcardId: number, payload: {
     return {data: true, error: null}
 }
 
-const DeleteFlashcard = async (flashcardId: number) => {
+const DeleteFlashcard = async (flashcardId: string) => {
     const supabase = await createClient()
 
     const {error} = await supabase
@@ -453,7 +453,7 @@ const DeleteFlashcard = async (flashcardId: number) => {
     return {data: true, error: null}
 }
 
-const DeleteFlashcardsBulk = async (flashcardIds: number[]) => {
+const DeleteFlashcardsBulk = async (flashcardIds: string[]) => {
     const supabase = await createClient()
 
     const {error} = await supabase
@@ -691,6 +691,94 @@ const GetLastConjugationFlashcard = async (deckId: string) => {
     return {data: data?.id as string ?? null, error: null}
 }
 
+const GetDueFlashcards = async () => {
+    const supabase = await createClient()
+
+    const today = new Date()
+    today.setHours(23, 59, 59, 999)
+    const todayStr = today.toISOString().split("T")[0]
+
+    // RLS on deck scopes to the current user automatically
+    const {data: decks, error: decksError} = await supabase
+        .from("deck")
+        .select("id")
+
+    if (decksError || !decks) {
+        console.error("Error fetching decks:", decksError)
+        return {data: null, error: decksError}
+    }
+
+    const deckIds = decks.map((d: {id: string}) => d.id)
+    if (deckIds.length === 0) return {data: [], error: null}
+
+    const {data, error} = await supabase
+        .from("flashcards")
+        .select("id, translated_word, IPA_translation, gender, image_paths, audio_path, translation_caption, image_caption, pathway, review_date, ease")
+        .in("deck_id", deckIds)
+        .lte("review_date", todayStr)
+
+    if (error) {
+        console.error("Error fetching due flashcards:", error)
+        return {data: null, error}
+    }
+
+    return {data: data as (FlashcardRow & {ease: number})[], error: null}
+}
+
+const GetDueConjugationFlashcards = async () => {
+    const supabase = await createClient()
+
+    const today = new Date()
+    today.setHours(23, 59, 59, 999)
+    const todayStr = today.toISOString().split("T")[0]
+
+    const {data: decks, error: decksError} = await supabase
+        .from("deck")
+        .select("id")
+
+    if (decksError || !decks) {
+        console.error("Error fetching decks:", decksError)
+        return {data: null, error: decksError}
+    }
+
+    const deckIds = decks.map((d: {id: string}) => d.id)
+    if (deckIds.length === 0) return {data: [], error: null}
+
+    const {data, error} = await supabase
+        .from("conjugation_flashcards")
+        .select("id, phrase, missing_word, IPA_translation, gender, image_paths, audio_path, translation_caption, image_caption, pathway, review_date, ease")
+        .in("deck_id", deckIds)
+        .lte("review_date", todayStr)
+
+    if (error) {
+        console.error("Error fetching due conjugation flashcards:", error)
+        return {data: null, error}
+    }
+
+    return {data: data as (ConjugationFlashcardRow & {ease: number})[], error: null}
+}
+
+const UpdateFlashcardReview = async (
+    flashcardId: string,
+    table: "flashcards" | "conjugation_flashcards",
+    newReviewDate: string,
+    newEase: number
+) => {
+    const supabase = await createClient()
+
+    const {error} = await supabase
+        .from(table)
+        .update({review_date: newReviewDate, ease: newEase})
+        .eq("id", flashcardId)
+
+    if (error) {
+        console.error(`Error updating review for ${table}:`, error)
+        return {data: null, error}
+    }
+
+    return {data: true, error: null}
+}
+
 const GetFlashcardById = async (flashcardId: string) => {
     const supabase = await createClient()
 
@@ -755,4 +843,7 @@ export {
     GetWordFlashcardsDeckID,
     GetFlashcardById,
     GetConjugationFlashcardById,
+    GetDueFlashcards,
+    GetDueConjugationFlashcards,
+    UpdateFlashcardReview,
 }
