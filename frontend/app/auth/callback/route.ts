@@ -16,5 +16,5 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${siteUrl}/auth/reset-password`);
     }
 
-    return NextResponse.redirect(`${siteUrl}/main`);
+    return NextResponse.redirect(siteUrl!);
 }
