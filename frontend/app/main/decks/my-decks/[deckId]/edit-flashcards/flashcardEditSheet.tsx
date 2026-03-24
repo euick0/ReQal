@@ -685,6 +685,7 @@ export default function FlashcardEditSheet({
                                                     src={src}
                                                     alt={`Image ${idx + 1}`}
                                                     fill
+                                                    priority
                                                     className="object-cover"
                                                     sizes="(max-width: 768px) 25vw, 15vw"
                                                     onError={e => {

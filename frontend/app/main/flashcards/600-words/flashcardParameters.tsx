@@ -505,8 +505,8 @@ const FlashcardParameters = () => {
                                     disabled={isSubmitting}
                                     onChange={(e) => {
                                         const files = Array.from(e.target.files ?? [])
-                                        setImageFiles(files)
-                                        setImagePath([...files.map(f => URL.createObjectURL(f)), ...imagePath])
+                                        if (files.length > 0) addImagesToState(files)
+                                        e.target.value = ""
                                     }}/>
                             </div>
                         </ImageParameter>

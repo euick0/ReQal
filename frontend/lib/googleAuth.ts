@@ -12,7 +12,7 @@ export const GoogleOAuthHandler = async () => {
             },
         },
     });
-
+    
     if (error) {
         console.error('Error during Google OAuth:', error.message);
     }

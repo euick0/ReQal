@@ -1,4 +1,4 @@
-"use client"
+ "use client"
 
 import React, {useState} from 'react';
 import {motion} from "motion/react"
@@ -74,7 +74,7 @@ const Content = () => {
             <motion.div initial={{opacity: 0, y: 200}} whileInView={{opacity: 1, y: 0}}
                         transition={{duration: 0.6, type: "spring", damping: 12, stiffness: 50}}
                         viewport={{margin: "0px 0px -150px 0px"}}
-                        className="relative z-10 mx-10 -mt-26 overflow-hidden">
+                        className="relative z-1 mx-10 -mt-26 overflow-hidden">
                 <Card className=" mx-32 bg-backgroundLight border-0">
                     <CardContent>
                         <h2 className="text-5xl font-bold text-center my-8">Flashcards that grow with <span
