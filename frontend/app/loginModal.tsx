@@ -62,7 +62,7 @@ const LoginModal = ({onClose, onClickRegister, onClickForgotPassword}: LoginModa
                     } onClick={onClose}/>
                 </div>
                 <div className="hidden md:block md:w-5/12 h-full p-0 top-0 left-0">
-                    <Image src="/images/person mountains.webp" alt="img.png" width="1499" height="1000"
+                    <Image src="/images/person mountains.webp" alt="img.png" width={1499} height={1000}
                            className="object-cover w-full h-full "></Image>
                 </div>
                 <form className="flex-1 flex-col flex justify-center" noValidate onSubmit={validateFormInput}>
@@ -100,7 +100,7 @@ const LoginModal = ({onClose, onClickRegister, onClickForgotPassword}: LoginModa
                             <Button className="text-white font-normal py-5" type="submit">Login</Button>
                             <Button variant="outline" className="text-white font-normal py-5"
                                     onClick={GoogleOAuthHandler} type="button"><Image
-                                src="/svgs/Google%20Logo.svg" width="20" height="20"
+                                src="/svgs/Google%20Logo.svg" width={20} height={20}
                                 alt="Google Logo"
                                 className="m-full"></Image> Continue with Google</Button>
                         </Field>
