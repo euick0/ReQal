@@ -1,6 +1,7 @@
 "use client"
 
 import React, {FormEvent, useState} from 'react';
+import Image from "next/image";
 import {X} from "lucide-react";
 import {Input} from "@/components/ui/input";
 import {Field, FieldError, FieldGroup, FieldLegend, FieldSet, FieldTitle} from "@/components/ui/field";
