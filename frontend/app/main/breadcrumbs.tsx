@@ -1,10 +1,10 @@
 import React, {useContext} from 'react';
 import {SidebarContext} from "@/app/main/sidebar";
-import Image from "next/image";
 import clsx from "clsx";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {isValidRoute} from "@/lib/validRoutes";
+import {PanelLeft} from "lucide-react";
 
 const Breadcrumbs =() => {
     const sidebarContext = useContext(SidebarContext);
@@ -37,16 +37,18 @@ const Breadcrumbs =() => {
     const {isExpanded, setIsExpanded} = sidebarContext;
 
     return (
-        <div className={clsx("fixed  flex justify-center text-lg h-17.5 p-4 z-10 bg-transparent transition-all duration-300 ease-in-out right-01", {
-                "left-20 -top-2": !isExpanded,
-                "left-64 top-0": isExpanded})}>
-            <Image width={40} height={40} alt="Sidebar closing image" src="/svgs/sidebar.svg"
-                   className={clsx("invert m-1 transition-all duration-200 ease-in-out", {
-                       "cursor-pointer max-w-17.5": !isExpanded,
-                       "pointer-events-none max-w-0": isExpanded,
-                   })}
-                   onClick={() => setIsExpanded(!isExpanded)}></Image>
-            <p className="my-auto">{breadcrumbs.map((crumb, i) => (
+        <div className={clsx("fixed flex items-center text-lg h-17.5 p-4 z-10 bg-transparent transition-all duration-300 ease-in-out top-0", {
+                "left-0 md:left-20": !isExpanded,
+                "left-0 md:left-64": isExpanded})}>
+            <div className={clsx("hidden md:flex items-center overflow-hidden shrink-0 transition-all duration-200 ease-in-out", {
+                "w-10 mr-2": !isExpanded,
+                "w-0 opacity-0 pointer-events-none": isExpanded,
+            })}>
+                <PanelLeft
+                    className="w-7 h-7 cursor-pointer text-neutral-300 hover:text-neutral-100 transition-colors duration-200"
+                    onClick={() => setIsExpanded(!isExpanded)} />
+            </div>
+            <p>{breadcrumbs.map((crumb, i) => (
                 <Link key={i} className="mx-1 text-neutral-300 hover:text-neutral-100 transition duration-100 ease-in-out" href={crumb.url}>{crumb.text} /</Link>
             ))}</p>
         </div>

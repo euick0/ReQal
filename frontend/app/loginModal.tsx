@@ -3,6 +3,7 @@ import React, {FormEvent, useState} from 'react';
 import CustomButton from "@/components/customButton";
 import Image from "next/image";
 import Login from "@/lib/login";
+import {X} from "lucide-react";
 import {Input} from "@/components/ui/input";
 import {Field, FieldError, FieldGroup, FieldLegend, FieldSeparator, FieldSet, FieldTitle} from "@/components/ui/field";
 import {Button} from "@/components/ui/button";
@@ -47,27 +48,26 @@ const LoginModal = ({onClose, onClickRegister, onClickForgotPassword}: LoginModa
         const error = await Login(formData)
 
         if (error) {
-            setLoginError({...loginError , password: "Invalid email or password"})
+            setLoginError({...loginError, password: "Invalid email or password"})
             return
         }
     }
 
     return (
         <div className="z-2 fixed top-0 left-0 w-screen h-screen bg-black/70 flex justify-center items-center">
-            <div className="bg-backgroundLight rounded-md w-8/12 h-8/12 relative flex overflow-hidden">
+            <div className="bg-backgroundLight rounded-md w-11/12 sm:w-9/12 md:w-8/12 h-auto max-h-[90vh] md:h-8/12 relative flex overflow-y-auto md:overflow-hidden">
                 <div className="w-0 h-0">
                     <CustomButton style="secondary" reactNode={
-                        <Image src="/svgs/x.svg" width="25" height="25" alt="Close Login Modal Button"
-                               className="transition duration-200 ease-in-out hover:invert-30 cursor-pointer absolute top-2 right-2 active:scale-105 active:duration-0"/>
+                        <X className="transition duration-200 ease-in-out cursor-pointer absolute top-2 right-2 active:scale-105 active:duration-0 text-neutral-300 hover:text-neutral-100 w-6 h-6" />
                     } onClick={onClose}/>
                 </div>
-                <div className="w-5/12 h-full p-0 top-0 left-0">
+                <div className="hidden md:block md:w-5/12 h-full p-0 top-0 left-0">
                     <Image src="/images/person mountains.webp" alt="img.png" width="1499" height="1000"
                            className="object-cover w-full h-full "></Image>
                 </div>
                 <form className="flex-1 flex-col flex justify-center" noValidate onSubmit={validateFormInput}>
-                    <FieldSet className="mx-36">
-                        <FieldTitle className="text-4xl antialiased font-semibold text-stone-200">Login</FieldTitle>
+                    <FieldSet className="mx-6 sm:mx-12 md:mx-24 lg:mx-36">
+                        <FieldTitle className="text-2xl sm:text-3xl md:text-4xl antialiased font-semibold text-stone-200">Login</FieldTitle>
                         <FieldGroup>
                             <Field>
                                 <FieldLegend variant="legend"
@@ -79,8 +79,14 @@ const LoginModal = ({onClose, onClickRegister, onClickForgotPassword}: LoginModa
                                 {loginError.email && <FieldError>{loginError.email}</FieldError>}
                             </Field>
                             <Field>
-                                <FieldLegend variant="legend"
-                                             className="antialiased text-stone-200 mb-0 pt-3">Password</FieldLegend>
+                                <FieldLegend variant="legend" className="antialiased text-stone-200 mb-0 pt-3 flex flex-row justify-between items-center">
+                                    Password
+                                    <CustomButton content="Forgot Password?"
+                                                  customCSS="text-blue-300 underline max-w-full whitespace-nowrap p-0!"
+                                                  style="secondary"
+                                                  onClick={onClickForgotPassword}
+                                    ></CustomButton>
+                                </FieldLegend>
                                 <Input placeholder="" name="password" type="password"
                                        value={loginInput.password}
                                        onChange={({target}) => handleUserInput(target.name, target.value)}
@@ -89,13 +95,7 @@ const LoginModal = ({onClose, onClickRegister, onClickForgotPassword}: LoginModa
                             </Field>
                         </FieldGroup>
                         <FieldSeparator className="mt-1"></FieldSeparator>
-                        <div className="flex">
-                            <CustomButton content="Forgot Password?"
-                                          customCSS="text-blue-300 underline max-w-full whitespace-nowrap pl-0!"
-                                          style="secondary"
-                                          onClick={onClickForgotPassword}
-                            ></CustomButton>
-                        </div>
+
                         <Field>
                             <Button className="text-white font-normal py-5" type="submit">Login</Button>
                             <Button variant="outline" className="text-white font-normal py-5"

@@ -1,5 +1,5 @@
 import Header from "@/components/header";
-import Content from "@/app/main/content";
+import Content from "@/app/content";
 import HeroSection from "@/app/heroSection";
 import Footer from "@/app/footer";
 

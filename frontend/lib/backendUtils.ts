@@ -1,5 +1,6 @@
 "use server"
 import {createClient} from "./supabase/server";
+import {createClient as createSupabaseClient} from "@supabase/supabase-js";
 import {pathways} from "@/lib/pathways";
 
 // Neste ficheiro não e preciso verificar pelo id do utilizador ja que a BD tem politicas de acesso (RLP)
@@ -813,6 +814,32 @@ const GetConjugationFlashcardById = async (flashcardId: string) => {
     return {data: data as ConjugationFlashcardRow | null, error: null}
 }
 
+const LogOut = async () => {
+    const supabase = await createClient()
+    await supabase.auth.signOut()
+}
+
+const DeleteAccount = async () => {
+    const supabase = await createClient()
+    const {data: {user}} = await supabase.auth.getUser()
+
+    if (!user) return {data: null, error: new Error("Not authenticated")}
+
+    const adminClient = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    const {error} = await adminClient.auth.admin.deleteUser(user.id)
+
+    if (error) {
+        console.error("Error deleting account:", error)
+        return {data: null, error}
+    }
+
+    return {data: true, error: null}
+}
+
 export {
     GetLanguages,
     InsertWordsFlashcard,
@@ -846,4 +873,6 @@ export {
     GetDueFlashcards,
     GetDueConjugationFlashcards,
     UpdateFlashcardReview,
+    LogOut,
+    DeleteAccount,
 }

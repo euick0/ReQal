@@ -56,24 +56,22 @@ const Header = () => {
             }}/>}
 
             <div
-                className="fixed top-5 left-5 right-5 flex justify-between box-border px-8 py-3 items-center bg-gray-500/30 rounded-4xl z-50 backdrop-blur-sm">
+                className="fixed top-3 left-3 right-3 sm:top-5 sm:left-5 sm:right-5 flex justify-between box-border px-3 py-2 md:px-8 md:py-3 items-center bg-gray-500/30 rounded-4xl z-50 backdrop-blur-sm">
                 <div className="flex flex-1 items-center gap-4 justify-start">
-                    <Logo width={100} height={100} iconType="textDark"/>
+                    <Logo width={100} height={100} iconType="textDark" className=""/>
                 </div>
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="lg"
-                             className="rounded-xl text-white text-md px-3 py-2 font-normal"
-                    >About us</Button>
-                        <Button variant="ghost" size="lg"
-                        className="rounded-xl text-white text-md px-3 py-2 font-normal"
-                        >Contact us</Button>
+                <div className="hidden md:flex items-center gap-4">
 
                 </div>
-                <div className="flex flex-1 items-center gap-4 justify-end">
-                    <Button variant="ghost" size="lg"
-                            className="rounded-xl text-white text-md px-3 py-2 font-normal"
+                <div className="flex flex-1 items-center gap-2 md:gap-4 justify-end">
+                    <Button variant="ghost" size="sm" className="rounded-xl text-white text-md px-3 py-2 font-normal md:hidden"
                             onClick={ToggleLoginModal}>Login</Button>
-                    <Button size="lg" className="rounded-xl text-white text-md px-3 py-2 font-normal"
+                    <Button variant="ghost" size="lg"
+                            className="rounded-xl text-white text-md px-3 py-2 font-normal hidden md:flex"
+                            onClick={ToggleLoginModal}>Login</Button>
+                    <Button size="sm" className="rounded-xl text-white text-md px-3 py-2 font-normal md:hidden"
+                            onClick={ToggleRegisterModal}>Register</Button>
+                    <Button size="lg" className="rounded-xl text-white text-md px-3 py-2 font-normal hidden md:flex"
                             onClick={ToggleRegisterModal}>Register</Button>
                 </div>
             </div>

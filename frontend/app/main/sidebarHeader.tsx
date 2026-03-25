@@ -3,6 +3,7 @@ import Image from "next/image";
 import clsx from "clsx";
 import {SidebarContext} from "@/app/main/sidebar";
 import {redirect} from "next/navigation";
+import {PanelLeftClose} from "lucide-react";
 
 const SidebarHeader = () => {
     const [isIconVisible, setIsIconVisible] = React.useState(false);
@@ -39,9 +40,9 @@ const SidebarHeader = () => {
                    className="cursor-pointer"
                    onClick={() => redirect("/main/")}
   />
-            {isIconVisible && <Image src="/svgs/sidebar-reverse.svg" alt="Open Sidebar" width={40} height={40}
-                                     className={clsx(` invert-100 transition-all duration-200 ease-in-out cursor-pointer`, {"pointer-events-none opacity-0 mr-0": !isIconActive}, {"opacity-100 mr-6": isIconActive})}
-                                     onClick={() => setIsExpanded(!isExpanded)}/>}
+            {isIconVisible && <PanelLeftClose
+                className={clsx(`transition-all duration-200 ease-in-out cursor-pointer text-neutral-300 hover:text-neutral-100`, {"pointer-events-none opacity-0 mr-0": !isIconActive}, {"opacity-100 mr-6": isIconActive})}
+                onClick={() => setIsExpanded(!isExpanded)}/>}
         </div>
     );
 };

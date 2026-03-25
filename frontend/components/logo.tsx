@@ -5,9 +5,10 @@ interface LogoProps {
     width: number;
     height: number;
     iconType: "dark" | "light" | "textDark" | "textLight";
+    className?: string;
 }
 
-const Logo = ({width,height, iconType}: LogoProps) => {
+const Logo = ({width, height, iconType, className}: LogoProps) => {
     let iconSource = "/svgs/Reqal%20Logo%20-%20Dark%20Mode.svg"
     if (iconType === "dark") {
         iconSource = "/svgs/Reqal%20Logo%20-%20Dark%20Mode.svg"
@@ -22,7 +23,7 @@ const Logo = ({width,height, iconType}: LogoProps) => {
         iconSource = "/svgs/Reqal%20Logo%20W-text.svg"
     }
     return (
-        <div>
+        <div className={className}>
             <Image src={iconSource} alt="ReQal Logo" width={width} height={height}></Image>
         </div>
     );

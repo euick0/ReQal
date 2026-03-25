@@ -1,7 +1,7 @@
 "use client"
 
 import React, {FormEvent, useState} from 'react';
-import Image from "next/image";
+import {X} from "lucide-react";
 import {Input} from "@/components/ui/input";
 import {Field, FieldError, FieldGroup, FieldLegend, FieldSet, FieldTitle} from "@/components/ui/field";
 import {Button} from "@/components/ui/button";
@@ -64,14 +64,8 @@ const ForgotPasswordModal = ({onClose, onClickLogin}: ForgotPasswordModalProps) 
             <div className="bg-backgroundLight rounded-md w-8/12 h-8/12 relative flex overflow-hidden">
                 <div className="w-0 h-0">
                     <Button variant="ghost" size="icon" onClick={onClose}
-                            className="absolute top-2 right-2 p-0 hover:bg-transparent">
-                        <Image
-                            src="/svgs/x.svg"
-                            width="25"
-                            height="25"
-                            alt="Close Modal Button"
-                            className="transition duration-200 ease-in-out hover:invert-30 active:scale-105 active:duration-0"
-                        />
+                            className="absolute top-2 right-2 p-0 hover:bg-transparent text-neutral-300 hover:text-neutral-100">
+                        <X className="w-5 h-5 transition duration-200 ease-in-out active:scale-105 active:duration-0" />
                     </Button>
                 </div>
                 <div className="w-5/12 h-full p-0 top-0 left-0">

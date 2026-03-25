@@ -7,6 +7,8 @@ import SidebarHeader from "@/app/main/sidebarHeader";
 import SidebarFooter from "@/app/main/sidebarFooter";
 import SidebarGroup, {GroupItem} from "@/app/main/sidebarGroup";
 import {usePathname} from "next/navigation";
+import {Button} from "@/components/ui/button";
+import {BookOpen, Layers, Menu} from "lucide-react";
 
 const Sidebar = () => {
     const [isExpanded, setIsExpanded] = React.useState(false);
@@ -41,21 +43,36 @@ const Sidebar = () => {
 
     return (
         <SidebarContext.Provider value={{isExpanded, setIsExpanded}}>
-            <div ref={sidebarRef} className="flex h-screen fixed z-3">
-                <div className={clsx(`group bg-backgroundLight w-20 h-full fixed top-0 left-0 rounded-r-lg z-10 transition-all duration-300 ease-in-out flex flex-col justify-between`, {
-                        "w-64": isExpanded,
+            <>
+                <div
+                    className={clsx("fixed inset-0 bg-black/50 z-[9] md:hidden transition-opacity duration-300", {
+                        "opacity-100": isExpanded,
+                        "opacity-0 pointer-events-none": !isExpanded,
+                    })}
+                    onClick={() => setIsExpanded(false)}
+                />
+                <div ref={sidebarRef} className={clsx(`group bg-backgroundLight w-64 h-full fixed top-0 left-0 rounded-r-lg z-10 transition-all duration-300 ease-in-out flex flex-col justify-between`, {
+                        "-translate-x-full md:translate-x-0 md:w-20": !isExpanded,
                     })}>
                     <SidebarHeader></SidebarHeader>
                     <div className="flex-row items-center justify-evenly">
-                        <SidebarGroup groupItems={decksGroup} size={35} text="Decks" imagePath="/svgs/flashcard_deck.svg" invert={true}  redirectUrl="/main/decks" />
-                        <SidebarGroup groupItems={flashcardGroup} size={50} text="Flashcards" imagePath="/svgs/cards.svg" invert={true} redirectUrl="/main/flashcards" />
+                        <SidebarGroup groupItems={decksGroup} icon={<Layers className="w-8 h-8 text-neutral-300" />} text="Decks" redirectUrl="/main/decks/my-decks" />
+                        <SidebarGroup groupItems={flashcardGroup} icon={<BookOpen className="w-8 h-8 text-neutral-300" />} text="Flashcards" redirectUrl="/main/flashcards/600-words" />
                     </div>
                     <div className="w-full flex-row items-center">
                         <SidebarFooter></SidebarFooter>
                     </div>
                 </div>
                 <Breadcrumbs/>
-            </div>
+                <Button
+                    className="fixed bottom-4 left-4 z-11 md:hidden rounded-full w-12 h-12 shadow-lg"
+                    variant="default"
+                    size="icon"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                >
+                    <Menu className="size-7" />
+                </Button>
+            </>
         </SidebarContext.Provider>
     );
 

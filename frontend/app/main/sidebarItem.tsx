@@ -1,29 +1,23 @@
 import React from 'react';
-import Image from "next/image";
-import clsx from "clsx";
 import {redirect} from "next/navigation";
 
 
-const SidebarItem = ({size, text, imagePath, customCSS, invert, redirectUrl}: SidebarItemProps) => {
+const SidebarItem = ({icon, text, redirectUrl}: SidebarItemProps) => {
 
     return (
         <div className="w-full h-20 border-transparent border rounded-xl flex m-auto overflow-hidden cursor-pointer">
             <div className="w-[80px] h-[80px] flex items-center justify-center shrink-0">
-                <Image src={imagePath} alt="Sidebar Item Icon" width={size} height={size}
-                       className={clsx(`${customCSS}`, {"invert": invert})} onClick={() => {if (redirectUrl) redirect(redirectUrl)}}/>
+                {icon}
             </div>
-            <p className="text-center ml-4 my-auto text-xl whitespace-nowrap text-neutral-300 hover:text-neutral-100 transition duration-100 ease-in-out">{text}</p>
+            <p className="text-center ml-4 my-auto text-xl whitespace-nowrap text-neutral-300 hover:text-neutral-100 transition duration-100 ease-in-out" onClick={() => {if (redirectUrl) redirect(redirectUrl)}}>{text}</p>
         </div>
     );
 };
 
 
 export interface SidebarItemProps {
-    size: number;
+    icon: React.ReactNode;
     text?: string;
-    imagePath: string;
-    customCSS?: string;
-    invert?: boolean;
     redirectUrl?: string;
 }
 

@@ -1,193 +1,147 @@
- "use client"
+"use client"
+import React from 'react';
+import { motion } from "motion/react";
+import { Globe, BookOpen, LayersIcon, Repeat2 } from "lucide-react";
 
-import React, {useState} from 'react';
-import {motion} from "motion/react"
-import {Card, CardContent, CardTitle} from "@/components/ui/card";
-import {Line, LineChart, XAxis, YAxis} from "recharts";
-import {ChartContainer, ChartTooltip, ChartTooltipContent} from "@/components/ui/chart";
-
-const cards = [
+const steps = [
     {
-        title: "Learn according to your needs",
-        content: "Create flashcards with custom words so you learn what you want",
+        icon: Globe,
+        title: "Learn the alphabet and phonetics",
+        description: "Get familiar with how the language sounds before attempting words. Correct pronunciation from day one prevents bad habits.",
     },
     {
-        title: <span>Cover the basics of any language, <span className="italic">fast</span></span>,
-        content: "Quickly learn 80% of any language with the most common 600 words",
+        icon: BookOpen,
+        title: "Build your core vocabulary",
+        description: "Learn the 600 most common words to cover 80% of everyday conversation. Use the spaced repetition system to lock them in.",
     },
     {
-        title: "Master grammar easily",
-        content: "No memorizing entire conjugation charts, just use the power of flashcards",
+        icon: LayersIcon,
+        title: "Create your personal decks",
+        description: "Add words specific to your goals — travel, business, or culture. Use the conjugation flashcards to study grammar. Your decks grows with you as your needs evolve.",
+    },
+    {
+        icon: Repeat2,
+        title: "Review and retain long-term",
+        description: "Use scheduled reviews to fight forgetting. The algorithm spaces reviews optimally so you never over-study or under-study.",
     },
 ];
 
-const reviewDays = [1, 2, 4, 10, 16, 24];
-const reviewDaySet = new Set(reviewDays);
-
-const stabilityAfterReview: Record<number, number> = {
-    0:  1.5,
-    1:  2.5,
-    2:  5,
-    4:  10,
-    10: 16,
-    16: 22,
-    24: 30,
-};
-
-const retentionData = Array.from({length: 30}, (_, i) => {
-    const day = i + 1;
-    const withoutFlashcards = Math.round(100 / (1 + (day - 1) / 1.5));
-    let lastReview = 0;
-    for (const r of reviewDays) { if (r <= day) lastReview = r; }
-    const daysSinceReview = day - lastReview;
-    const S = stabilityAfterReview[lastReview] ?? 1.5;
-    const withFlashcards = reviewDaySet.has(day) ? 100 : Math.round(100 * Math.exp(-daysSinceReview / S));
-    return {day: `Day ${day}`, withoutFlashcards, withFlashcards};
+const stepTransition = (i: number) => ({
+    duration: 0.35,
+    type: "spring" as const,
+    damping: 16,
+    stiffness: 100,
+    delay: i * 0.25,
 });
 
-const chartConfig = {
-    withFlashcards: {label: "With flashcards", color: "#2FA4A9"},
-    withoutFlashcards: {label: "Without flashcards", color: "#6b7280"},
-};
-
-const containerVariants = {
-    hidden: {},
-    visible: {transition: {staggerChildren: 0.4}},
-};
-
-const cardVariants = {
-    hidden: {opacity: 0, y: 200},
-    visible: {opacity: 1, y: 0, transition: {duration: 0.6, type: "spring" as const, damping: 12, stiffness: 50}},
-};
-
-const fadeVariants = {
-    hidden: {opacity: 0},
-    visible: {opacity: 1, transition: {duration: 0.6}},
-};
-
-const Content = () => {
-    const [flipped, setFlipped] = useState([false, false, false]);
-    const toggle = (i: number) => setFlipped(f => f.map((v, idx) => idx === i ? !v : v));
-
+const MainContent = () => {
     return (
-        <>
-            <motion.div initial={{opacity: 0, y: 200}} whileInView={{opacity: 1, y: 0}}
-                        transition={{duration: 0.6, type: "spring", damping: 12, stiffness: 50}}
-                        viewport={{margin: "0px 0px -150px 0px"}}
-                        className="relative z-1 mx-10 -mt-26 overflow-hidden">
-                <Card className=" mx-32 bg-backgroundLight border-0">
-                    <CardContent>
-                        <h2 className="text-5xl font-bold text-center my-8">Flashcards that grow with <span
-                            className="bg-gradient-to-tr from-contrast to-contrastDark bg-clip-text text-transparent">your</span> progress
-                        </h2>
-                    </CardContent>
-                    <motion.div className="flex flex-row gap-8 mx-8 h-full"
-                                variants={containerVariants}
-                                initial="hidden"
-                                whileInView="visible"
-                                viewport={{margin: "0px 0px -150px 0px"}}>
-                        {cards.map((card, i) => (
-                            <motion.div key={i} className="flex-1"
-                                        variants={cardVariants}
-                                        whileHover={{rotate: -2}}>
-                                <div style={{perspective: 1000}} className="h-120 cursor-pointer"
-                                     onClick={() => toggle(i)}>
+        <div className="min-h-screen pl-20 flex flex-col py-16 px-8 md:px-16 box-border mx-20">
+            <motion.h1
+                className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-16 text-center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, type: "spring", damping: 16, stiffness: 100 }}
+            >
+                Steps for your{" "}
+                <span className="italic bg-gradient-to-tr to-complement2 from-complement bg-clip-text text-transparent">
+                    language learning
+                </span>{" "}
+                journey
+            </motion.h1>
+
+            <motion.div
+                className="flex-1 flex items-center"
+            >
+                <div className="w-full">
+
+                    {/* Above content row */}
+                    <div className="flex flex-row">
+                        {steps.map((step, i) => {
+                            const isAbove = i % 2 === 0;
+                            return (
+                                <div
+                                    key={i}
+                                    className="flex-1 flex flex-col items-center justify-end pb-8 text-center px-3"
+                                    style={{ minHeight: "160px" }}
+                                >
+                                    {isAbove && (
+                                        <motion.div
+                                            className="flex flex-col items-center gap-1"
+                                            initial={{ opacity: 0, y: -20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={stepTransition(i)}
+                                        >
+                                            <span className="text-sm md:text-base font-semibold text-neutral-100">
+                                                {step.title}
+                                            </span>
+                                            <span className="text-xs md:text-sm text-neutral-400 leading-relaxed max-w-[180px]">
+                                                {step.description}
+                                            </span>
+                                        </motion.div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Nodes row with connecting line */}
+                    <div className="relative flex flex-row">
+                        <div
+                            className="absolute top-1/2 left-[12.5%] right-[12.5%] h-px -translate-y-1/2 bg-gradient-to-r from-contrast  to-contrast/40"
+                            aria-hidden="true"
+                        />
+                        {steps.map((step, i) => {
+                            const Icon = step.icon;
+                            return (
+                                <div key={i} className="flex-1 flex justify-center">
                                     <motion.div
-                                        animate={{rotateY: flipped[i] ? 180 : 0}}
-                                        transition={{duration: 0.6, type: "spring", damping: 14, stiffness: 60}}
-                                        style={{transformStyle: "preserve-3d", position: "relative", height: "100%"}}
+                                        className="w-10 h-10 rounded-full bg-surface border border-border flex items-center justify-center z-10 relative"
+                                        initial={{ opacity: 0, scale: 0.5 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={stepTransition(i)}
                                     >
-                                        <div style={{backfaceVisibility: "hidden", position: "absolute", inset: 0}}>
-                                            <Card
-                                                className="bg-background border-0 h-full flex items-center justify-center">
-                                                <CardTitle
-                                                    className="mx-auto text-3xl text-center px-6">{card.title}</CardTitle>
-                                            </Card>
-                                        </div>
-                                        <div style={{
-                                            backfaceVisibility: "hidden",
-                                            transform: "rotateY(180deg)",
-                                            position: "absolute",
-                                            inset: 0
-                                        }}>
-                                            <Card
-                                                className="bg-background border-0 h-full flex items-center justify-center ">
-                                                <CardContent
-                                                    className="mx-auto text-2xl text-center px-6">{card.content}</CardContent>
-                                            </Card>
-                                        </div>
+                                        <Icon className="w-5 h-5 text-contrastDark" />
                                     </motion.div>
                                 </div>
-                            </motion.div>
-                        ))}
-                    </motion.div>
-                </Card>
+                            );
+                        })}
+                    </div>
+
+                    {/* Below content row */}
+                    <div className="flex flex-row">
+                        {steps.map((step, i) => {
+                            const isBelow = i % 2 === 1;
+                            return (
+                                <div
+                                    key={i}
+                                    className="flex-1 flex flex-col items-center justify-start pt-8 text-center px-3"
+                                    style={{ minHeight: "160px" }}
+                                >
+                                    {isBelow && (
+                                        <motion.div
+                                            className="flex flex-col items-center gap-1"
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={stepTransition(i)}
+                                        >
+                                            <span className="text-sm md:text-base font-semibold text-neutral-100">
+                                                {step.title}
+                                            </span>
+                                            <span className="text-xs md:text-sm text-neutral-400 leading-relaxed max-w-[180px]">
+                                                {step.description}
+                                            </span>
+                                        </motion.div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                </div>
             </motion.div>
-            <motion.div className="h-135 z-10 mx-18 my-20 flex flex-row gap-8"
-                        variants={containerVariants}
-                        initial="hidden"
-                        whileInView="visible"
-                        viewport={{margin: "0px 0px -150px 0px"}}>
-
-                <motion.div variants={fadeVariants} className="flex-3/5">
-                    <Card className="bg-backgroundLight border-0 p-6 flex flex-col gap-4 h-full">
-                        <div>
-                            <h3 className="text-2xl font-bold text-neutral-100">Retention over time</h3>
-                            <p className="text-neutral-400 mt-1">Flashcards vs wihtout</p>
-                        </div>
-                        <ChartContainer config={chartConfig} className="flex-1 min-h-0 w-full">
-                            <LineChart data={retentionData}>
-                                <XAxis
-                                    dataKey="day"
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tick={{fill: "#9ca3af", fontSize: 12}}
-                                    ticks={[...reviewDays.map(d => `Day ${d}`), "Day 30"]}
-                                />
-                                <YAxis domain={[0, 100]} hide/>
-                                <ChartTooltip content={
-                                    <ChartTooltipContent
-                                        indicator="line"
-                                        formatter={(value, name, item) => (
-                                            <>
-                                                <div className="shrink-0 rounded-[2px] w-1 self-stretch"
-                                                     style={{backgroundColor: item.color}}/>
-                                                <div className="flex flex-1 justify-between leading-none items-center">
-                                                    <span className="text-muted-foreground">
-                                                        {chartConfig[name as keyof typeof chartConfig]?.label ?? name}
-                                                    </span>
-                                                    <span className="ml-8 font-mono font-medium text-foreground tabular-nums">{value}%</span>
-                                                </div>
-                                            </>
-                                        )}
-                                    />
-                                }/>
-                                <Line dataKey="withoutFlashcards" stroke="var(--color-withoutFlashcards)" strokeWidth={2}
-                                      dot={false}/>
-                                <Line dataKey="withFlashcards" stroke="var(--color-withFlashcards)" strokeWidth={2}
-                                      dot={false}/>
-                            </LineChart>
-                        </ChartContainer>
-                    </Card>
-                </motion.div>
-                <motion.div variants={fadeVariants} className="flex-2/5">
-                    <Card className="bg-backgroundLight border-0 h-full">
-                        <div className="flex flex-col justify-center ml-28 flex-1">
-                            <CardTitle
-                                className="text-left text-[150px] bg-gradient-to-tr from-complement2 to-complement bg-clip-text text-transparent left-0 relative">
-                                3x
-                            </CardTitle>
-                            <CardContent className="text-xl left-0 relative text-left mx-0! px-0 text-neutral-200 pr-32 font-semibold">
-                                More retention long term by using flashcards compared to cramming words
-                            </CardContent>
-                        </div>
-                    </Card>
-                </motion.div>
-
-            </motion.div>
-        </>
-
+        </div>
     );
 };
 
-export default Content;
+export default MainContent;

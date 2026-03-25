@@ -3,6 +3,7 @@ import React, {FormEvent, useState} from 'react';
 import CustomButton from "@/components/customButton";
 import Image from "next/image";
 import RegisterHandler from "@/lib/register";
+import {X} from "lucide-react";
 import {Field, FieldError, FieldGroup, FieldLegend, FieldSeparator, FieldSet, FieldTitle} from "@/components/ui/field";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
@@ -110,24 +111,22 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
                 onClose()
             }}/>
             <div className="z-2 fixed top-0 left-0 w-screen h-screen bg-black/70 flex justify-center items-center">
-                <div className="bg-backgroundLight rounded-md w-8/12 h-8/12 relative flex overflow-hidden">
+                <div className="bg-backgroundLight rounded-md w-11/12 sm:w-9/12 md:w-8/12 h-auto max-h-[90vh] md:h-8/12 relative flex overflow-y-auto md:overflow-hidden">
                     <div className="w-0 h-0">
                         <CustomButton style="secondary"
-                                      reactNode={<Image src="/svgs/x.svg" width="25" height="25"
-                                                        alt="Close Login Modal Button"
-                                                        className="transition duration-200 ease-in-out hover:invert-30 cursor-pointer absolute top-2 right-2 active:scale-105 active:duration-0"/>}
+                                      reactNode={<X className="transition duration-200 ease-in-out cursor-pointer absolute top-2 right-2 active:scale-105 active:duration-0 text-neutral-300 hover:text-neutral-100 w-6 h-6" />}
                                       onClick={onClose}/>
                     </div>
-                    <div className="w-5/12 h-full p-0 top-0 left-0">
+                    <div className="hidden md:block md:w-5/12 h-full p-0 top-0 left-0">
                         <Image src="/images/person mountains.webp" alt="img.png" width="1499" height="1000"
                                className="object-cover w-full h-full"></Image>
                     </div>
                     <form className="flex-1 flex-col flex justify-center" noValidate onSubmit={(event) => {
                         validateFormInput(event)
                     }}>
-                        <FieldSet className="mx-36">
+                        <FieldSet className="mx-6 sm:mx-12 md:mx-24 lg:mx-36">
                             <FieldTitle
-                                className="text-4xl antialiased font-semibold text-stone-200">Register</FieldTitle>
+                                className="text-2xl sm:text-3xl md:text-4xl antialiased font-semibold text-stone-200">Register</FieldTitle>
                             <FieldGroup>
                                 <Field>
                                     <FieldLegend variant="legend"

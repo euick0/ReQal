@@ -15,8 +15,8 @@ const HeroText = ({ scrollYProgress }: HeroTextProps) => {
             transition={{ duration: 0.6, type: "spring", damping: 12, stiffness: 50 }}
             className="w-full h-full flex flex-col items-center justify-center overflow-hidden"
         >
-            <h1 className="text-center text-6xl font-semibold">Learn any language</h1>
-            <h1 className="text-center text-6xl font-bold p-1 bg-gradient-to-tr from-primary to-complement bg-clip-text text-transparent pb-5">
+            <h1 className="text-center text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold">Learn any language</h1>
+            <h1 className="text-center text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold p-1 bg-gradient-to-tr from-primary to-complement bg-clip-text text-transparent pb-5">
                 Travel wherever you want
             </h1>
         </motion.div>
