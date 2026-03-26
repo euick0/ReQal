@@ -121,10 +121,10 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
                         <Image src="/images/person mountains.webp" alt="img.png" width="1499" height="1000"
                                className="object-cover w-full h-full"></Image>
                     </div>
-                    <form className="flex-1 flex-col flex justify-center" noValidate onSubmit={(event) => {
+                    <form className="flex-1 flex-col flex justify-center min-h-0" noValidate onSubmit={(event) => {
                         validateFormInput(event)
                     }}>
-                        <FieldSet className="mx-6 sm:mx-12 md:mx-24 lg:mx-36">
+                        <FieldSet className="mx-6 sm:mx-10 md:mx-12 lg:mx-16 py-6 sm:py-8">
                             <FieldTitle
                                 className="text-2xl sm:text-3xl md:text-4xl antialiased font-semibold text-stone-200">Register</FieldTitle>
                             <FieldGroup>

@@ -24,7 +24,7 @@ const Logo = ({width, height, iconType, className}: LogoProps) => {
     }
     return (
         <div className={className}>
-            <Image src={iconSource} alt="ReQal Logo" width={width} height={height}></Image>
+            <Image src={iconSource} alt="ReQal Logo" width={width} height={height} style={{ width: '100%', height: 'auto' }}></Image>
         </div>
     );
 };

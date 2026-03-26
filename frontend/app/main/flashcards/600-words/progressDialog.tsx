@@ -39,17 +39,18 @@ const ProgressDialog = ({words, nextWord}: ProgressDialogProps) => {
     const arrangedWords = ArrangeWords(words);
 
     return (
-        <Carousel opts={{align: "center",}} className="w-250  mx-auto">
+        <div className="px-12 xl:px-0">
+        <Carousel opts={{align: "center",}} className="w-full xl:w-250 mx-auto">
             <CarouselContent className="">
                 {arrangedWords.map((arrangedWordsEntry) => (
-                    <CarouselItem key={arrangedWordsEntry.letter} className="basis-1/6">
+                    <CarouselItem key={arrangedWordsEntry.letter} className="basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6">
                         <Card className="bg-input/10!">
-                            <CardContent className="flex h-60 justify-top flex-col">
+                            <CardContent className="flex h-44 sm:h-52 xl:h-60 justify-top flex-col">
                                 <h6 className={clsx("text-2xl font-semibold text-center", {
                                     "text-contrast": arrangedWordsEntry.words.includes(nextWord)
                                 })}>{arrangedWordsEntry.letter}</h6>
                                 <div className="h-0.5 w-4/5 items-center bg-neutral-300 mx-auto my-1"></div>
-                                <ScrollArea className="flex-1 h-full max-h-[180px]">
+                                <ScrollArea className="flex-1 h-full max-h-[100px] sm:max-h-[140px] xl:max-h-[180px]">
                                     {arrangedWordsEntry.words.map((word, index) => (
                                         <p key={index} className={clsx("text-center text-sm", {
                                             "text-contrast": word === nextWord
@@ -65,6 +66,7 @@ const ProgressDialog = ({words, nextWord}: ProgressDialogProps) => {
             <CarouselPrevious/>
             <CarouselNext/>
         </Carousel>
+        </div>
     );
 };
 

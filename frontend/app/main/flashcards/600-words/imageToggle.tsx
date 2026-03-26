@@ -15,9 +15,9 @@ const ImageToggle = ({imageUrl, onToggle, alt, onLoad, defaultPressed}: ImageTog
     if (failed) return null;
 
     return (
-        <Toggle aria-label="Search Image" size="lg" variant="outline" defaultPressed={defaultPressed}
+        <Toggle aria-label="Search Image" variant="outline" defaultPressed={defaultPressed}
                 onPressedChange={(pressed) => onToggle(imageUrl, pressed)}
-                className="relative p-0 lg:w-[13vw] lg:h-[13vw] w-[15vw] h-[15vw] cursor-pointer group data-[state=on]:border-contrast data-[state=on]:border overflow-hidden">
+                className="relative p-0 h-auto w-full aspect-square cursor-pointer group data-[state=on]:border-contrast data-[state=on]:border overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={imageUrl} alt={alt ?? ""} onLoad={onLoad} onError={() => {
                 console.warn("Failed to load image:", imageUrl);

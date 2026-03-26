@@ -51,7 +51,7 @@ const Sidebar = () => {
                     })}
                     onClick={() => setIsExpanded(false)}
                 />
-                <div ref={sidebarRef} className={clsx(`group bg-backgroundLight w-64 h-full fixed top-0 left-0 rounded-r-lg z-10 transition-all duration-300 ease-in-out flex flex-col justify-between`, {
+                <div ref={sidebarRef} className={clsx(`group bg-backgroundLight w-64 h-dvh fixed top-0 left-0 rounded-r-lg z-50 transition-all duration-300 ease-in-out flex flex-col justify-between`, {
                         "-translate-x-full md:translate-x-0 md:w-20": !isExpanded,
                     })}>
                     <SidebarHeader></SidebarHeader>
@@ -65,12 +65,12 @@ const Sidebar = () => {
                 </div>
                 <Breadcrumbs/>
                 <Button
-                    className="fixed bottom-4 left-4 z-11 md:hidden rounded-full w-12 h-12 shadow-lg"
+                    className="fixed bottom-4 right-4 z-11 md:hidden rounded-full w-12 h-12 shadow-lg"
                     variant="default"
                     size="icon"
                     onClick={() => setIsExpanded(!isExpanded)}
                 >
-                    <Menu className="size-7" />
+                    <Menu className="size-7 text-white" />
                 </Button>
             </>
         </SidebarContext.Provider>

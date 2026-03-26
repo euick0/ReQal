@@ -325,12 +325,17 @@ const ConjugationParameters = () => {
     }
 
     return (
-        <div className="box-border pt-17 pr-0 pl-9 w-full">
+        <div className="box-border pt-20 md:pt-17 pr-2 lg:pr-0 pl-4 lg:pl-9 w-full">
             <ScrollArea className="w-full h-[calc(100vh-70px)] overflow-visible">
                 <Progress value={progress} className="w-full h-2 mb-4 mx-auto"></Progress>
+                <div className="md:hidden flex flex-wrap gap-2 mb-4">
+                    <Button className="text-white rounded-md! antialiased" size="default"
+                            type="button" onClick={(e) => { const form = document.getElementById("conjugation-form") as HTMLFormElement; form?.requestSubmit() }} disabled={isSubmitting}>Create</Button>
+                    <Button className="text-white" variant="ghost" size="default" type="button" onClick={handleEditLast} disabled={isSubmitting || isTranslating}>Edit Last</Button>
+                </div>
                 <Field className="w-auto p-1 pr-6 pb-4">
-                    <form className="" onSubmit={handleSubmit}>
-                        <div className="flex gap-2">
+                    <form className="" id="conjugation-form" onSubmit={handleSubmit}>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
                             <Combobox items={languages} name="language" value={language}
                                       onValueChange={(value) => {
                                           if (value !== null) {
@@ -339,7 +344,7 @@ const ConjugationParameters = () => {
                                           }
                                       }}
                                       required={true}>
-                                <ComboboxInput placeholder="Select a language" className="w-64"
+                                <ComboboxInput placeholder="Select a language" className="w-full sm:w-64"
                                                disabled={isSubmitting || isTranslating || languages.length === 0}/>
                                 <ComboboxContent>
                                     <ComboboxEmpty>No items found.</ComboboxEmpty>
@@ -366,7 +371,7 @@ const ConjugationParameters = () => {
                                 }}
                                 itemToStringValue={(pathway: (typeof pathways)[number]) => pathway.pathName}
                                 itemToStringLabel={(pathway: (typeof pathways)[number]) => pathway.pathName}>
-                                <ComboboxInput placeholder="Select a pathway" className="w-64 mb-4"
+                                <ComboboxInput placeholder="Select a pathway" className="w-full sm:w-64"
                                                disabled={isSubmitting || isTranslating}/>
                                 <ComboboxContent>
                                     <ComboboxEmpty>No items found.</ComboboxEmpty>
@@ -407,9 +412,9 @@ const ConjugationParameters = () => {
                             </HoverCard>
                         </div>
 
-                        <div className="flex items-center gap-2 mb-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
                             <Input
-                                className="w-60 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-60 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Original Word"
                                 value={missingWord}
                                 disabled={isSubmitting || isTranslating}
@@ -424,7 +429,7 @@ const ConjugationParameters = () => {
                             
 
                             <Input
-                                className="w-96 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-96 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Original Phrase"
                                 name="originalPhrase"
                                 value={originalPhrase}
@@ -441,16 +446,16 @@ const ConjugationParameters = () => {
                             </Button>
                         </div>
 
-                        <div className="flex gap-2 mb-4">
+                        <div className="flex flex-col sm:flex-row gap-2 mb-4">
                             <Input
-                                className="w-96 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-96 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Translated word"
                                 name="translatedWord"
                                 value={translatedWord}
                                 disabled={isSubmitting || isTranslating}
                                 onChange={({target}) => setTranslatedWord(target.value)}/>
                             <Input
-                                className="w-96 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-96 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Translated Phrase"
                                 name="translatedPhrase"
                                 value={translatedPhrase}
@@ -458,9 +463,9 @@ const ConjugationParameters = () => {
                                 onChange={({target}) => setTranslatedPhrase(target.value)}/>
                         </div>
 
-                        <div className="flex gap-2 mb-4">
+                        <div className="flex flex-col sm:flex-row gap-2 mb-4">
                             <Input
-                                className="w-70 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-70 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="IPA translation"
                                 name="IPATranslation"
                                 value={IPATranslation}
@@ -480,7 +485,7 @@ const ConjugationParameters = () => {
                                 <FieldLabel htmlFor="customImage" className="mb-1">Or choose your own
                                     image...</FieldLabel>
                                 <Input
-                                    className="w-96 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                    className="w-full sm:w-96 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                     placeholder="Or choose your own image" type="file"
                                     id="customImage"
                                     accept="image/*"
@@ -507,7 +512,7 @@ const ConjugationParameters = () => {
                             <FieldLabel htmlFor="customAudio" className="mb-1 ml-4">Or choose your own audio
                                 file...</FieldLabel>
                             <Input
-                                className="w-96 mb-4 ml-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-96 mb-4 ml-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Or choose your audio file" type="file"
                                 id="customAudio"
                                 accept="audio/*"
@@ -518,28 +523,29 @@ const ConjugationParameters = () => {
                                     if (file) setAudioPath(URL.createObjectURL(file))
                                 }}/>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center">
                             <Input
-                                className="w-70 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-70 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Optional: Image caption"
                                 value={imageCaption}
                                 name="imageCaption"
                                 disabled={isSubmitting}
                                 onChange={({target}) => setImageCaption(target.value)}/>
                             <Input
-                                className="w-70 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-70 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Optional: Translation caption"
                                 value={translationCaption}
                                 name="translationCaption"
                                 disabled={isSubmitting}
                                 onChange={({target}) => setTranslationCaption(target.value)}/>
                         </div>
-                        <div>
+                        <div className="hidden md:block">
                             <Button className="text-white mr-4 rounded-md!  antialiased" size="default"
                                     type="submit" disabled={isSubmitting}>Create</Button>
                             <Button className="text-white " variant="ghost" size="default" type="button" onClick={handleEditLast} disabled={isSubmitting || isTranslating}>Edit Last</Button>
+                        </div>
 
-                            <Dialog open={showLanguageDialog} onOpenChange={setShowLanguageDialog}>
+                        <Dialog open={showLanguageDialog} onOpenChange={setShowLanguageDialog}>
                                 <DialogContent showCloseButton={false} onInteractOutside={(e) => e.preventDefault()}>
                                     <DialogHeader>
                                         <DialogTitle>Select a language</DialogTitle>
@@ -567,7 +573,6 @@ const ConjugationParameters = () => {
                                     </DialogFooter>
                                 </DialogContent>
                             </Dialog>
-                        </div>
                     </form>
                 </Field>
                 <ScrollBar className="absolute pl-8"></ScrollBar>

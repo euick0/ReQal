@@ -58,7 +58,7 @@ const Header = () => {
             <div
                 className="fixed top-3 left-3 right-3 sm:top-5 sm:left-5 sm:right-5 flex justify-between box-border px-3 py-2 md:px-8 md:py-3 items-center bg-gray-500/30 rounded-4xl z-50 backdrop-blur-sm">
                 <div className="flex flex-1 items-center gap-4 justify-start">
-                    <Logo width={100} height={100} iconType="textDark" className=""/>
+                    <Logo width={100} height={100} iconType="textDark" className="w-16 sm:w-20 md:w-28"/>
                 </div>
                 <div className="hidden md:flex items-center gap-4">
 

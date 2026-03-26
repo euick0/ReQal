@@ -291,11 +291,16 @@ const CustomFlashcardParameters = () => {
     const isLoading = isSubmitting || isTranslating
 
     return (
-        <div className="box-border pt-17 pr-0 pl-9 w-full">
+        <div className="box-border pt-20 md:pt-17 pr-2 lg:pr-0 pl-4 lg:pl-9 w-full">
             <ScrollArea className="w-full h-[calc(100vh-70px)] overflow-visible">
                 <Progress value={progress} className="w-full h-2 mb-4 mx-auto"></Progress>
+                <div className="md:hidden flex flex-wrap gap-2 mb-4">
+                    <Button className="text-white rounded-md! antialiased" size="default"
+                            type="button" onClick={(e) => { const form = document.getElementById("custom-flashcard-form") as HTMLFormElement; form?.requestSubmit() }} disabled={isLoading}>Create</Button>
+                    <Button className="text-white" variant="ghost" size="default" type="button" onClick={handleEditLast} disabled={isLoading}>Edit Last</Button>
+                </div>
                 <Field className="w-auto p-1 pr-6 pb-4">
-                    <form className="" onSubmit={handleSubmit}>
+                    <form className="" id="custom-flashcard-form" onSubmit={handleSubmit}>
                         <Combobox items={languages} name="language" value={language ?? null}
                                   onValueChange={(value) => {
                                       setLanguage(value ?? null);
@@ -304,7 +309,7 @@ const CustomFlashcardParameters = () => {
                                       }
                                   }}
                                   required={true}>
-                            <ComboboxInput placeholder="Select a language" className="w-64 mb-4"
+                            <ComboboxInput placeholder="Select a language" className="w-full sm:w-64 mb-4"
                                            disabled={isLoading || languagesLoading}/>
                             <ComboboxContent>
                                 <ComboboxEmpty>No items found.</ComboboxEmpty>
@@ -318,7 +323,7 @@ const CustomFlashcardParameters = () => {
                             </ComboboxContent>
                         </Combobox>
 
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
                             <Combobox
                                 items={pathways}
                                 value={pathway}
@@ -332,7 +337,7 @@ const CustomFlashcardParameters = () => {
                                 }}
                                 itemToStringValue={(pathway: (typeof pathways)[number]) => pathway.pathName}
                                 itemToStringLabel={(pathway: (typeof pathways)[number]) => pathway.pathName}>
-                                <ComboboxInput placeholder="Select a pathway" className="w-64 mb-4"
+                                <ComboboxInput placeholder="Select a pathway" className="w-full sm:w-64"
                                                disabled={isLoading}/>
                                 <ComboboxContent>
                                     <ComboboxEmpty>No items found.</ComboboxEmpty>
@@ -373,9 +378,9 @@ const CustomFlashcardParameters = () => {
                             </HoverCard>
                         </div>
 
-                        <div className="flex items-center gap-2 mb-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-0">
                             <Input
-                                className="w-60 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-60 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Original Word"
                                 value={currentWord}
                                 disabled={isLoading}
@@ -398,9 +403,9 @@ const CustomFlashcardParameters = () => {
                             </Button>
                         </div>
 
-                        <div>
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap">
                             <Input
-                                className="w-96 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-96 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Translated word"
                                 name="translatedWord"
                                 value={translatedWord}
@@ -414,7 +419,7 @@ const CustomFlashcardParameters = () => {
                                 disabled={isLoading}
                                 onChange={({target}) => setTranslatedWordGender(target.value)}/>
                             <Input
-                                className="w-70 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-70 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="IPA translation"
                                 name="IPATranslation"
                                 value={IPATranslation}
@@ -427,7 +432,7 @@ const CustomFlashcardParameters = () => {
                                 <FieldLabel htmlFor="customImage" className="mb-1">Or choose your own
                                     image...</FieldLabel>
                                 <Input
-                                    className="w-96 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                    className="w-full sm:w-96 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                     placeholder="Or choose your own image" type="file"
                                     id="customImage"
                                     accept="image/*"
@@ -454,7 +459,7 @@ const CustomFlashcardParameters = () => {
                             <FieldLabel htmlFor="customAudio" className="mb-1 ml-4">Or choose your own audio
                                 file...</FieldLabel>
                             <Input
-                                className="w-96 mb-4 ml-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-96 mb-4 ml-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Or choose your audio file" type="file"
                                 id="customAudio"
                                 accept="audio/*"
@@ -465,23 +470,23 @@ const CustomFlashcardParameters = () => {
                                     if (file) setAudioPath(URL.createObjectURL(file))
                                 }}/>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center">
                             <Input
-                                className="w-70 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-70 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Optional: Image caption"
                                 value={imageCaption}
                                 name="imageCaption"
                                 disabled={isLoading}
                                 onChange={({target}) => setImageCaption(target.value)}/>
                             <Input
-                                className="w-70 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-70 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Optional: Translation caption"
                                 value={translationCaption}
                                 name="translationCaption"
                                 disabled={isLoading}
                                 onChange={({target}) => setTranslationCaption(target.value)}/>
                         </div>
-                        <div>
+                        <div className="hidden md:block">
                             <Button className="text-white mr-4 rounded-md!  antialiased" size="default"
                                     type="submit" disabled={isLoading}>Create</Button>
                             <Button className="text-white " variant="ghost" size="default" type="button" onClick={handleEditLast} disabled={isLoading}>Edit Last</Button>

@@ -60,15 +60,18 @@ const ConjugationCreation = () => {
 
     return (
         <ConjugationContext.Provider value={contextValue}>
-            <div className="flex flex-row pl-20 w-full h-screen right-0 overflow-visible">
+            <div className="flex flex-col md:flex-row pl-4 md:pl-20 w-full md:h-screen right-0 overflow-visible">
                 <div className="flex-1 overflow-visible">
                     <ConjugationParameters/>
                 </div>
-                <div className="items-center h-full flex mx-4">
+                <div className="hidden md:flex items-center h-full mx-4">
                     <div className="w-0.5 h-200 bg-rose-300 rounded-lg content-center"></div>
                 </div>
-                <ScrollArea className="box-border m-8 flex-1">
-                    <div className="flex flex-row items-center mb-1 gap-4 w-full justify-center">
+                <div className="md:hidden w-full px-4">
+                    <div className="h-0.5 w-full bg-rose-300 rounded-lg my-4"></div>
+                </div>
+                <ScrollArea className="box-border m-4 md:m-8 flex-1">
+                    <div className="hidden sm:flex flex-row items-center mb-1 gap-4 w-full justify-center">
                         <h1 className="m-auto">Front</h1>
                         <h1 className="m-auto">Back</h1>
                     </div>

@@ -41,7 +41,7 @@ const SidebarHeader = () => {
                    onClick={() => redirect("/main/")}
   />
             {isIconVisible && <PanelLeftClose
-                className={clsx(`transition-all duration-200 ease-in-out cursor-pointer text-neutral-300 hover:text-neutral-100`, {"pointer-events-none opacity-0 mr-0": !isIconActive}, {"opacity-100 mr-6": isIconActive})}
+                className={clsx(`w-7 h-7 shrink-0 transition-all duration-200 ease-in-out cursor-pointer text-neutral-300 hover:text-neutral-100`, {"pointer-events-none opacity-0 mr-0": !isIconActive}, {"opacity-100 mr-6": isIconActive})}
                 onClick={() => setIsExpanded(!isExpanded)}/>}
         </div>
     );

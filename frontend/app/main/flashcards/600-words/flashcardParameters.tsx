@@ -377,11 +377,27 @@ const FlashcardParameters = () => {
     }
 
     return (
-        <div className="box-border pt-17 pr-0 pl-9 w-full">
+        <div className="box-border pt-20 md:pt-17 pr-2 lg:pr-0 pl-4 lg:pl-9 w-full">
             <ScrollArea className="w-full h-[calc(100vh-70px)] overflow-visible">
                 <Progress value={progress} className="w-full h-2 mb-4 mx-auto"></Progress>
+                <div className="md:hidden flex flex-wrap gap-2 mb-4">
+                    <Button className="text-white rounded-md! antialiased" size="default"
+                            type="button" form="flashcard-form" onClick={(e) => { const form = document.getElementById("flashcard-form") as HTMLFormElement; form?.requestSubmit() }} disabled={isSubmitting}>Create</Button>
+                    <Button className="text-white" variant="ghost" size="default" type="button" onClick={handleEditLast} disabled={isSubmitting}>Edit Last</Button>
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button className="text-white" variant="ghost" size="default">Progress</Button>
+                        </DialogTrigger>
+                        <DialogContent className="w-300 h-100">
+                            <DialogHeader className="">
+                                <DialogTitle className="mb-5">{currentWordIndex} out of 604 completed</DialogTitle>
+                                <ProgressDialog words={wordList} nextWord={wordList[currentWordIndex]}/>
+                            </DialogHeader>
+                        </DialogContent>
+                    </Dialog>
+                </div>
                 <Field className="w-auto p-1 pr-6 pb-4">
-                    <form className="" onSubmit={handleSubmit}>
+                    <form className="" id="flashcard-form" onSubmit={handleSubmit}>
                         <Combobox items={languages} name="language" value={language}
                                   onValueChange={(value) => {
                                       if (value !== null) {
@@ -393,7 +409,7 @@ const FlashcardParameters = () => {
                                       }
                                   }}
                                   required={true}>
-                            <ComboboxInput placeholder="Select a language" className="w-64 mb-4"
+                            <ComboboxInput placeholder="Select a language" className="w-full sm:w-64 mb-4"
                                            disabled={isSubmitting}/>
                             <ComboboxContent>
                                 <ComboboxEmpty>No items found.</ComboboxEmpty>
@@ -407,7 +423,7 @@ const FlashcardParameters = () => {
                             </ComboboxContent>
                         </Combobox>
 
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
                             <Combobox
                                 items={pathways}
                                 value={pathway}
@@ -421,7 +437,7 @@ const FlashcardParameters = () => {
                                 }}
                                 itemToStringValue={(pathway: (typeof pathways)[number]) => pathway.pathName}
                                 itemToStringLabel={(pathway: (typeof pathways)[number]) => pathway.pathName}>
-                                <ComboboxInput placeholder="Select a pathway" className="w-64 mb-4"
+                                <ComboboxInput placeholder="Select a pathway" className="w-full sm:w-64"
                                                disabled={isSubmitting}/>
                                 <ComboboxContent>
                                     <ComboboxEmpty>No items found.</ComboboxEmpty>
@@ -461,16 +477,16 @@ const FlashcardParameters = () => {
                                 </HoverCardContent>
                             </HoverCard>
                             <Input
-                                className="w-60 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-60 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Original Word"
                                 value={currentWord ?? ""}
                                 disabled={isSubmitting}
                                 readOnly/>
                         </div>
 
-                        <div>
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap">
                             <Input
-                                className="w-96 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-96 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Translated word"
                                 name="translatedWord"
                                 value={translatedWord}
@@ -484,7 +500,7 @@ const FlashcardParameters = () => {
                                 disabled={isSubmitting}
                                 onChange={({target}) => setTranslatedWordGender(target.value)}/>
                             <Input
-                                className="w-70 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-70 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="IPA translation"
                                 name="IPATranslation"
                                 value={IPATranslation}
@@ -497,7 +513,7 @@ const FlashcardParameters = () => {
                                 <FieldLabel htmlFor="customImage" className="mb-1">Or choose your own
                                     image...</FieldLabel>
                                 <Input
-                                    className="w-96 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                    className="w-full sm:w-96 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                     placeholder="Or choose your own image" type="file"
                                     id="customImage"
                                     accept="image/*"
@@ -524,7 +540,7 @@ const FlashcardParameters = () => {
                             <FieldLabel htmlFor="customAudio" className="mb-1 ml-4">Or choose your own audio
                                 file...</FieldLabel>
                             <Input
-                                className="w-96 mb-4 ml-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-96 mb-4 ml-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Or choose your audio file" type="file"
                                 id="customAudio"
                                 accept="audio/*"
@@ -535,23 +551,23 @@ const FlashcardParameters = () => {
                                     if (file) setAudioPath(URL.createObjectURL(file))
                                 }}/>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center">
                             <Input
-                                className="w-70 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-70 mb-4 mr-2 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Optional: Image caption"
                                 value={imageCaption}
                                 name="imageCaption"
                                 disabled={isSubmitting}
                                 onChange={({target}) => setImageCaption(target.value)}/>
                             <Input
-                                className="w-70 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-full sm:w-70 mb-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Optional: Translation caption"
                                 value={translationCaption}
                                 name="translationCaption"
                                 disabled={isSubmitting}
                                 onChange={({target}) => setTranslationCaption(target.value)}/>
                         </div>
-                        <div>
+                        <div className="hidden md:block">
                             <Button className="text-white mr-4 rounded-md!  antialiased" size="default"
                                     type="submit" disabled={isSubmitting}>Create</Button>
                             <Button className="text-white " variant="ghost" size="default" type="button" onClick={handleEditLast} disabled={isSubmitting}>Edit Last</Button>
@@ -568,36 +584,36 @@ const FlashcardParameters = () => {
                                     </DialogHeader>
                                 </DialogContent>
                             </Dialog>
-
-                            <Dialog open={showLanguageDialog} onOpenChange={setShowLanguageDialog}>
-                                <DialogContent showCloseButton={false} onInteractOutside={(e) => e.preventDefault()}>
-                                    <DialogHeader>
-                                        <DialogTitle>Select a language</DialogTitle>
-                                        <DialogDescription>
-                                            Hi, it seems like its your first time here. Select a language you want to learn.
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <Combobox items={languages} value={dialogLanguage}
-                                              onValueChange={(v) => { if (v) setDialogLanguage(v) }}>
-                                        <ComboboxInput placeholder="Select a language" className="w-full"/>
-                                        <ComboboxContent>
-                                            <ComboboxEmpty>No items found.</ComboboxEmpty>
-                                            <ComboboxList>
-                                                {(item) => (
-                                                    <ComboboxItem key={item} value={item}>{item}</ComboboxItem>
-                                                )}
-                                            </ComboboxList>
-                                        </ComboboxContent>
-                                    </Combobox>
-                                    <DialogFooter>
-                                        <Button className="text-white rounded-md!" onClick={handleLanguageConfirm}
-                                                disabled={!dialogLanguage}>
-                                            Confirm
-                                        </Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
                         </div>
+
+                        <Dialog open={showLanguageDialog} onOpenChange={setShowLanguageDialog}>
+                            <DialogContent showCloseButton={false} onInteractOutside={(e) => e.preventDefault()}>
+                                <DialogHeader>
+                                    <DialogTitle>Select a language</DialogTitle>
+                                    <DialogDescription>
+                                        Hi, it seems like its your first time here. Select a language you want to learn.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <Combobox items={languages} value={dialogLanguage}
+                                          onValueChange={(v) => { if (v) setDialogLanguage(v) }}>
+                                    <ComboboxInput placeholder="Select a language" className="w-full"/>
+                                    <ComboboxContent>
+                                        <ComboboxEmpty>No items found.</ComboboxEmpty>
+                                        <ComboboxList>
+                                            {(item) => (
+                                                <ComboboxItem key={item} value={item}>{item}</ComboboxItem>
+                                            )}
+                                        </ComboboxList>
+                                    </ComboboxContent>
+                                </Combobox>
+                                <DialogFooter>
+                                    <Button className="text-white rounded-md!" onClick={handleLanguageConfirm}
+                                            disabled={!dialogLanguage}>
+                                        Confirm
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                     </form>
                 </Field>
                 <ScrollBar className="absolute pl-8"></ScrollBar>

@@ -62,14 +62,14 @@ const ForgotPasswordModal = ({onClose, onClickLogin}: ForgotPasswordModalProps) 
 
     return (
         <div className="z-2 fixed top-0 left-0 w-screen h-screen bg-black/70 flex justify-center items-center">
-            <div className="bg-backgroundLight rounded-md w-8/12 h-8/12 relative flex overflow-hidden">
+            <div className="bg-backgroundLight rounded-md w-11/12 sm:w-9/12 md:w-8/12 h-auto max-h-[90vh] md:h-8/12 relative flex overflow-y-auto md:overflow-hidden">
                 <div className="w-0 h-0">
                     <Button variant="ghost" size="icon" onClick={onClose}
                             className="absolute top-2 right-2 p-0 hover:bg-transparent text-neutral-300 hover:text-neutral-100">
                         <X className="w-5 h-5 transition duration-200 ease-in-out active:scale-105 active:duration-0" />
                     </Button>
                 </div>
-                <div className="w-5/12 h-full p-0 top-0 left-0">
+                <div className="hidden md:block md:w-5/12 h-full p-0 top-0 left-0">
                     <Image
                         src="/images/person mountains.webp"
                         alt="Background"
@@ -78,9 +78,9 @@ const ForgotPasswordModal = ({onClose, onClickLogin}: ForgotPasswordModalProps) 
                         className="object-cover w-full h-full"
                     />
                 </div>
-                <form className="flex-1 flex-col flex justify-center" noValidate onSubmit={validateFormInput}>
-                    <FieldSet className="mx-36">
-                        <FieldTitle className="text-4xl antialiased font-semibold text-stone-200">
+                <form className="flex-1 flex-col flex justify-center min-h-0" noValidate onSubmit={validateFormInput}>
+                    <FieldSet className="mx-6 sm:mx-10 md:mx-12 lg:mx-16 py-6 sm:py-8">
+                        <FieldTitle className="text-2xl sm:text-3xl md:text-4xl antialiased font-semibold text-stone-200">
                             Reset Password
                         </FieldTitle>
 
