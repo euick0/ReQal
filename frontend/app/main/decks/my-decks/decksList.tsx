@@ -80,20 +80,20 @@ const DeckList = () => {
     }
 
     return (
-        <div className="flex flex-col pl-20 w-full h-screen right-0 overflow-visible">
-            <h1 className="text-center text-5xl text-white font-semibold py-10">My decks</h1>
+        <div className="flex flex-col pl-0 md:pl-20 w-full h-screen right-0 overflow-visible">
+            <h1 className="text-center text-2xl sm:text-4xl md:text-5xl text-white font-semibold  md:py-10 py-16">My decks</h1>
             {isLoading ? (
-                <div className="flex flex-col mx-10">
+                <div className="flex flex-col mx-3 sm:mx-6 md:mx-10">
                     {[...Array(8)].map((_, i) => (
                         <Skeleton className="h-22 my-2 rounded-xl" key={`skeleton-${i}`} />
                     ))}
                 </div>
             ) : (
                 decks.map((deck) => (
-                    <Card className="mx-10 flex flex-col my-2" key={deck.id}>
-                        <div className="flex flex-row items-center justify-between">
-                            <h2 className="pl-5">{deck.name}</h2>
-                            <div>
+                    <Card className="mx-3 sm:mx-6 md:mx-10 flex flex-col my-2" key={deck.id}>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                            <h2 className="text-center sm:text-left pl-0 sm:pl-5">{deck.name}</h2>
+                            <div className="flex flex-nowrap justify-center sm:justify-end gap-0 px-3 sm:px-0 pb-2 sm:pb-0">
                                 <Button className="mr-5 text-neutral-200" variant="ghost" onClick={() => handleExport(deck.id, deck.name)}>Export to Anki</Button>
                                 <Button className="mr-5 text-neutral-200" variant="ghost" onClick={() => router.push(`/main/decks/my-decks/${deck.id}/edit-flashcards`)}>Edit Flashcards</Button>
                                 <Button className="mr-5 text-neutral-200 bg-red-700! hover:bg-red-800!"

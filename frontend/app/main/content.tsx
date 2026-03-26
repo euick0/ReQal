@@ -36,7 +36,7 @@ const stepTransition = (i: number) => ({
 
 const MainContent = () => {
     return (
-        <div className="min-h-screen md:pl-20 flex flex-col py-16 md:py-8 md:py-16 px-4 sm:px-8 md:px-16 box-border mx-0 sm:mx-6 md:mx-20">
+        <div className="min-h-screen md:pl-20 flex flex-col py-16 md:py-8  px-4 sm:px-8 md:px-16 box-border mx-0 sm:mx-6 md:mx-20">
             <motion.h1
                 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-8 md:mb-16 text-center"
                 initial={{ opacity: 0, y: 20 }}

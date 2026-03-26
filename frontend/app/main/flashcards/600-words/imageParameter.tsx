@@ -1,5 +1,4 @@
 import React from 'react';
-import {ScrollArea, ScrollBar} from "@/components/ui/scroll-area";
 import ImageToggle from "@/app/main/flashcards/600-words/imageToggle";
 import {FlashcardContext} from "@/app/main/flashcards/600-words/flashcardPreviews";
 
@@ -30,15 +29,14 @@ const ImageParameter = ({children, src, alt}: ImageParameterProps & { children: 
 
     return (
         <div className="max-w-full flex flex-col bg-input/10 rounded-lg mb-4 border-sidebar-border border min-h-[5rem]">
-            <ScrollArea className="max-w-full max-h-80 sm:max-h-120">
+            <div className="scrollbar-transparent overflow-y-auto max-h-80 sm:max-h-120">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full h-auto p-4">
                     {allImages.map((image, index) => (
                         <ImageToggle key={image} imageUrl={image} onToggle={handleImageToggle} alt={allAlts[index]}
                             defaultPressed={imagePath.includes(image)}/>
                     ))}
                 </div>
-                <ScrollBar orientation="vertical" className=""/>
-            </ScrollArea>
+            </div>
             {children}
         </div>
     );

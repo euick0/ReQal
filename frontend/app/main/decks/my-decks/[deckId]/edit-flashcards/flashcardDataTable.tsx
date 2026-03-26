@@ -303,9 +303,9 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
         return (row as FlashcardRow).translated_word
     }
 
-    const sortableHeader = (label: string, column: AnySortColumn) => (
+    const sortableHeader = (label: string, column: AnySortColumn, className?: string) => (
         <TableHead
-            className="cursor-pointer select-none hover:text-neutral-100 text-neutral-400 transition-colors"
+            className={`cursor-pointer select-none hover:text-neutral-100 text-neutral-400 transition-colors${className ? ` ${className}` : ""}`}
             onClick={() => handleSort(column)}
         >
             {label}
@@ -321,13 +321,13 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
                     placeholder="Search flashcards..."
                     value={searchInput}
                     onChange={e => setSearchInput(e.target.value)}
-                    className="max-w-sm bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-500"
+                    className="w-full sm:max-w-sm bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-500"
                 />
             </div>
 
             {/* Table */}
             <div
-                className={`rounded-md border border-neutral-800 bg-neutral-950 transition-opacity ${
+                className={`rounded-md border border-neutral-800 bg-neutral-950 transition-opacity overflow-x-auto ${
                     isPending ? "opacity-60" : "opacity-100"
                 }`}
             >
@@ -346,17 +346,17 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
                             {deckType === "conjugation" ? (
                                 <>
                                     {sortableHeader("Phrase", "phrase")}
-                                    {sortableHeader("Missing Word", "missing_word")}
+                                    {sortableHeader("Missing Word", "missing_word", "hidden sm:table-cell")}
                                 </>
                             ) : (
                                 <>
                                     {sortableHeader("Translated Word", "translated_word")}
-                                    {sortableHeader("Gender", "gender")}
+                                    {sortableHeader("Gender", "gender", "hidden sm:table-cell")}
                                 </>
                             )}
 
-                            <TableHead className="text-neutral-400">Pathway</TableHead>
-                            {sortableHeader("Review Date", "review_date")}
+                            <TableHead className="text-neutral-400 hidden sm:table-cell">Pathway</TableHead>
+                            {sortableHeader("Review Date", "review_date", "hidden md:table-cell")}
                             <TableHead className="w-12" />
                         </TableRow>
                     </TableHeader>
@@ -392,7 +392,7 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
                                                 <TableCell className="text-neutral-100 font-medium">
                                                     {(row as ConjugationFlashcardRow).phrase}
                                                 </TableCell>
-                                                <TableCell className="text-neutral-300">
+                                                <TableCell className="text-neutral-300 hidden sm:table-cell">
                                                     {(row as ConjugationFlashcardRow).missing_word}
                                                 </TableCell>
                                             </>
@@ -401,16 +401,16 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
                                                 <TableCell className="text-neutral-100 font-medium">
                                                     {(row as FlashcardRow).translated_word}
                                                 </TableCell>
-                                                <TableCell className="text-neutral-300">
+                                                <TableCell className="text-neutral-300 hidden sm:table-cell">
                                                     {(row as FlashcardRow).gender ?? "—"}
                                                 </TableCell>
                                             </>
                                         )}
 
-                                        <TableCell className="text-neutral-300">
+                                        <TableCell className="text-neutral-300 hidden sm:table-cell">
                                             {pathwayLabel(row.pathway)}
                                         </TableCell>
-                                        <TableCell className="text-neutral-300">
+                                        <TableCell className="text-neutral-300 hidden md:table-cell">
                                             {formatDate(row.review_date)}
                                         </TableCell>
                                         <TableCell
@@ -461,7 +461,7 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
             </div>
 
             {/* Pagination */}
-            <div className="flex items-center justify-between text-sm text-neutral-500">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-neutral-500">
                 <span>
                     {totalCount === 0
                         ? "No results"

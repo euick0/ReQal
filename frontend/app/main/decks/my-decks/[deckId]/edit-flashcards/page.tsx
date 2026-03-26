@@ -43,8 +43,8 @@ const EditFlashcardsPage = async ({ params, searchParams }: PageProps) => {
         if (flashcardsError || !flashcards) notFound()
 
         return (
-            <div className="flex flex-col pl-20 w-full h-screen right-0 overflow-visible">
-                <h1 className="text-center text-5xl text-white font-semibold py-10">{deck.name}</h1>
+            <div className="flex flex-col pl-0 md:pl-20 w-full h-screen right-0 overflow-visible">
+                <h1 className="text-center text-2xl sm:text-4xl md:text-5xl text-white font-semibold py-6 md:py-10">{deck.name}</h1>
                 <div className="flex flex-col gap-4 w-full h-full overflow-y-auto pb-10">
                     <FlashcardList
                         flashcards={flashcards}
@@ -74,8 +74,8 @@ const EditFlashcardsPage = async ({ params, searchParams }: PageProps) => {
     if (flashcardsError || !flashcards) notFound()
 
     return (
-        <div className="flex flex-col pl-20 w-full h-screen right-0 overflow-visible">
-            <h1 className="text-center text-5xl text-white font-semibold py-10">{deck.name}</h1>
+        <div className="flex flex-col pl-0 md:pl-20 w-full h-screen right-0 overflow-visible">
+            <h1 className="text-center text-2xl sm:text-4xl md:text-5xl text-white font-semibold py-6 md:py-10">{deck.name}</h1>
             <div className="flex flex-col gap-4 w-full h-full overflow-y-auto pb-10">
                 <FlashcardList
                     flashcards={flashcards}

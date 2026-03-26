@@ -427,9 +427,6 @@ export default function FlashcardReview() {
             <div className="flex flex-col items-center justify-center h-screen gap-4">
                 <p className="text-3xl font-semibold">Session complete!</p>
                 <p className="text-muted-foreground">You reviewed {cards.length} card{cards.length !== 1 ? "s" : ""}.</p>
-                <Button size="lg" className="text-white" onClick={() => { setIndex(0); setIsAnswerShown(false) }}>
-                    Review again
-                </Button>
             </div>
         )
     }
