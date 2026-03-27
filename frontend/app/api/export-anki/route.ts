@@ -418,16 +418,18 @@ async function downloadMedia(
 }
 
 const KNOWN_IMAGE_EXTS = new Set(["jpg", "jpeg", "png", "webp", "gif", "avif"])
+const KNOWN_AUDIO_EXTS = new Set(["mp3", "ogg", "wav", "m4a", "flac", "opus"])
 
-function mediaExtension(url: string): string {
+function mediaExtension(url: string, role: "audio" | "image"): string {
     try {
         const pathname = new URL(url).pathname
         const ext = pathname.split(".").pop()?.toLowerCase()
         if (ext && KNOWN_IMAGE_EXTS.has(ext)) return `.${ext}`
-        return ".jpg"
+        if (ext && KNOWN_AUDIO_EXTS.has(ext)) return `.${ext}`
     } catch {
-        return ".jpg"
+        // fall through
     }
+    return role === "audio" ? ".mp3" : ".jpg"
 }
 
 // ---------------------------------------------------------------------------
@@ -496,7 +498,7 @@ export async function GET(request: NextRequest) {
         const result = results[k]
 
         if (result.status === "fulfilled" && result.value) {
-            const ext = mediaExtension(job.url)
+            const ext = mediaExtension(job.url, job.role)
             const originalName = `${job.role}_${job.cardIndex}_${job.imageIndex ?? 0}${ext}`
             const idx = mediaIndex++
             mediaManifest[String(idx)] = originalName

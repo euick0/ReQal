@@ -76,7 +76,7 @@ interface FlashcardDataTableProps {
     autoOpenFlashcardId?: string | null
 }
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 15
 
 function SortIcon({
     column,
@@ -305,7 +305,7 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
 
     const sortableHeader = (label: string, column: AnySortColumn, className?: string) => (
         <TableHead
-            className={`cursor-pointer select-none hover:text-neutral-100 text-neutral-400 transition-colors${className ? ` ${className}` : ""}`}
+            className={`cursor-pointer select-none hover:text-neutral-100 text-neutral-400 transition-colors text-xs sm:text-sm${className ? ` ${className}` : ""}`}
             onClick={() => handleSort(column)}
         >
             {label}
@@ -316,24 +316,24 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
     return (
         <div className="flex flex-col gap-4 w-full">
             {/* Toolbar */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                 <Input
                     placeholder="Search flashcards..."
                     value={searchInput}
                     onChange={e => setSearchInput(e.target.value)}
-                    className="w-full sm:max-w-sm bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-500"
+                    className="w-full sm:max-w-sm bg-backgroundLight border-border text-neutral-100 placeholder:text-neutral-500 text-sm sm:text-base"
                 />
             </div>
 
             {/* Table */}
             <div
-                className={`rounded-md border border-neutral-800 bg-neutral-950 transition-opacity overflow-x-auto ${
+                className={`rounded-md border border-border bg-background transition-opacity overflow-x-auto ${
                     isPending ? "opacity-60" : "opacity-100"
                 }`}
             >
                 <Table>
                     <TableHeader>
-                        <TableRow className="border-neutral-800 hover:bg-transparent">
+                        <TableRow className="border-border hover:bg-transparent">
                             <TableHead className="w-10 pr-0" onClick={e => e.stopPropagation()}>
                                 <Checkbox
                                     checked={allPageSelected ? true : somePageSelected ? "indeterminate" : false}
@@ -355,14 +355,14 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
                                 </>
                             )}
 
-                            <TableHead className="text-neutral-400 hidden sm:table-cell">Pathway</TableHead>
+                            <TableHead className="text-neutral-400 hidden sm:table-cell text-xs sm:text-sm">Pathway</TableHead>
                             {sortableHeader("Review Date", "review_date", "hidden md:table-cell")}
                             <TableHead className="w-12" />
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {rows.length === 0 ? (
-                            <TableRow className="border-neutral-800">
+                            <TableRow className="border-border">
                                 <TableCell colSpan={deckType === "conjugation" ? 6 : 6} className="text-center text-neutral-500 py-10">
                                     No flashcards found.
                                 </TableCell>
@@ -376,7 +376,7 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
                                         id={`flashcard-row-${row.id}`}
                                         onClick={() => handleRowClick(row)}
                                         data-state={isSelected ? "selected" : undefined}
-                                        className="border-neutral-800 hover:bg-neutral-800/60 data-[state=selected]:bg-neutral-800/40 cursor-pointer transition-colors"
+                                        className="border-border hover:bg-surface/60 data-[state=selected]:bg-surface/40 cursor-pointer transition-colors"
                                     >
                                         <TableCell className="pr-0" onClick={e => toggleSelectRow(row.id, e)}>
                                             <Checkbox
@@ -389,7 +389,7 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
 
                                         {deckType === "conjugation" ? (
                                             <>
-                                                <TableCell className="text-neutral-100 font-medium">
+                                                <TableCell className="text-neutral-100 font-medium max-w-[150px] sm:max-w-none truncate">
                                                     {(row as ConjugationFlashcardRow).phrase}
                                                 </TableCell>
                                                 <TableCell className="text-neutral-300 hidden sm:table-cell">
@@ -398,7 +398,7 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
                                             </>
                                         ) : (
                                             <>
-                                                <TableCell className="text-neutral-100 font-medium">
+                                                <TableCell className="text-neutral-100 font-medium max-w-[150px] sm:max-w-none truncate">
                                                     {(row as FlashcardRow).translated_word}
                                                 </TableCell>
                                                 <TableCell className="text-neutral-300 hidden sm:table-cell">
@@ -422,7 +422,7 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="size-8 text-neutral-400 hover:text-neutral-100 hover:bg-neutral-700"
+                                                        className="size-8 text-neutral-400 hover:text-neutral-100 hover:bg-surface"
                                                     >
                                                         <MoreHorizontalIcon className="size-4" />
                                                         <span className="sr-only">Actions</span>
@@ -430,7 +430,7 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent
                                                     align="end"
-                                                    className="bg-neutral-900 border-neutral-700"
+                                                    className="bg-backgroundLight border-border"
                                                 >
                                                     {selectedIds.size > 1 && selectedIds.has(row.id) ? (
                                                         <DropdownMenuItem
@@ -461,7 +461,7 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
             </div>
 
             {/* Pagination */}
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-neutral-500">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-xs sm:text-sm text-neutral-500">
                 <span>
                     {totalCount === 0
                         ? "No results"
@@ -479,12 +479,12 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
                                 className={
                                     currentPage <= 1
                                         ? "pointer-events-none opacity-40 text-neutral-400"
-                                        : "cursor-pointer text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800"
+                                        : "cursor-pointer text-neutral-300 hover:text-neutral-100 hover:bg-surface"
                                 }
                             />
                         </PaginationItem>
                         <PaginationItem>
-                            <span className="px-3 py-1 text-neutral-400 text-sm">
+                            <span className="px-2 sm:px-3 py-1 text-neutral-400 text-xs sm:text-sm">
                                 Page {currentPage} of {totalPages}
                             </span>
                         </PaginationItem>
@@ -495,7 +495,7 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
                                 className={
                                     currentPage >= totalPages
                                         ? "pointer-events-none opacity-40 text-neutral-400"
-                                        : "cursor-pointer text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800"
+                                        : "cursor-pointer text-neutral-300 hover:text-neutral-100 hover:bg-surface"
                                 }
                             />
                         </PaginationItem>
@@ -505,7 +505,7 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
 
             {/* Delete Confirmation Dialog */}
             <AlertDialog open={deleteTarget !== null} onOpenChange={open => { if (!open && !isDeleting) setDeleteTarget(null) }}>
-                <AlertDialogContent className="bg-neutral-950 border-neutral-800 text-neutral-100">
+                <AlertDialogContent className="bg-background border-border text-neutral-100">
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-neutral-100">
                             {deleteTarget?.type === "bulk"
@@ -521,7 +521,7 @@ export default function FlashcardDataTable({ initialData, initialCount, deckId, 
                     <AlertDialogFooter>
                         <AlertDialogCancel
                             disabled={isDeleting}
-                            className="bg-transparent border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-neutral-100"
+                            className="bg-transparent border-border text-neutral-300 hover:bg-surface hover:text-neutral-100"
                         >
                             Cancel
                         </AlertDialogCancel>

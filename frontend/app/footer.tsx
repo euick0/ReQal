@@ -3,7 +3,7 @@ import Link from "next/link";
 
 const Footer = () => {
     return (
-        <div className="relative bottom-0 text-center py-1 w-ful bg-backgroundLight font-semibold flex flex-row items-center justify-center gap-4">
+        <div className="relative bottom-0 text-center py-1 px-4 w-full bg-backgroundLight font-semibold flex flex-row flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs sm:text-sm">
             <div>
 
                 <a href="https://reqal.app">ReQal</a> © 2026 by Eric Simões is licensed

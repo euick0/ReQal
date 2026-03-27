@@ -44,7 +44,7 @@ const EditFlashcardsPage = async ({ params, searchParams }: PageProps) => {
 
         return (
             <div className="flex flex-col pl-0 md:pl-20 w-full h-screen right-0 overflow-visible">
-                <h1 className="text-center text-2xl sm:text-4xl md:text-5xl text-white font-semibold py-6 md:py-10">{deck.name}</h1>
+                <h1 className="text-center text-xl sm:text-2xl md:text-4xl lg:text-5xl text-white font-semibold py-4 sm:py-6 md:py-10">{deck.name}</h1>
                 <div className="flex flex-col gap-4 w-full h-full overflow-y-auto pb-10">
                     <FlashcardList
                         flashcards={flashcards}
@@ -75,7 +75,7 @@ const EditFlashcardsPage = async ({ params, searchParams }: PageProps) => {
 
     return (
         <div className="flex flex-col pl-0 md:pl-20 w-full h-screen right-0 overflow-visible">
-            <h1 className="text-center text-2xl sm:text-4xl md:text-5xl text-white font-semibold py-6 md:py-10">{deck.name}</h1>
+            <h1 className="text-center text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-white font-semibold pt-16 sm:py-6 md:pt-8 pb-4">{deck.name}</h1>
             <div className="flex flex-col gap-4 w-full h-full overflow-y-auto pb-10">
                 <FlashcardList
                     flashcards={flashcards}

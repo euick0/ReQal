@@ -90,7 +90,7 @@ const DeckList = () => {
                 </div>
             ) : (
                 decks.map((deck) => (
-                    <Card className="mx-3 sm:mx-6 md:mx-10 flex flex-col my-2" key={deck.id}>
+                    <Card className="mx-3 sm:mx-6 md:mx-10 flex flex-col my-2 bg-backgroundLight" key={deck.id}>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                             <h2 className="text-center sm:text-left pl-0 sm:pl-5">{deck.name}</h2>
                             <div className="flex flex-nowrap justify-center sm:justify-end gap-0 px-3 sm:px-0 pb-2 sm:pb-0">

@@ -148,7 +148,10 @@ export function AudioPlayerProvider<TData = unknown>({
         try {
           await playPromiseRef.current
         } catch (error) {
-          console.error("Play promise error:", error)
+          const name = (error as Error).name
+          if (name !== 'AbortError' && name !== 'NotAllowedError') {
+            console.error("Play promise error:", error)
+          }
         }
       }
 
@@ -190,7 +193,10 @@ export function AudioPlayerProvider<TData = unknown>({
       try {
         await playPromiseRef.current
       } catch (e) {
-        console.error(e)
+        const name = (e as Error).name
+        if (name !== 'AbortError' && name !== 'NotAllowedError') {
+          console.error(e)
+        }
       }
     }
 

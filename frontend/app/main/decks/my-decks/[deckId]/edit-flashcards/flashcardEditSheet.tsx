@@ -157,7 +157,7 @@ function AudioSection({
         <AudioPlayerProvider>
             <div className="flex flex-col gap-3">
                 {audioPath ? (
-                    <div className="flex flex-col gap-2 rounded-md border border-neutral-800 bg-neutral-900/50 p-3">
+                    <div className="flex flex-col gap-2 rounded-md border border-border bg-backgroundLight/50 p-3">
                         <div className="flex items-center gap-2">
                             <MusicIcon className="size-4 shrink-0 text-neutral-400" />
                             <span className="flex-1 truncate text-xs text-neutral-400" title={audioPath}>
@@ -179,7 +179,7 @@ function AudioSection({
                                 item={audioItem ?? undefined}
                                 variant="ghost"
                                 size="icon"
-                                className="size-8 shrink-0 text-neutral-300 hover:text-neutral-100 hover:bg-neutral-700"
+                                className="size-8 shrink-0 text-neutral-300 hover:text-neutral-100 hover:bg-surface"
                             />
                             <div className="flex flex-1 flex-col gap-1">
                                 <AudioPlayerProgress className="w-full" />
@@ -191,7 +191,7 @@ function AudioSection({
                         </div>
                     </div>
                 ) : (
-                    <div className="flex items-center justify-center rounded-md border border-dashed border-neutral-700 py-4 text-sm text-neutral-500">
+                    <div className="flex items-center justify-center rounded-md border border-dashed border-border py-4 text-sm text-neutral-500">
                         No audio
                     </div>
                 )}
@@ -201,7 +201,7 @@ function AudioSection({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="flex-1 gap-2 border-neutral-700 bg-neutral-900 text-neutral-300 hover:bg-neutral-800 hover:text-neutral-100"
+                        className="flex-1 gap-2 border-border bg-backgroundLight text-neutral-300 hover:bg-surface hover:text-neutral-100"
                         disabled={isUploadingAudio}
                         onClick={() => audioInputRef.current?.click()}
                     >
@@ -235,51 +235,51 @@ function AudioSection({
 
 function EditSheetSkeleton() {
     return (
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
             <div className="flex flex-col gap-5">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="flex flex-col gap-1.5">
-                        <Skeleton className="h-3 w-24 bg-neutral-800" />
-                        <Skeleton className="h-9 bg-neutral-800" />
+                        <Skeleton className="h-3 w-24 bg-surface" />
+                        <Skeleton className="h-9 bg-surface" />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                        <Skeleton className="h-3 w-28 bg-neutral-800" />
-                        <Skeleton className="h-9 bg-neutral-800" />
+                        <Skeleton className="h-3 w-28 bg-surface" />
+                        <Skeleton className="h-9 bg-surface" />
                     </div>
                 </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="flex flex-col gap-1.5">
-                        <Skeleton className="h-3 w-20 bg-neutral-800" />
-                        <Skeleton className="h-9 bg-neutral-800" />
+                        <Skeleton className="h-3 w-20 bg-surface" />
+                        <Skeleton className="h-9 bg-surface" />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                        <Skeleton className="h-3 w-24 bg-neutral-800" />
-                        <Skeleton className="h-9 bg-neutral-800" />
+                        <Skeleton className="h-3 w-24 bg-surface" />
+                        <Skeleton className="h-9 bg-surface" />
                     </div>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                    <Skeleton className="h-3 w-16 bg-neutral-800" />
-                    <Skeleton className="h-9 bg-neutral-800" />
+                    <Skeleton className="h-3 w-16 bg-surface" />
+                    <Skeleton className="h-9 bg-surface" />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                    <Skeleton className="h-3 w-36 bg-neutral-800" />
-                    <Skeleton className="h-20 bg-neutral-800" />
+                    <Skeleton className="h-3 w-36 bg-surface" />
+                    <Skeleton className="h-20 bg-surface" />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                    <Skeleton className="h-3 w-28 bg-neutral-800" />
-                    <Skeleton className="h-20 bg-neutral-800" />
+                    <Skeleton className="h-3 w-28 bg-surface" />
+                    <Skeleton className="h-20 bg-surface" />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                    <Skeleton className="h-3 w-14 bg-neutral-800" />
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                    <Skeleton className="h-3 w-14 bg-surface" />
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                         {[0, 1, 2, 3].map(i => (
-                            <Skeleton key={i} className="aspect-square bg-neutral-800 rounded-md" />
+                            <Skeleton key={i} className="aspect-square bg-surface rounded-md" />
                         ))}
                     </div>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                    <Skeleton className="h-3 w-12 bg-neutral-800" />
-                    <Skeleton className="h-24 bg-neutral-800" />
+                    <Skeleton className="h-3 w-12 bg-surface" />
+                    <Skeleton className="h-24 bg-surface" />
                 </div>
             </div>
         </div>
@@ -465,11 +465,11 @@ export default function FlashcardEditSheet({
             <Sheet open={isOpen} onOpenChange={handleOpenChange}>
                 <SheetContent
                     side="right"
-                    className="flex w-full flex-col gap-0 bg-neutral-950 border-neutral-800 text-neutral-100 sm:max-w-2xl p-0"
+                    className="flex w-full flex-col gap-0 bg-background border-border text-neutral-100 sm:max-w-2xl p-0"
                 >
                     {/* Header */}
-                    <SheetHeader className="shrink-0 border-b border-neutral-800 px-6 py-4">
-                        <SheetTitle className="text-neutral-100 text-lg">
+                    <SheetHeader className="shrink-0 border-b border-border px-4 sm:px-6 py-3 sm:py-4">
+                        <SheetTitle className="text-neutral-100 text-base sm:text-lg">
                             {sheetTitle()}
                         </SheetTitle>
                         <SheetDescription className="text-neutral-400 text-sm">
@@ -479,7 +479,7 @@ export default function FlashcardEditSheet({
 
                     {/* Scrollable body */}
                     {isLoading ? <EditSheetSkeleton /> : (
-                    <div className="flex-1 overflow-y-auto px-6 py-5">
+                    <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5">
                         <FieldGroup className="gap-5">
 
                             {/* ── Type-specific text fields ─────────────────── */}
@@ -492,7 +492,7 @@ export default function FlashcardEditSheet({
                                         <Input
                                             value={editedData.phrase}
                                             onChange={e => setField("phrase", e.target.value)}
-                                            className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
+                                            className="bg-backgroundLight border-border text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
                                             placeholder="e.g. Yo ___ al mercado"
                                         />
                                     </Field>
@@ -503,7 +503,7 @@ export default function FlashcardEditSheet({
                                         <Input
                                             value={editedData.missing_word}
                                             onChange={e => setField("missing_word", e.target.value)}
-                                            className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
+                                            className="bg-backgroundLight border-border text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
                                             placeholder="e.g. fui"
                                         />
                                     </Field>
@@ -517,7 +517,7 @@ export default function FlashcardEditSheet({
                                         <Input
                                             value={editedData.translated_word}
                                             onChange={e => setField("translated_word", e.target.value)}
-                                            className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
+                                            className="bg-backgroundLight border-border text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
                                             placeholder="e.g. el gato"
                                         />
                                     </Field>
@@ -528,7 +528,7 @@ export default function FlashcardEditSheet({
                                         <Input
                                             value={editedData.IPA_translation}
                                             onChange={e => setField("IPA_translation", e.target.value)}
-                                            className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
+                                            className="bg-backgroundLight border-border text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
                                             placeholder="e.g. /el ˈɡato/"
                                         />
                                     </Field>
@@ -545,7 +545,7 @@ export default function FlashcardEditSheet({
                                         <Input
                                             value={editedData.IPA_translation}
                                             onChange={e => setField("IPA_translation", e.target.value)}
-                                            className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
+                                            className="bg-backgroundLight border-border text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
                                             placeholder="e.g. /fwi/"
                                         />
                                     </Field>
@@ -556,7 +556,7 @@ export default function FlashcardEditSheet({
                                         <Input
                                             value={editedData.gender}
                                             onChange={e => setField("gender", e.target.value)}
-                                            className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
+                                            className="bg-backgroundLight border-border text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
                                             placeholder="e.g. masculine"
                                         />
                                     </Field>
@@ -573,7 +573,7 @@ export default function FlashcardEditSheet({
                                         <Input
                                             value={editedData.gender}
                                             onChange={e => setField("gender", e.target.value)}
-                                            className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
+                                            className="bg-backgroundLight border-border text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500"
                                             placeholder="e.g. masculine"
                                         />
                                     </Field>
@@ -581,7 +581,7 @@ export default function FlashcardEditSheet({
                                         <FieldLabel className="text-neutral-400 text-xs uppercase tracking-wide">
                                             Review Date
                                         </FieldLabel>
-                                        <div className="flex h-9 items-center rounded-md border border-neutral-800 bg-neutral-900/40 px-3 text-sm text-neutral-500 select-none cursor-default">
+                                        <div className="flex h-9 items-center rounded-md border border-border bg-backgroundLight/40 px-3 text-sm text-neutral-500 select-none cursor-default">
                                             {formatDate(flashcard?.review_date ?? null)}
                                         </div>
                                     </Field>
@@ -595,7 +595,7 @@ export default function FlashcardEditSheet({
                                         <FieldLabel className="text-neutral-400 text-xs uppercase tracking-wide">
                                             Review Date
                                         </FieldLabel>
-                                        <div className="flex h-9 items-center rounded-md border border-neutral-800 bg-neutral-900/40 px-3 text-sm text-neutral-500 select-none cursor-default">
+                                        <div className="flex h-9 items-center rounded-md border border-border bg-backgroundLight/40 px-3 text-sm text-neutral-500 select-none cursor-default">
                                             {formatDate(flashcard?.review_date ?? null)}
                                         </div>
                                     </Field>
@@ -617,18 +617,18 @@ export default function FlashcardEditSheet({
                                     itemToStringValue={(opt: typeof pathwayOptions[number]) => opt.value}
                                 >
                                     <ComboboxInput
-                                        className="w-full bg-neutral-900 border-neutral-700 text-neutral-100"
+                                        className="w-full bg-backgroundLight border-border text-neutral-100"
                                         placeholder="Select pathway…"
                                         readOnly
                                         showClear={false}
                                     />
-                                    <ComboboxContent className="bg-neutral-900 border-neutral-700">
+                                    <ComboboxContent className="bg-backgroundLight border-border">
                                         <ComboboxList>
                                             {(opt: typeof pathwayOptions[number]) => (
                                                 <ComboboxItem
                                                     key={opt.value}
                                                     value={opt}
-                                                    className="text-neutral-100 data-highlighted:bg-neutral-800 data-highlighted:text-neutral-100 flex-col items-start gap-0.5"
+                                                    className="text-neutral-100 data-highlighted:bg-surface data-highlighted:text-neutral-100 flex-col items-start gap-0.5"
                                                 >
                                                     <span className="font-medium">{opt.label}</span>
                                                     <span className="text-xs text-neutral-400">{opt.description}</span>
@@ -647,7 +647,7 @@ export default function FlashcardEditSheet({
                                 <Textarea
                                     value={editedData.translation_caption}
                                     onChange={e => setField("translation_caption", e.target.value)}
-                                    className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500 min-h-[80px]"
+                                    className="bg-backgroundLight border-border text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500 min-h-[80px]"
                                     placeholder="Caption for the translation…"
                                 />
                             </Field>
@@ -659,7 +659,7 @@ export default function FlashcardEditSheet({
                                 <Textarea
                                     value={editedData.image_caption}
                                     onChange={e => setField("image_caption", e.target.value)}
-                                    className="bg-neutral-900 border-neutral-700 text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500 min-h-[80px]"
+                                    className="bg-backgroundLight border-border text-neutral-100 placeholder:text-neutral-600 focus-visible:border-neutral-500 min-h-[80px]"
                                     placeholder="Caption for the image…"
                                 />
                             </Field>
@@ -675,11 +675,11 @@ export default function FlashcardEditSheet({
                                 </FieldLabel>
 
                                 {editedData.image_paths.length > 0 ? (
-                                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                                         {editedData.image_paths.map((src, idx) => (
                                             <div
                                                 key={idx}
-                                                className="group relative aspect-square overflow-hidden rounded-md border border-neutral-800 bg-neutral-900"
+                                                className="group relative aspect-square overflow-hidden rounded-md border border-border bg-backgroundLight"
                                             >
                                                 <Image
                                                     src={src}
@@ -687,7 +687,7 @@ export default function FlashcardEditSheet({
                                                     fill
                                                     priority
                                                     className="object-cover"
-                                                    sizes="(max-width: 768px) 25vw, 15vw"
+                                                    sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, 15vw"
                                                     onError={e => {
                                                         (e.target as HTMLImageElement).style.display = "none"
                                                     }}
@@ -704,7 +704,7 @@ export default function FlashcardEditSheet({
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="flex items-center justify-center rounded-md border border-dashed border-neutral-700 py-6 text-sm text-neutral-500">
+                                    <div className="flex items-center justify-center rounded-md border border-dashed border-border py-6 text-sm text-neutral-500">
                                         No images — paste or upload below
                                     </div>
                                 )}
@@ -714,7 +714,7 @@ export default function FlashcardEditSheet({
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        className="gap-2 border-neutral-700 bg-neutral-900 text-neutral-300 hover:bg-neutral-800 hover:text-neutral-100"
+                                        className="gap-2 border-border bg-backgroundLight text-neutral-300 hover:bg-surface hover:text-neutral-100"
                                         disabled={isUploadingImage}
                                         onClick={() => imageFileInputRef.current?.click()}
                                     >
@@ -759,19 +759,19 @@ export default function FlashcardEditSheet({
                     )}
 
                     {/* Footer */}
-                    <SheetFooter className="shrink-0 flex-row justify-between gap-3 border-t border-neutral-800 px-6 py-4">
+                    <SheetFooter className="shrink-0 flex-row justify-between gap-2 sm:gap-3 border-t border-border px-4 sm:px-6 py-3 sm:py-4">
                         <div className="flex items-center gap-1.5">
                             {isDirty && (
                                 <span className="text-xs text-amber-500">Unsaved changes</span>
                             )}
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-1.5 sm:gap-2">
                             <Button
                                 type="button"
                                 variant="ghost"
                                 onClick={() => handleOpenChange(false)}
                                 disabled={isSaving || isLoading}
-                                className="text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+                                className="text-neutral-400 hover:text-neutral-100 hover:bg-surface"
                             >
                                 {isDirty ? "Cancel" : "Close"}
                             </Button>
@@ -780,7 +780,7 @@ export default function FlashcardEditSheet({
                                 disabled={!isDirty || isSaving || isLoading}
                                 onClick={handleSave}
                                 className={cn(
-                                    "min-w-20 bg-neutral-100 text-neutral-950 hover:bg-neutral-200 disabled:opacity-40",
+                                    "min-w-16 sm:min-w-20 bg-neutral-100 text-neutral-950 hover:bg-neutral-200 disabled:opacity-40",
                                 )}
                             >
                                 {isSaving ? (
@@ -802,7 +802,7 @@ export default function FlashcardEditSheet({
                 open={showUnsavedDialog}
                 onOpenChange={open => { if (!open) setShowUnsavedDialog(false) }}
             >
-                <AlertDialogContent className="bg-neutral-950 border-neutral-800 text-neutral-100">
+                <AlertDialogContent className="bg-background border-border text-neutral-100">
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-neutral-100">Unsaved Changes</AlertDialogTitle>
                         <AlertDialogDescription className="text-neutral-400">
@@ -812,7 +812,7 @@ export default function FlashcardEditSheet({
                     <AlertDialogFooter>
                         <AlertDialogCancel
                             onClick={() => setShowUnsavedDialog(false)}
-                            className="bg-transparent border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-neutral-100"
+                            className="bg-transparent border-border text-neutral-300 hover:bg-surface hover:text-neutral-100"
                         >
                             Keep Editing
                         </AlertDialogCancel>

@@ -1,6 +1,6 @@
 "use client"
 
-import React, {useEffect} from 'react';
+import React, {useEffect, useRef} from 'react';
 import {
     Combobox,
     ComboboxContent,
@@ -47,6 +47,7 @@ const CustomFlashcardParameters = () => {
     const [deckId, setDeckId] = React.useState<string | null>(null)
     const [languages, setLanguages] = React.useState<string[]>([])
     const [languagesLoading, setLanguagesLoading] = React.useState(true)
+    const pasteZoneRef = useRef<HTMLDivElement>(null)
 
     if (!customFlashcardContext) {
         throw new Error("CustomFlashcardParameters must be used within CustomFlashcardContext.Provider");
@@ -140,10 +141,19 @@ const CustomFlashcardParameters = () => {
             addImagesToState(images)
         }
 
+        const handleWindowFocus = () => {
+            const active = document.activeElement
+            const isInputFocused = active && ["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(active.tagName)
+            if (!isInputFocused) pasteZoneRef.current?.focus({ preventScroll: true })
+        }
+
+        pasteZoneRef.current?.focus({ preventScroll: true })
+        window.addEventListener("focus", handleWindowFocus)
         document.addEventListener("paste", handlePaste)
         document.addEventListener("dragover", handleDragOver)
         document.addEventListener("drop", handleDrop)
         return () => {
+            window.removeEventListener("focus", handleWindowFocus)
             document.removeEventListener("paste", handlePaste)
             document.removeEventListener("dragover", handleDragOver)
             document.removeEventListener("drop", handleDrop)
@@ -291,7 +301,7 @@ const CustomFlashcardParameters = () => {
     const isLoading = isSubmitting || isTranslating
 
     return (
-        <div className="box-border pt-20 md:pt-17 pr-2 lg:pr-0 pl-4 lg:pl-9 w-full">
+        <div ref={pasteZoneRef} tabIndex={-1} className="outline-none box-border pt-20 md:pt-17 pr-2 lg:pr-0 pl-4 lg:pl-9">
             <ScrollArea className="w-full h-[calc(100vh-70px)] overflow-visible">
                 <Progress value={progress} className="w-full h-2 mb-4 mx-auto"></Progress>
                 <div className="md:hidden flex flex-wrap gap-2 mb-4">
@@ -459,7 +469,7 @@ const CustomFlashcardParameters = () => {
                             <FieldLabel htmlFor="customAudio" className="mb-1 ml-4">Or choose your own audio
                                 file...</FieldLabel>
                             <Input
-                                className="w-full sm:w-96 mb-4 ml-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
+                                className="w-[calc(100%-1rem)] sm:w-96 mb-4 ml-4 border-input! rounded-md! focus-visible:border-ring! focus-visible:ring-ring/50! bg-input/30!"
                                 placeholder="Or choose your audio file" type="file"
                                 id="customAudio"
                                 accept="audio/*"

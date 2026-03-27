@@ -123,7 +123,7 @@ function AudioRow({src, id}: {src: string; id: string}) {
     return (
         <AudioPlayerProvider>
             <AudioAutoplay track={track}/>
-            <div className="flex items-center gap-4 w-4/5">
+            <div className="flex items-center gap-4 w-full sm:w-4/5">
                 <AudioPlayerButton className="bg-primary [&>svg]:invert" item={track}/>
                 <AudioPlayerProgress className="flex-1"/>
                 <AudioPlayerTime/>
@@ -139,7 +139,7 @@ function ImageWithSkeleton({src, isSingle}: {src: string; isSingle: boolean}) {
         <div
             className={clsx(
                 "relative w-full overflow-hidden rounded",
-                isSingle ? "h-96" : "h-64"
+                isSingle ? "h-48 sm:h-64 lg:h-96" : "h-32 sm:h-44 lg:h-64"
             )}
         >
             {!loaded && <Skeleton className="absolute inset-0 rounded"/>}
@@ -451,9 +451,9 @@ export default function FlashcardReview() {
         )
 
     return (
-        <>
+        <div className="flex flex-col h-screen">
             {/* Progress bar */}
-            <div className="w-full px-80 pt-15">
+            <div className="w-full px-4 sm:px-16 md:px-40 pt-18 lg:pt-15">
                 <div className="flex justify-between text-sm text-muted-foreground mb-1">
                     <span>Card {index + 1} / {total}</span>
                 </div>
@@ -466,15 +466,15 @@ export default function FlashcardReview() {
             </div>
 
             {/* Cards */}
-            <div className="flex flex-row items-stretch w-full px-80 py-10 h-[calc(100vh-160px)] justify-between gap-10">
+            <div className="flex flex-col md:flex-row items-stretch w-full px-4 sm:px-8 md:px-40 py-4 lg:py-10 flex-1 min-h-0 overflow-y-auto justify-between gap-4 lg:gap-10">
                 {/* Front card */}
-                <Card className="flex-1 flex flex-col items-center justify-center bg-input/10 p-6 overflow-y-auto max-h-full">
+                <Card className="flex-1 flex flex-col items-center justify-center bg-input/10 p-4 sm:p-6 overflow-y-auto max-h-full min-h-48 lg:min-h-0">
                     {front}
                 </Card>
 
                 {/* Back card — shown after "Show Answer" */}
                 {isAnswerShown && (
-                    <Card className="flex-1 flex flex-col items-center justify-center bg-input/10 p-6 overflow-y-auto max-h-full">
+                    <Card className="flex-1 flex flex-col items-center justify-center bg-input/10 p-4 sm:p-6 overflow-y-auto max-h-full min-h-48 lg:min-h-0">
                         {back}
                     </Card>
                 )}
@@ -482,13 +482,13 @@ export default function FlashcardReview() {
 
             {/* Buttons */}
             {!isAnswerShown ? (
-                <div className="flex justify-center items-center w-full absolute bottom-0 mb-10">
+                <div className="flex justify-center items-center w-full mb-6 lg:mb-10">
                     <Button size="lg" className="text-white" onClick={() => setIsAnswerShown(true)}>
                         Show Answer
                     </Button>
                 </div>
             ) : (
-                <div className="flex flex-row absolute bottom-0 mb-10 gap-4 justify-center items-center w-full">
+                <div className="flex flex-row mb-6 lg:mb-10 gap-4 justify-center items-center w-full">
                     <Button
                         className="min-w-24 bg-red-700 hover:bg-red-800 text-white"
                         size="lg"
@@ -505,6 +505,6 @@ export default function FlashcardReview() {
                     </Button>
                 </div>
             )}
-        </>
+        </div>
     )
 }
