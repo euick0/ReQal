@@ -8,6 +8,7 @@ import {DeleteDeck, GetDeckList} from "@/lib/backendUtils";
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle} from "@/components/ui/dialog";
 import {Skeleton} from "@/components/ui/skeleton";
 import {toast} from "sonner";
+import {Download, Pencil, Trash2} from "lucide-react";
 
 const getDecks = async () => {
     const {data, error} = await GetDeckList()
@@ -80,7 +81,7 @@ const DeckList = () => {
     }
 
     return (
-        <div className="flex flex-col pl-0 md:pl-20 w-full h-screen right-0 overflow-visible">
+        <div className="flex flex-col pl-0 md:pl-20 w-full min-h-screen overflow-x-hidden md:overflow-visible">
             <h1 className="text-center text-2xl sm:text-4xl md:text-5xl text-white font-semibold  md:py-10 py-16">My decks</h1>
             {isLoading ? (
                 <div className="flex flex-col mx-3 sm:mx-6 md:mx-10">
@@ -90,14 +91,22 @@ const DeckList = () => {
                 </div>
             ) : (
                 decks.map((deck) => (
-                    <Card className="mx-3 sm:mx-6 md:mx-10 flex flex-col my-2 bg-backgroundLight" key={deck.id}>
+                    <Card className="mx-3 sm:mx-6 md:mx-10 flex flex-col my-2 bg-backgroundLight border-l-2 border-l-contrast sm:border-l-0" key={deck.id}>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-                            <h2 className="text-center sm:text-left pl-0 sm:pl-5">{deck.name}</h2>
-                            <div className="flex flex-nowrap justify-center sm:justify-end gap-0 px-3 sm:px-0 pb-2 sm:pb-0">
-                                <Button className="mr-5 text-neutral-200" variant="ghost" onClick={() => handleExport(deck.id, deck.name)}>Export to Anki</Button>
-                                <Button className="mr-5 text-neutral-200" variant="ghost" onClick={() => router.push(`/main/decks/my-decks/${deck.id}/edit-flashcards`)}>Edit Flashcards</Button>
-                                <Button className="mr-5 text-neutral-200 bg-red-700! hover:bg-red-800!"
-                                        variant="destructive" onClick={() => setDeckToDelete(deck.name)}>Delete</Button>
+                            <h2 className="text-left pl-4 sm:text-left sm:pl-5">{deck.name}</h2>
+                            <div className="flex justify-end gap-2 px-3 sm:px-0 pb-3 sm:pb-0 sm:flex-nowrap sm:justify-end sm:gap-0">
+                                <Button className="sm:mr-5 text-neutral-200 size-9 p-0 sm:size-auto sm:px-4 sm:py-2" variant="ghost" size="default" onClick={() => handleExport(deck.id, deck.name)} aria-label="Export to Anki">
+                                    <Download className="shrink-0" />
+                                    <span className="hidden sm:inline">Export to Anki</span>
+                                </Button>
+                                <Button className="sm:mr-5 text-neutral-200 size-9 p-0 sm:size-auto sm:px-4 sm:py-2" variant="ghost" size="default" onClick={() => router.push(`/main/decks/my-decks/${deck.id}/edit-flashcards`)} aria-label="Edit Flashcards">
+                                    <Pencil className="shrink-0" />
+                                    <span className="hidden sm:inline">Edit Flashcards</span>
+                                </Button>
+                                <Button className="sm:mr-5 text-neutral-200 bg-red-700! hover:bg-red-800! size-9 p-0 sm:size-auto sm:px-4 sm:py-2" variant="destructive" size="default" onClick={() => setDeckToDelete(deck.name)} aria-label="Delete deck">
+                                    <Trash2 className="shrink-0" />
+                                    <span className="hidden sm:inline">Delete</span>
+                                </Button>
                             </div>
                         </div>
                     </Card>

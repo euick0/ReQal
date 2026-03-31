@@ -56,8 +56,8 @@ const Sidebar = () => {
                     })}>
                     <SidebarHeader></SidebarHeader>
                     <div className="flex-row items-center justify-evenly">
-                        <SidebarGroup groupItems={decksGroup} icon={<Layers className="w-8 h-8 text-neutral-300" />} text="Decks" redirectUrl="/main/decks/my-decks" />
                         <SidebarGroup groupItems={flashcardGroup} icon={<BookOpen className="w-8 h-8 text-neutral-300" />} text="Flashcards" redirectUrl="/main/flashcards/600-words" />
+                        <SidebarGroup groupItems={decksGroup} icon={<Layers className="w-8 h-8 text-neutral-300" />} text="Decks" redirectUrl="/main/decks/my-decks" />
                     </div>
                     <div className="w-full flex-row items-center">
                         <SidebarFooter></SidebarFooter>

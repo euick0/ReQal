@@ -134,9 +134,10 @@ const FlashcardParameters = () => {
 
     useEffect(() => {
         const handlePaste = (e: ClipboardEvent) => {
-            // Don't intercept paste inside text inputs / textareas
+            // Don't intercept paste inside text inputs / textareas (but file inputs are fine)
             const target = e.target as HTMLElement
-            if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return
+            const inputEl = target as HTMLInputElement
+            if ((target.tagName === "INPUT" && inputEl.type !== "file") || target.tagName === "TEXTAREA") return
 
             const files = extractImagesFromPasteEvent(e)
             if (files.length > 0) addImagesToState(files)
@@ -157,7 +158,12 @@ const FlashcardParameters = () => {
 
         const handleWindowFocus = () => {
             const active = document.activeElement
-            const isInputFocused = active && ["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(active.tagName)
+            const isInputFocused = active && (
+                (active.tagName === "INPUT" && (active as HTMLInputElement).type !== "file") ||
+                active.tagName === "TEXTAREA" ||
+                active.tagName === "SELECT" ||
+                active.tagName === "BUTTON"
+            )
             if (!isInputFocused) pasteZoneRef.current?.focus({ preventScroll: true })
         }
 
@@ -398,11 +404,13 @@ const FlashcardParameters = () => {
                         <DialogTrigger asChild>
                             <Button className="text-white" variant="ghost" size="default">Progress</Button>
                         </DialogTrigger>
-                        <DialogContent className="w-300 h-100">
-                            <DialogHeader className="">
+                        <DialogContent className="flex flex-col w-[95vw] sm:w-300 max-h-[90vh]">
+                            <DialogHeader>
                                 <DialogTitle className="mb-5">{currentWordIndex} out of 604 completed</DialogTitle>
-                                <ProgressDialog words={wordList} nextWord={wordList[currentWordIndex]}/>
                             </DialogHeader>
+                            <div className="flex-1 overflow-auto">
+                                <ProgressDialog words={wordList} nextWord={wordList[currentWordIndex]}/>
+                            </div>
                         </DialogContent>
                     </Dialog>
                 </div>

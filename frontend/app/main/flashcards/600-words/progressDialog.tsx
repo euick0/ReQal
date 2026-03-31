@@ -43,7 +43,7 @@ const ProgressDialog = ({words, nextWord}: ProgressDialogProps) => {
         <Carousel opts={{align: "center",}} className="w-full xl:w-250 mx-auto">
             <CarouselContent className="">
                 {arrangedWords.map((arrangedWordsEntry) => (
-                    <CarouselItem key={arrangedWordsEntry.letter} className="basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6">
+                    <CarouselItem key={arrangedWordsEntry.letter} className="basis-1/2 max-w-[50%] sm:basis-1/3 sm:max-w-[33.333%] md:basis-1/4 md:max-w-[25%] lg:basis-1/5 lg:max-w-[20%] xl:basis-1/6 xl:max-w-[16.666%]">
                         <Card className="bg-input/10!">
                             <CardContent className="flex h-44 sm:h-52 xl:h-60 justify-top flex-col">
                                 <h6 className={clsx("text-2xl font-semibold text-center", {

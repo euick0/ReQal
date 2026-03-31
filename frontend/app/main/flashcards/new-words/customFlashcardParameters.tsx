@@ -120,9 +120,10 @@ const CustomFlashcardParameters = () => {
 
     useEffect(() => {
         const handlePaste = (e: ClipboardEvent) => {
-            // Don't intercept paste inside text inputs / textareas
+            // Don't intercept paste inside text inputs / textareas (but file inputs are fine)
             const target = e.target as HTMLElement
-            if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return
+            const inputEl = target as HTMLInputElement
+            if ((target.tagName === "INPUT" && inputEl.type !== "file") || target.tagName === "TEXTAREA") return
 
             const files = extractImagesFromPasteEvent(e)
             if (files.length > 0) addImagesToState(files)
@@ -143,7 +144,12 @@ const CustomFlashcardParameters = () => {
 
         const handleWindowFocus = () => {
             const active = document.activeElement
-            const isInputFocused = active && ["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(active.tagName)
+            const isInputFocused = active && (
+                (active.tagName === "INPUT" && (active as HTMLInputElement).type !== "file") ||
+                active.tagName === "TEXTAREA" ||
+                active.tagName === "SELECT" ||
+                active.tagName === "BUTTON"
+            )
             if (!isInputFocused) pasteZoneRef.current?.focus({ preventScroll: true })
         }
 
