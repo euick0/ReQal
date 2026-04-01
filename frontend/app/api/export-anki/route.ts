@@ -403,18 +403,59 @@ async function downloadMedia(
             if (slashIdx !== -1) {
                 const bucket = withoutPrefix.slice(0, slashIdx)
                 const path = withoutPrefix.slice(slashIdx + 1)
-                const {data, error} = await supabase.storage.from(bucket).download(path)
+                const timeoutPromise = new Promise<never>((_, reject) =>
+                    setTimeout(() => reject(new Error("Supabase download timeout")), 15000)
+                )
+                const {data, error} = await Promise.race([
+                    supabase.storage.from(bucket).download(path),
+                    timeoutPromise,
+                ])
                 if (error || !data) return null
                 return Buffer.from(await data.arrayBuffer())
             }
         }
         // Plain fetch for external URLs (e.g. Bing image CDN)
-        const res = await fetch(url, {signal: AbortSignal.timeout(10000)})
+        const res = await fetch(url, {
+            signal: AbortSignal.timeout(15000),
+            headers: {
+                "User-Agent": "ReQal/1.0 (Language Learning App; Anki Export)",
+            },
+        })
         if (!res.ok) return null
         return Buffer.from(await res.arrayBuffer())
     } catch {
         return null
     }
+}
+
+async function downloadMediaWithRetry(
+    url: string,
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    supabaseUrl: string,
+    maxRetries = 2,
+    delayMs = 500,
+): Promise<Buffer | null> {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        const result = await downloadMedia(url, supabase, supabaseUrl)
+        if (result !== null) return result
+        if (attempt < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, delayMs * (attempt + 1)))
+        }
+    }
+    return null
+}
+
+async function runWithConcurrency<T>(
+    tasks: (() => Promise<T>)[],
+    limit: number,
+): Promise<PromiseSettledResult<T>[]> {
+    const results: PromiseSettledResult<T>[] = []
+    for (let i = 0; i < tasks.length; i += limit) {
+        const chunk = tasks.slice(i, i + limit)
+        const chunkResults = await Promise.allSettled(chunk.map(fn => fn()))
+        results.push(...chunkResults)
+    }
+    return results
 }
 
 const KNOWN_IMAGE_EXTS = new Set(["jpg", "jpeg", "png", "webp", "gif", "avif"])
@@ -480,7 +521,10 @@ export async function GET(request: NextRequest) {
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
-    const results = await Promise.allSettled(jobs.map(j => downloadMedia(j.url, supabase, supabaseUrl)))
+    const results = await runWithConcurrency(
+        jobs.map(j => () => downloadMediaWithRetry(j.url, supabase, supabaseUrl)),
+        10,
+    )
 
     // mediaFiles: maps mediaIndex → { filename, buffer }
     // We assign each downloaded file a sequential number (Anki media convention)

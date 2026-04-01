@@ -483,7 +483,7 @@ const FlashcardParameters = () => {
                                     ?
                                 </Button>
                                 </HoverCardTrigger>
-                                <HoverCardContent side="right" align="center">
+                                <HoverCardContent side="top" align="center">
                                     <h5 className="font-bold">1st Path</h5>
                                     <p className="text-sm">For easy languages and reviewing ones that you have
                                         already
