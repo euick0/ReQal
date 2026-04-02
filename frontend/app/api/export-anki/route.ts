@@ -426,9 +426,10 @@ async function downloadMedia(
         const normalizedUrl = normalizeProtocolRelativeUrl(url)
         const timeoutMs = role === "audio" ? 30000 : 15000
         const res = await fetch(normalizedUrl, {
+            cache: "no-store",
             signal: AbortSignal.timeout(timeoutMs),
             headers: {
-                "User-Agent": "ReQal/1.0 (Language Learning App; Anki Export)",
+                "User-Agent": "ReQal/1.0 (Language Learning App; Anki Export; https://github.com/euick0/reqal)",
                 "Accept": role === "audio" ? "audio/*,*/*;q=0.8" : "image/*,*/*;q=0.8",
             },
         })
@@ -766,5 +767,5 @@ export async function GET(request: NextRequest) {
         "X-Skipped-Media": String(skippedCount),
     })
 
-    return new NextResponse(apkgBuffer as unknown as BodyInit, {status: 200, headers})
+    return new NextResponse(new Uint8Array(apkgBuffer), {status: 200, headers})
 }
