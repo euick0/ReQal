@@ -8,7 +8,7 @@ import {DeleteDeck, GetDeckList} from "@/lib/backendUtils";
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle} from "@/components/ui/dialog";
 import {Skeleton} from "@/components/ui/skeleton";
 import {toast} from "sonner";
-import {Download, Pencil, Trash2} from "lucide-react";
+import {Download, Loader2Icon, Pencil, Trash2} from "lucide-react";
 
 const getDecks = async () => {
     const {data, error} = await GetDeckList()
@@ -27,6 +27,7 @@ const DeckList = () => {
     const [decks, setDecks] = React.useState<{ id: number, name: string }[]>([])
     const [isLoading, setIsLoading] = React.useState(true)
     const [deckToDelete, setDeckToDelete] = React.useState<string | null>(null)
+    const [exportingDeckId, setExportingDeckId] = React.useState<number | null>(null)
 
     React.useEffect(() => {
         (async () => {
@@ -37,6 +38,8 @@ const DeckList = () => {
     }, [])
 
     const handleExport = async (deckId: number, deckName: string) => {
+        if (exportingDeckId === deckId) return
+        setExportingDeckId(deckId)
         try {
             const res = await fetch(`/api/export-anki?deckId=${deckId}`)
 
@@ -63,6 +66,8 @@ const DeckList = () => {
             URL.revokeObjectURL(url)
         } catch {
             toast.error("Export failed. Please check your connection and try again.")
+        } finally {
+            setExportingDeckId(null)
         }
     }
 
@@ -95,8 +100,19 @@ const DeckList = () => {
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                             <h2 className="text-left pl-4 sm:text-left sm:pl-5">{deck.name}</h2>
                             <div className="flex justify-end gap-2 px-3 sm:px-0 pb-3 sm:pb-0 sm:flex-nowrap sm:justify-end sm:gap-0">
-                                <Button className="sm:mr-5 text-neutral-200 size-9 p-0 sm:size-auto sm:px-4 sm:py-2" variant="ghost" size="default" onClick={() => handleExport(deck.id, deck.name)} aria-label="Export to Anki">
-                                    <Download className="shrink-0" />
+                                <Button
+                                    className="sm:mr-5 text-neutral-200 size-9 p-0 sm:size-auto sm:px-4 sm:py-2"
+                                    variant="ghost"
+                                    size="default"
+                                    onClick={() => handleExport(deck.id, deck.name)}
+                                    aria-label="Export to Anki"
+                                    disabled={exportingDeckId === deck.id}
+                                >
+                                    {exportingDeckId === deck.id ? (
+                                        <Loader2Icon className="shrink-0 animate-spin" />
+                                    ) : (
+                                        <Download className="shrink-0" />
+                                    )}
                                     <span className="hidden sm:inline">Export to Anki</span>
                                 </Button>
                                 <Button className="sm:mr-5 text-neutral-200 size-9 p-0 sm:size-auto sm:px-4 sm:py-2" variant="ghost" size="default" onClick={() => router.push(`/main/decks/my-decks/${deck.id}/edit-flashcards`)} aria-label="Edit Flashcards">
