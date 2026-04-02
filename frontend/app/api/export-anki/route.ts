@@ -416,7 +416,7 @@ async function downloadMedia(
             }
         }
         // Plain fetch for external URLs (e.g. Bing image CDN)
-        const normalizedUrl = url.startsWith("//") ? `https:${url}` : url
+        const normalizedUrl = normalizeProtocolRelativeUrl(url)
         const timeoutMs = role === "audio" ? 30000 : 15000
         const res = await fetch(normalizedUrl, {
             signal: AbortSignal.timeout(timeoutMs),
@@ -444,7 +444,7 @@ async function downloadMediaWithRetry(
         const result = await downloadMedia(url, role, supabase, supabaseUrl)
         if (result !== null) return result
         if (attempt < maxRetries) {
-            const backoffMs = Math.min(delayMs * (2 ** attempt), 5000)
+            const backoffMs = Math.min(delayMs * (2 ** attempt), MAX_MEDIA_DOWNLOAD_BACKOFF_MS)
             await new Promise(resolve => setTimeout(resolve, backoffMs))
         }
     }
@@ -466,6 +466,12 @@ async function runWithConcurrency<T>(
 
 const KNOWN_IMAGE_EXTS = new Set(["jpg", "jpeg", "png", "webp", "gif", "avif"])
 const KNOWN_AUDIO_EXTS = new Set(["mp3", "ogg", "wav", "m4a", "flac", "opus"])
+const MAX_MEDIA_DOWNLOAD_BACKOFF_MS = 5000
+const MEDIA_DOWNLOAD_CONCURRENCY = 6
+
+function normalizeProtocolRelativeUrl(url: string): string {
+    return url.startsWith("//") ? `https:${url}` : url
+}
 
 function mediaExtension(url: string, role: "audio" | "image"): string {
     try {
@@ -529,7 +535,7 @@ export async function GET(request: NextRequest) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
     const results = await runWithConcurrency(
         jobs.map(j => () => downloadMediaWithRetry(j.url, j.role, supabase, supabaseUrl)),
-        6,
+        MEDIA_DOWNLOAD_CONCURRENCY,
     )
 
     // mediaFiles: maps mediaIndex → { filename, buffer }
