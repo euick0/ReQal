@@ -412,7 +412,7 @@ async function downloadMedia(
                 const bucket = withoutPrefix.slice(0, slashIdx)
                 const path = withoutPrefix.slice(slashIdx + 1)
                 const timeoutPromise = new Promise<never>((_, reject) =>
-                    setTimeout(() => reject(new Error("Supabase download timeout")), 15000)
+                    setTimeout(() => reject(new Error("Supabase download timeout")), 5000)
                 )
                 const {data, error} = await Promise.race([
                     supabase.storage.from(bucket).download(path),
@@ -424,7 +424,7 @@ async function downloadMedia(
         }
         // Plain fetch for external URLs (e.g. Bing image CDN)
         const normalizedUrl = normalizeProtocolRelativeUrl(url)
-        const timeoutMs = role === "audio" ? 30000 : 15000
+        const timeoutMs = 5000
         const res = await fetch(normalizedUrl, {
             cache: "no-store",
             signal: AbortSignal.timeout(timeoutMs),
@@ -446,17 +446,7 @@ async function downloadMediaWithRetry(
     supabase: Awaited<ReturnType<typeof createClient>>,
     supabaseUrl: string,
 ): Promise<Buffer | null> {
-    const maxRetries = role === "audio" ? 4 : 2
-    const delayMs = role === "audio" ? 1000 : 500
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        const result = await downloadMedia(url, role, supabase, supabaseUrl)
-        if (result !== null) return result
-        if (attempt < maxRetries) {
-            const backoffMs = Math.min(delayMs * (2 ** (attempt + 1)), MAX_MEDIA_DOWNLOAD_BACKOFF_MS)
-            await new Promise(resolve => setTimeout(resolve, backoffMs))
-        }
-    }
-    return null
+    return await downloadMedia(url, role, supabase, supabaseUrl)
 }
 
 async function runWithConcurrency<T>(
@@ -550,6 +540,7 @@ export async function GET(request: NextRequest) {
     const cardMedia: CardMedia[] = flashcards.map(() => ({audioFilename: null, imageFilenames: []}))
     const mediaManifest: Record<string, string> = {}  // { "0": "audio.mp3", "1": "img.jpg", ... }
     const mediaBuffers: { index: number; buffer: Buffer }[] = []
+    const failureMap = new Map<number, { audioFailed: boolean; imagesFailed: number }>()
 
     for (let k = 0; k < jobs.length; k++) {
         const job = jobs[k]
@@ -569,7 +560,27 @@ export async function GET(request: NextRequest) {
             }
         } else {
             skippedCount++
+            if (!failureMap.has(job.cardIndex)) {
+                failureMap.set(job.cardIndex, {audioFailed: false, imagesFailed: 0})
+            }
+            const entry = failureMap.get(job.cardIndex)!
+            if (job.role === "audio") {
+                entry.audioFailed = true
+            } else {
+                entry.imagesFailed++
+            }
         }
+    }
+
+    type FailedCardDetail = { word: string; audioFailed: boolean; imagesFailed: number }
+    const failedDetails: FailedCardDetail[] = []
+    for (const [cardIndex, failure] of failureMap.entries()) {
+        const fc = flashcards[cardIndex]
+        failedDetails.push({
+            word: ('translated_word' in fc ? fc.translated_word : fc.missing_word) ?? `Card ${cardIndex + 1}`,
+            audioFailed: failure.audioFailed,
+            imagesFailed: failure.imagesFailed,
+        })
     }
 
     // ---------------------------------------------------------------------------
@@ -722,8 +733,7 @@ export async function GET(request: NextRequest) {
 
         const noteId = nextId()
         const guid = `reqal_${fc.id}`
-        const regularFc = fc as any
-        const sfld = regularFc.translated_word ?? ""
+        const sfld = ('translated_word' in fc ? fc.translated_word : fc.missing_word) ?? ""
         const csum = fieldChecksum(sfld)
 
         insertNote.run(noteId, guid, modelId, now, -1, "", flds, sfld, csum, 0, "")
@@ -765,6 +775,7 @@ export async function GET(request: NextRequest) {
         "Content-Type": "application/octet-stream",
         "Content-Disposition": `attachment; filename="${safeName}.apkg"`,
         "X-Skipped-Media": String(skippedCount),
+        "X-Failed-Details": JSON.stringify(failedDetails).replace(/[^\x00-\x7F]/g, c => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`),
     })
 
     return new NextResponse(new Uint8Array(apkgBuffer), {status: 200, headers})
