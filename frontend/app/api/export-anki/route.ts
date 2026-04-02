@@ -389,8 +389,16 @@ function buildConjugationModel(deckId: number) {
 // Media download helper
 // ---------------------------------------------------------------------------
 
+const MAX_MEDIA_DOWNLOAD_BACKOFF_MS = 5000
+const MEDIA_DOWNLOAD_CONCURRENCY = 6
+
+function normalizeProtocolRelativeUrl(url: string): string {
+    return url.startsWith("//") ? `https:${url}` : url
+}
+
 async function downloadMedia(
     url: string,
+    role: "audio" | "image",
     supabase: Awaited<ReturnType<typeof createClient>>,
     supabaseUrl: string,
 ): Promise<Buffer | null> {
@@ -415,10 +423,13 @@ async function downloadMedia(
             }
         }
         // Plain fetch for external URLs (e.g. Bing image CDN)
-        const res = await fetch(url, {
-            signal: AbortSignal.timeout(15000),
+        const normalizedUrl = normalizeProtocolRelativeUrl(url)
+        const timeoutMs = role === "audio" ? 30000 : 15000
+        const res = await fetch(normalizedUrl, {
+            signal: AbortSignal.timeout(timeoutMs),
             headers: {
                 "User-Agent": "ReQal/1.0 (Language Learning App; Anki Export)",
+                "Accept": role === "audio" ? "audio/*,*/*;q=0.8" : "image/*,*/*;q=0.8",
             },
         })
         if (!res.ok) return null
@@ -430,16 +441,18 @@ async function downloadMedia(
 
 async function downloadMediaWithRetry(
     url: string,
+    role: "audio" | "image",
     supabase: Awaited<ReturnType<typeof createClient>>,
     supabaseUrl: string,
-    maxRetries = 2,
-    delayMs = 500,
 ): Promise<Buffer | null> {
+    const maxRetries = role === "audio" ? 4 : 2
+    const delayMs = role === "audio" ? 1000 : 500
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        const result = await downloadMedia(url, supabase, supabaseUrl)
+        const result = await downloadMedia(url, role, supabase, supabaseUrl)
         if (result !== null) return result
         if (attempt < maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, delayMs * (attempt + 1)))
+            const backoffMs = Math.min(delayMs * (2 ** (attempt + 1)), MAX_MEDIA_DOWNLOAD_BACKOFF_MS)
+            await new Promise(resolve => setTimeout(resolve, backoffMs))
         }
     }
     return null
@@ -522,8 +535,8 @@ export async function GET(request: NextRequest) {
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
     const results = await runWithConcurrency(
-        jobs.map(j => () => downloadMediaWithRetry(j.url, supabase, supabaseUrl)),
-        10,
+        jobs.map(j => () => downloadMediaWithRetry(j.url, j.role, supabase, supabaseUrl)),
+        MEDIA_DOWNLOAD_CONCURRENCY,
     )
 
     // mediaFiles: maps mediaIndex → { filename, buffer }
