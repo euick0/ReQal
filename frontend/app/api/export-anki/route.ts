@@ -389,6 +389,13 @@ function buildConjugationModel(deckId: number) {
 // Media download helper
 // ---------------------------------------------------------------------------
 
+const MAX_MEDIA_DOWNLOAD_BACKOFF_MS = 5000
+const MEDIA_DOWNLOAD_CONCURRENCY = 6
+
+function normalizeProtocolRelativeUrl(url: string): string {
+    return url.startsWith("//") ? `https:${url}` : url
+}
+
 async function downloadMedia(
     url: string,
     role: "audio" | "image",
@@ -466,12 +473,6 @@ async function runWithConcurrency<T>(
 
 const KNOWN_IMAGE_EXTS = new Set(["jpg", "jpeg", "png", "webp", "gif", "avif"])
 const KNOWN_AUDIO_EXTS = new Set(["mp3", "ogg", "wav", "m4a", "flac", "opus"])
-const MAX_MEDIA_DOWNLOAD_BACKOFF_MS = 5000
-const MEDIA_DOWNLOAD_CONCURRENCY = 6
-
-function normalizeProtocolRelativeUrl(url: string): string {
-    return url.startsWith("//") ? `https:${url}` : url
-}
 
 function mediaExtension(url: string, role: "audio" | "image"): string {
     try {
