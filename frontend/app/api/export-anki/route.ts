@@ -451,7 +451,7 @@ async function downloadMediaWithRetry(
         const result = await downloadMedia(url, role, supabase, supabaseUrl)
         if (result !== null) return result
         if (attempt < maxRetries) {
-            const backoffMs = Math.min(delayMs * (2 ** attempt), MAX_MEDIA_DOWNLOAD_BACKOFF_MS)
+            const backoffMs = Math.min(delayMs * (2 ** (attempt + 1)), MAX_MEDIA_DOWNLOAD_BACKOFF_MS)
             await new Promise(resolve => setTimeout(resolve, backoffMs))
         }
     }
