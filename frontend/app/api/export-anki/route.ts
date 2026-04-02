@@ -416,9 +416,9 @@ async function downloadMedia(
             }
         }
         // Plain fetch for external URLs (e.g. Bing image CDN)
-        const externalUrl = url.startsWith("//") ? `https:${url}` : url
+        const normalizedUrl = url.startsWith("//") ? `https:${url}` : url
         const timeoutMs = role === "audio" ? 30000 : 15000
-        const res = await fetch(externalUrl, {
+        const res = await fetch(normalizedUrl, {
             signal: AbortSignal.timeout(timeoutMs),
             headers: {
                 "User-Agent": "ReQal/1.0 (Language Learning App; Anki Export)",
@@ -444,7 +444,8 @@ async function downloadMediaWithRetry(
         const result = await downloadMedia(url, role, supabase, supabaseUrl)
         if (result !== null) return result
         if (attempt < maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, delayMs * (2 ** attempt)))
+            const backoffMs = Math.min(delayMs * (2 ** attempt), 5000)
+            await new Promise(resolve => setTimeout(resolve, backoffMs))
         }
     }
     return null
