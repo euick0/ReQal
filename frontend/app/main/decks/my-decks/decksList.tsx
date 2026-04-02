@@ -47,8 +47,25 @@ const DeckList = () => {
             }
 
             const skipped = Number(res.headers.get("X-Skipped-Media") ?? "0")
-            if (skipped > 0) {
-                toast.warning(`${skipped} media file${skipped === 1 ? "" : "s"} couldn't be downloaded and ${skipped === 1 ? "was" : "were"} skipped.`)
+            const failedDetailsRaw = res.headers.get("X-Failed-Details")
+            const failedDetails: { word: string; audioFailed: boolean; imagesFailed: number }[] =
+                failedDetailsRaw ? JSON.parse(failedDetailsRaw) : []
+
+            if (failedDetails.length > 0) {
+                const displayLimit = 5
+                const shown = failedDetails.slice(0, displayLimit)
+                const lines = shown.map(d => {
+                    const parts: string[] = []
+                    if (d.audioFailed) parts.push("audio")
+                    if (d.imagesFailed > 0) parts.push(`${d.imagesFailed} image${d.imagesFailed > 1 ? "s" : ""}`)
+                    return `• "${d.word}": ${parts.join(", ")} failed`
+                })
+                if (failedDetails.length > displayLimit) {
+                    lines.push(`• ...and ${failedDetails.length - displayLimit} more`)
+                }
+                toast.warning(`${skipped} media file${skipped !== 1 ? "s" : ""} failed to download`, {
+                    description: lines.join("\n"),
+                })
             }
 
             const blob = await res.blob()

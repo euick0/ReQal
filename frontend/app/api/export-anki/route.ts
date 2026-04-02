@@ -404,7 +404,7 @@ async function downloadMedia(
                 const bucket = withoutPrefix.slice(0, slashIdx)
                 const path = withoutPrefix.slice(slashIdx + 1)
                 const timeoutPromise = new Promise<never>((_, reject) =>
-                    setTimeout(() => reject(new Error("Supabase download timeout")), 15000)
+                    setTimeout(() => reject(new Error("Supabase download timeout")), 5000)
                 )
                 const {data, error} = await Promise.race([
                     supabase.storage.from(bucket).download(path),
@@ -416,7 +416,7 @@ async function downloadMedia(
         }
         // Plain fetch for external URLs (e.g. Bing image CDN)
         const res = await fetch(url, {
-            signal: AbortSignal.timeout(15000),
+            signal: AbortSignal.timeout(5000),
             headers: {
                 "User-Agent": "ReQal/1.0 (Language Learning App; Anki Export)",
             },
@@ -432,7 +432,7 @@ async function downloadMediaWithRetry(
     url: string,
     supabase: Awaited<ReturnType<typeof createClient>>,
     supabaseUrl: string,
-    maxRetries = 2,
+    maxRetries = 0,
     delayMs = 500,
 ): Promise<Buffer | null> {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -536,6 +536,7 @@ export async function GET(request: NextRequest) {
     const cardMedia: CardMedia[] = flashcards.map(() => ({audioFilename: null, imageFilenames: []}))
     const mediaManifest: Record<string, string> = {}  // { "0": "audio.mp3", "1": "img.jpg", ... }
     const mediaBuffers: { index: number; buffer: Buffer }[] = []
+    const failureMap = new Map<number, { audioFailed: boolean; imagesFailed: number }>()
 
     for (let k = 0; k < jobs.length; k++) {
         const job = jobs[k]
@@ -555,7 +556,27 @@ export async function GET(request: NextRequest) {
             }
         } else {
             skippedCount++
+            if (!failureMap.has(job.cardIndex)) {
+                failureMap.set(job.cardIndex, {audioFailed: false, imagesFailed: 0})
+            }
+            const entry = failureMap.get(job.cardIndex)!
+            if (job.role === "audio") {
+                entry.audioFailed = true
+            } else {
+                entry.imagesFailed++
+            }
         }
+    }
+
+    type FailedCardDetail = { word: string; audioFailed: boolean; imagesFailed: number }
+    const failedDetails: FailedCardDetail[] = []
+    for (const [cardIndex, failure] of failureMap.entries()) {
+        const fc = flashcards[cardIndex]
+        failedDetails.push({
+            word: fc.translated_word ?? `Card ${cardIndex + 1}`,
+            audioFailed: failure.audioFailed,
+            imagesFailed: failure.imagesFailed,
+        })
     }
 
     // ---------------------------------------------------------------------------
@@ -751,6 +772,7 @@ export async function GET(request: NextRequest) {
         "Content-Type": "application/octet-stream",
         "Content-Disposition": `attachment; filename="${safeName}.apkg"`,
         "X-Skipped-Media": String(skippedCount),
+        "X-Failed-Details": JSON.stringify(failedDetails),
     })
 
     return new NextResponse(apkgBuffer as unknown as BodyInit, {status: 200, headers})

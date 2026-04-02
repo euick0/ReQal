@@ -56,7 +56,7 @@ const FlashcardCreation = () => {
 
     return (
         <FlashcardContext.Provider value={contextValue}>
-            <div className="flex flex-col md:flex-row pl-4 md:pl-20 w-full md:h-screen right-0 overflow-visible">
+            <div className="flex flex-col md:flex-row px-4 md:pl-20 md:pr-0 w-full md:h-screen right-0 overflow-visible">
                 <div className="flex-1 overflow-visible">
                     <FlashcardParameters/>
                 </div>
