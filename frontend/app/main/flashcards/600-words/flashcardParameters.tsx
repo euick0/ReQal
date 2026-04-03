@@ -1,6 +1,6 @@
 "use client"
 
-import React, {useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 import {
     Combobox,
     ComboboxContent,
@@ -110,6 +110,9 @@ const FlashcardParameters = () => {
         setPastedImages,
     } = flashcardContext;
 
+    const imagePathLengthRef = useRef(imagePath.length);
+    imagePathLengthRef.current = imagePath.length;
+
     const track = {
         id: flashcardContext.audioPath || "empty-track",
         src: flashcardContext.audioPath,
@@ -120,17 +123,17 @@ const FlashcardParameters = () => {
         toast.error(message, {position: "bottom-right"})
     }
 
-    const addImagesToState = (files: File[]) => {
-        const availableSlots = 4 - imagePath.length
+    const addImagesToState = useCallback((files: File[]) => {
+        const availableSlots = 4 - imagePathLengthRef.current
         if (availableSlots <= 0) {
-            showErrorToast("Maximum 4 images allowed")
+            toast.error("Maximum 4 images allowed", {position: "bottom-right"})
             return
         }
         const toAdd = files.slice(0, availableSlots)
         const newEntries = toAdd.map(f => ({ file: f, url: URL.createObjectURL(f) }))
         setPastedImages(prev => [...prev, ...newEntries])
         setImagePath(prev => [...prev, ...newEntries.map(e => e.url)])
-    }
+    }, [setPastedImages, setImagePath])
 
     useEffect(() => {
         const handlePaste = (e: ClipboardEvent) => {
