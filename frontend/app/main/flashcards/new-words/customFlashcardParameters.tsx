@@ -1,6 +1,6 @@
 "use client"
 
-import React, {useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 import {
     Combobox,
     ComboboxContent,
@@ -96,6 +96,9 @@ const CustomFlashcardParameters = () => {
         setPastedImages,
     } = customFlashcardContext;
 
+    const imagePathLengthRef = useRef(imagePath.length);
+    imagePathLengthRef.current = imagePath.length;
+
     const track = {
         id: customFlashcardContext.audioPath || "empty-track",
         src: customFlashcardContext.audioPath,
@@ -106,17 +109,17 @@ const CustomFlashcardParameters = () => {
         toast.error(message, {position: "bottom-right"})
     }
 
-    const addImagesToState = (files: File[]) => {
-        const availableSlots = 4 - imagePath.length
+    const addImagesToState = useCallback((files: File[]) => {
+        const availableSlots = 4 - imagePathLengthRef.current
         if (availableSlots <= 0) {
-            showErrorToast("Maximum 4 images allowed")
+            toast.error("Maximum 4 images allowed", {position: "bottom-right"})
             return
         }
         const toAdd = files.slice(0, availableSlots)
         const newEntries = toAdd.map(f => ({ file: f, url: URL.createObjectURL(f) }))
         setPastedImages(prev => [...prev, ...newEntries])
         setImagePath(prev => [...prev, ...newEntries.map(e => e.url)])
-    }
+    }, [setPastedImages, setImagePath])
 
     useEffect(() => {
         const handlePaste = (e: ClipboardEvent) => {
@@ -307,7 +310,7 @@ const CustomFlashcardParameters = () => {
     const isLoading = isSubmitting || isTranslating
 
     return (
-        <div ref={pasteZoneRef} tabIndex={-1} className="outline-none box-border pt-20 md:pt-17 pr-2 lg:pr-0 pl-4 lg:pl-9">
+        <div ref={pasteZoneRef} tabIndex={-1} className="outline-none box-border pt-20 md:pt-17 pr-2 lg:pr-0 pl-4 lg:pl-9 w-full">
             <ScrollArea className="w-full h-[calc(100vh-70px)] overflow-visible">
                 <Progress value={progress} className="w-full h-2 mb-4 mx-auto"></Progress>
                 <div className="md:hidden flex flex-wrap gap-2 mb-4">
