@@ -482,6 +482,7 @@ function mediaExtension(url: string, role: "audio" | "image"): string {
 // ---------------------------------------------------------------------------
 
 export async function GET(request: NextRequest) {
+    try {
     // Auth check
     const supabase = await createClient()
     const {data: {user}} = await supabase.auth.getUser()
@@ -781,4 +782,8 @@ export async function GET(request: NextRequest) {
     })
 
     return new NextResponse(new Uint8Array(apkgBuffer), {status: 200, headers})
+    } catch (err) {
+        console.error("[export-anki] Unhandled error:", err)
+        return NextResponse.json({error: "Export failed due to an internal error. Please try again."}, {status: 500})
+    }
 }
