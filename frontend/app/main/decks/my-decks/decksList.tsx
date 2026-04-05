@@ -60,6 +60,8 @@ const DeckList = () => {
             document.body.removeChild(a)
             setTimeout(() => URL.revokeObjectURL(url), 1000)
 
+            toast.success("Deck exported successfully!")
+
             try {
                 const skipped = Number(res.headers.get("X-Skipped-Media") ?? "0")
                 const failedDetailsRaw = res.headers.get("X-Failed-Details")
