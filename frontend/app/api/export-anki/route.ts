@@ -481,6 +481,8 @@ function mediaExtension(url: string, role: "audio" | "image"): string {
 // GET /api/export-anki?deckId=<uuid>
 // ---------------------------------------------------------------------------
 
+export const maxDuration = 120
+
 export async function GET(request: NextRequest) {
     // Auth check
     const supabase = await createClient()
@@ -773,12 +775,14 @@ export async function GET(request: NextRequest) {
     const apkgBuffer = await zip.generateAsync({type: "nodebuffer", compression: "DEFLATE"})
 
     const safeName = deck.name.replace(/[^a-z0-9_\-]/gi, "_")
+    const body = new Uint8Array(apkgBuffer)
     const headers = new Headers({
         "Content-Type": "application/octet-stream",
         "Content-Disposition": `attachment; filename="${safeName}.apkg"`,
+        "Content-Length": String(body.byteLength),
         "X-Skipped-Media": String(skippedCount),
         "X-Failed-Details": JSON.stringify(failedDetails).replace(/[^\x00-\x7F]/g, c => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`),
     })
 
-    return new NextResponse(new Uint8Array(apkgBuffer), {status: 200, headers})
+    return new NextResponse(body, {status: 200, headers})
 }

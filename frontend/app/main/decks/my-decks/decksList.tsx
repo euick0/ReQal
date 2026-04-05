@@ -37,6 +37,20 @@ const DeckList = () => {
         })()
     }, [])
 
+    const triggerBlobDownload = (blob: Blob, filename: string) => {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = filename
+        a.style.display = "none"
+        document.body.appendChild(a)
+        a.dispatchEvent(new MouseEvent("click", {bubbles: true, cancelable: true, view: window}))
+        setTimeout(() => {
+            a.remove()
+            URL.revokeObjectURL(url)
+        }, 60_000)
+    }
+
     const handleExport = async (deckId: number, deckName: string) => {
         if (exportingDeckId === deckId) return
         setExportingDeckId(deckId)
@@ -49,40 +63,32 @@ const DeckList = () => {
                 return
             }
 
-            const blob = await res.blob()
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement("a")
-            const safeName = deckName.replace(/[^a-z0-9_\-]/gi, "_")
-            a.href = url
-            a.download = `${safeName}.apkg`
-            document.body.appendChild(a)
-            a.click()
-            document.body.removeChild(a)
-            setTimeout(() => URL.revokeObjectURL(url), 1000)
-
+            const skipped = Number(res.headers.get("X-Skipped-Media") ?? "0")
+            let failedDetails: { word: string; audioFailed: boolean; imagesFailed: number }[] = []
             try {
-                const skipped = Number(res.headers.get("X-Skipped-Media") ?? "0")
                 const failedDetailsRaw = res.headers.get("X-Failed-Details")
-                const failedDetails: { word: string; audioFailed: boolean; imagesFailed: number }[] =
-                    failedDetailsRaw ? JSON.parse(failedDetailsRaw) : []
+                failedDetails = failedDetailsRaw ? JSON.parse(failedDetailsRaw) : []
+            } catch {}
 
-                if (failedDetails.length > 0) {
-                    const displayLimit = 5
-                    const shown = failedDetails.slice(0, displayLimit)
-                    const lines = shown.map(d => {
-                        const parts: string[] = []
-                        if (d.audioFailed) parts.push("audio")
-                        if (d.imagesFailed > 0) parts.push(`${d.imagesFailed} image${d.imagesFailed > 1 ? "s" : ""}`)
-                        return `• "${d.word}": ${parts.join(", ")} failed`
-                    })
-                    if (failedDetails.length > displayLimit) {
-                        lines.push(`• ...and ${failedDetails.length - displayLimit} more`)
-                    }
-                    toast.warning(`${skipped} media file${skipped !== 1 ? "s" : ""} failed to download`, {
-                        description: lines.join("\n"),
-                    })
+            const blob = await res.blob()
+            const safeName = deckName.replace(/[^a-z0-9_\-]/gi, "_")
+            triggerBlobDownload(blob, `${safeName}.apkg`)
+
+            if (failedDetails.length > 0) {
+                const displayLimit = 5
+                const shown = failedDetails.slice(0, displayLimit)
+                const lines = shown.map(d => {
+                    const parts: string[] = []
+                    if (d.audioFailed) parts.push("audio")
+                    if (d.imagesFailed > 0) parts.push(`${d.imagesFailed} image${d.imagesFailed > 1 ? "s" : ""}`)
+                    return `• "${d.word}": ${parts.join(", ")} failed`
+                })
+                if (failedDetails.length > displayLimit) {
+                    lines.push(`• ...and ${failedDetails.length - displayLimit} more`)
                 }
-            } catch {
+                toast.warning(`${skipped} media file${skipped !== 1 ? "s" : ""} failed to download`, {
+                    description: lines.join("\n"),
+                })
             }
         } catch {
             toast.error("Export failed. Please check your connection and try again.")
