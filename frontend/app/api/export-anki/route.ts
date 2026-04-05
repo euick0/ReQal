@@ -390,7 +390,7 @@ function buildConjugationModel(deckId: number) {
 // ---------------------------------------------------------------------------
 
 const MAX_MEDIA_DOWNLOAD_BACKOFF_MS = 5000
-const MEDIA_DOWNLOAD_CONCURRENCY = 6
+const MEDIA_DOWNLOAD_CONCURRENCY = 12
 
 function normalizeProtocolRelativeUrl(url: string): string {
     return url.startsWith("//") ? `https:${url}` : url
@@ -453,12 +453,22 @@ async function runWithConcurrency<T>(
     tasks: (() => Promise<T>)[],
     limit: number,
 ): Promise<PromiseSettledResult<T>[]> {
-    const results: PromiseSettledResult<T>[] = []
-    for (let i = 0; i < tasks.length; i += limit) {
-        const chunk = tasks.slice(i, i + limit)
-        const chunkResults = await Promise.allSettled(chunk.map(fn => fn()))
-        results.push(...chunkResults)
+    const results: PromiseSettledResult<T>[] = new Array(tasks.length)
+    let nextIndex = 0
+
+    async function worker() {
+        while (nextIndex < tasks.length) {
+            const i = nextIndex++
+            try {
+                results[i] = {status: "fulfilled", value: await tasks[i]()}
+            } catch (e) {
+                results[i] = {status: "rejected", reason: e}
+            }
+        }
     }
+
+    const workers = Array.from({length: Math.min(limit, tasks.length)}, () => worker())
+    await Promise.all(workers)
     return results
 }
 
@@ -512,63 +522,71 @@ export async function GET(request: NextRequest) {
     // ---------------------------------------------------------------------------
     // Download all media in parallel
     // ---------------------------------------------------------------------------
-    // Build a flat list of all media URLs we need, tagged with card index
-    type MediaJob = { cardIndex: number; role: "audio" | "image"; imageIndex?: number; url: string }
-    const jobs: MediaJob[] = []
+    type MediaRef = { cardIndex: number; role: "audio" | "image"; imageIndex?: number }
+    const urlToRefs = new Map<string, MediaRef[]>()
+    const urlToRole = new Map<string, "audio" | "image">()
 
     for (let i = 0; i < flashcards.length; i++) {
         const fc = flashcards[i]
-        if (fc.audio_path) jobs.push({cardIndex: i, role: "audio", url: fc.audio_path})
+        if (fc.audio_path) {
+            const url = fc.audio_path
+            if (!urlToRefs.has(url)) { urlToRefs.set(url, []); urlToRole.set(url, "audio") }
+            urlToRefs.get(url)!.push({cardIndex: i, role: "audio"})
+        }
         const imagePaths = fc.image_paths ?? []
         for (let j = 0; j < imagePaths.length; j++) {
-            jobs.push({cardIndex: i, role: "image", imageIndex: j, url: imagePaths[j]})
+            const url = imagePaths[j]
+            if (!urlToRefs.has(url)) { urlToRefs.set(url, []); urlToRole.set(url, "image") }
+            urlToRefs.get(url)!.push({cardIndex: i, role: "image", imageIndex: j})
         }
     }
 
+    const uniqueUrls = Array.from(urlToRefs.keys())
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
-    const results = await runWithConcurrency(
-        jobs.map(j => () => downloadMediaWithRetry(j.url, j.role, supabase, supabaseUrl)),
+
+    const downloadResults = await runWithConcurrency(
+        uniqueUrls.map(url => () => downloadMediaWithRetry(url, urlToRole.get(url)!, supabase, supabaseUrl)),
         MEDIA_DOWNLOAD_CONCURRENCY,
     )
 
-    // mediaFiles: maps mediaIndex → { filename, buffer }
-    // We assign each downloaded file a sequential number (Anki media convention)
     let mediaIndex = 0
     let skippedCount = 0
 
-    // For each card, store its resolved audio filename and image filenames
     type CardMedia = { audioFilename: string | null; imageFilenames: string[] }
     const cardMedia: CardMedia[] = flashcards.map(() => ({audioFilename: null, imageFilenames: []}))
-    const mediaManifest: Record<string, string> = {}  // { "0": "audio.mp3", "1": "img.jpg", ... }
+    const mediaManifest: Record<string, string> = {}
     const mediaBuffers: { index: number; buffer: Buffer }[] = []
     const failureMap = new Map<number, { audioFailed: boolean; imagesFailed: number }>()
 
-    for (let k = 0; k < jobs.length; k++) {
-        const job = jobs[k]
-        const result = results[k]
+    for (let k = 0; k < uniqueUrls.length; k++) {
+        const url = uniqueUrls[k]
+        const result = downloadResults[k]
+        const refs = urlToRefs.get(url)!
+        const role = urlToRole.get(url)!
 
         if (result.status === "fulfilled" && result.value) {
-            const ext = mediaExtension(job.url, job.role)
-            const originalName = `${job.role}_${job.cardIndex}_${job.imageIndex ?? 0}${ext}`
+            const ext = mediaExtension(url, role)
             const idx = mediaIndex++
+            const originalName = `${role}_${idx}${ext}`
             mediaManifest[String(idx)] = originalName
             mediaBuffers.push({index: idx, buffer: result.value})
 
-            if (job.role === "audio") {
-                cardMedia[job.cardIndex].audioFilename = originalName
-            } else {
-                cardMedia[job.cardIndex].imageFilenames.push(originalName)
+            for (const ref of refs) {
+                if (ref.role === "audio") {
+                    cardMedia[ref.cardIndex].audioFilename = originalName
+                } else {
+                    cardMedia[ref.cardIndex].imageFilenames.push(originalName)
+                }
             }
         } else {
-            skippedCount++
-            if (!failureMap.has(job.cardIndex)) {
-                failureMap.set(job.cardIndex, {audioFailed: false, imagesFailed: 0})
-            }
-            const entry = failureMap.get(job.cardIndex)!
-            if (job.role === "audio") {
-                entry.audioFailed = true
-            } else {
-                entry.imagesFailed++
+            for (const ref of refs) {
+                skippedCount++
+                if (!failureMap.has(ref.cardIndex)) {
+                    failureMap.set(ref.cardIndex, {audioFailed: false, imagesFailed: 0})
+                }
+                const entry = failureMap.get(ref.cardIndex)!
+                if (ref.role === "audio") entry.audioFailed = true
+                else entry.imagesFailed++
             }
         }
     }
@@ -683,78 +701,69 @@ export async function GET(request: NextRequest) {
     const insertNote = db.prepare(`INSERT INTO notes VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
     const insertCard = db.prepare(`INSERT INTO cards VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
-    for (let i = 0; i < flashcards.length; i++) {
-        const fc = flashcards[i]
-        const cm = cardMedia[i]
+    const insertAllCards = db.transaction(() => {
+        for (let i = 0; i < flashcards.length; i++) {
+            const fc = flashcards[i]
+            const cm = cardMedia[i]
 
-        // Build shared field values
-        const audioTag = cm.audioFilename ? `[sound:${cm.audioFilename}]` : ""
-        const imageTags = cm.imageFilenames.map(f => `<img src="${f}">`).join("\n")
-        const gender = fc.gender ?? ""
-        const ipa = fc.IPA_translation ?? ""
-        const enableCard2 = fc.pathway >= 2 ? "1" : ""
-        const enableCard3 = fc.pathway >= 3 ? "1" : ""
+            const audioTag = cm.audioFilename ? `[sound:${cm.audioFilename}]` : ""
+            const imageTags = cm.imageFilenames.map(f => `<img src="${f}">`).join("\n")
+            const gender = fc.gender ?? ""
+            const ipa = fc.IPA_translation ?? ""
+            const enableCard2 = fc.pathway >= 2 ? "1" : ""
+            const enableCard3 = fc.pathway >= 3 ? "1" : ""
 
-        // Anki field separator is \x1f (unit separator)
-        let flds: string
+            let flds: string
 
-        if (isConjugation) {
-            // 11 fields: Word, IPA, Gender, Audio, Image, ImageCaption,
-            //            TranslationCaption, TranslatedPhrase,
-            //            EnableCard2, EnableCard3, EnableCard4
-            // Conjugation cards store the word in 'missing_word' and the phrase in 'phrase'
-            const conjFc = fc as any
-            flds = [
-                conjFc.missing_word ?? "",
-                ipa,
-                gender,
-                audioTag,
-                imageTags,
-                fc.image_caption ?? "",
-                fc.translation_caption ?? "",
-                conjFc.phrase ?? "",
-                enableCard2,
-                enableCard3,
-                enableCard3,  // EnableCard4 mirrors EnableCard3 (pathway 3)
-            ].join("\x1f")
-        } else {
-            // 9 fields: Word, IPA, Gender, Audio, Image, ImageCaption,
-            //           TranslationCaption, EnableCard2, EnableCard3
-            const regularFc = fc as any
-            flds = [
-                regularFc.translated_word ?? "",
-                ipa,
-                gender,
-                audioTag,
-                imageTags,
-                fc.image_caption ?? "",
-                fc.translation_caption ?? "",
-                enableCard2,
-                enableCard3,
-            ].join("\x1f")
+            if (isConjugation) {
+                const conjFc = fc as any
+                flds = [
+                    conjFc.missing_word ?? "",
+                    ipa,
+                    gender,
+                    audioTag,
+                    imageTags,
+                    fc.image_caption ?? "",
+                    fc.translation_caption ?? "",
+                    conjFc.phrase ?? "",
+                    enableCard2,
+                    enableCard3,
+                    enableCard3,
+                ].join("\x1f")
+            } else {
+                const regularFc = fc as any
+                flds = [
+                    regularFc.translated_word ?? "",
+                    ipa,
+                    gender,
+                    audioTag,
+                    imageTags,
+                    fc.image_caption ?? "",
+                    fc.translation_caption ?? "",
+                    enableCard2,
+                    enableCard3,
+                ].join("\x1f")
+            }
+
+            const noteId = nextId()
+            const guid = `reqal_${fc.id}`
+            const sfld = ('translated_word' in fc ? fc.translated_word : fc.missing_word) ?? ""
+            const csum = fieldChecksum(sfld)
+
+            insertNote.run(noteId, guid, modelId, now, -1, "", flds, sfld, csum, 0, "")
+
+            insertCard.run(nextId(), noteId, deckIdNum, 0, now, -1, 0, 0, i, 0, 0, 0, 0, 0, 0, 0, 0, "")
+
+            if (fc.pathway >= 2) {
+                insertCard.run(nextId(), noteId, deckIdNum, 1, now, -1, 0, 0, i, 0, 0, 0, 0, 0, 0, 0, 0, "")
+            }
+
+            if (fc.pathway >= 3) {
+                insertCard.run(nextId(), noteId, deckIdNum, 2, now, -1, 0, 0, i, 0, 0, 0, 0, 0, 0, 0, 0, "")
+            }
         }
-
-        const noteId = nextId()
-        const guid = `reqal_${fc.id}`
-        const sfld = ('translated_word' in fc ? fc.translated_word : fc.missing_word) ?? ""
-        const csum = fieldChecksum(sfld)
-
-        insertNote.run(noteId, guid, modelId, now, -1, "", flds, sfld, csum, 0, "")
-
-        // Generate cards based on pathway
-        // Card 1 — always
-        insertCard.run(nextId(), noteId, deckIdNum, 0, now, -1, 0, 0, i, 0, 0, 0, 0, 0, 0, 0, 0, "")
-
-        // Card 2 — pathway >= 2
-        if (fc.pathway >= 2) {
-            insertCard.run(nextId(), noteId, deckIdNum, 1, now, -1, 0, 0, i, 0, 0, 0, 0, 0, 0, 0, 0, "")
-        }
-
-        // Card 3 — pathway >= 3
-        if (fc.pathway >= 3) {
-            insertCard.run(nextId(), noteId, deckIdNum, 2, now, -1, 0, 0, i, 0, 0, 0, 0, 0, 0, 0, 0, "")
-        }
-    }
+    })
+    insertAllCards()
 
     // Export the SQLite DB to a Buffer
     const dbBuffer = Buffer.from(db.serialize())
@@ -764,14 +773,28 @@ export async function GET(request: NextRequest) {
     // Assemble .apkg (ZIP)
     // ---------------------------------------------------------------------------
     const zip = new JSZip()
-    zip.file("collection.anki2", dbBuffer)
-    zip.file("media", JSON.stringify(mediaManifest))
+    zip.file("collection.anki2", dbBuffer, {compression: "DEFLATE"})
+    zip.file("media", JSON.stringify(mediaManifest), {compression: "DEFLATE"})
 
     for (const {index, buffer} of mediaBuffers) {
-        zip.file(String(index), buffer)
+        zip.file(String(index), buffer, {compression: "STORE"})
     }
 
-    const apkgBuffer = await zip.generateAsync({type: "nodebuffer", compression: "DEFLATE"})
+    const nodeStream = zip.generateNodeStream({type: "nodebuffer", streamFiles: true})
+
+    const webStream = new ReadableStream({
+        start(controller) {
+            nodeStream.on("data", (chunk: Buffer) => {
+                controller.enqueue(new Uint8Array(chunk))
+            })
+            nodeStream.on("end", () => {
+                controller.close()
+            })
+            nodeStream.on("error", (err: Error) => {
+                controller.error(err)
+            })
+        },
+    })
 
     const safeName = deck.name.replace(/[^a-z0-9_\-]/gi, "_")
     const headers = new Headers({
@@ -781,7 +804,7 @@ export async function GET(request: NextRequest) {
         "X-Failed-Details": JSON.stringify(failedDetails).replace(/[^\x00-\x7F]/g, c => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`),
     })
 
-    return new NextResponse(new Uint8Array(apkgBuffer), {status: 200, headers})
+    return new NextResponse(webStream, {status: 200, headers})
     } catch (err) {
         console.error("[export-anki] Unhandled error:", err)
         return NextResponse.json({error: "Export failed due to an internal error. Please try again."}, {status: 500})
