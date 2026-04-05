@@ -573,8 +573,10 @@ export async function GET(request: NextRequest) {
     }
 
     type FailedCardDetail = { word: string; audioFailed: boolean; imagesFailed: number }
+    const MAX_FAILED_DETAILS = 50
     const failedDetails: FailedCardDetail[] = []
     for (const [cardIndex, failure] of failureMap.entries()) {
+        if (failedDetails.length >= MAX_FAILED_DETAILS) break
         const fc = flashcards[cardIndex]
         failedDetails.push({
             word: ('translated_word' in fc ? fc.translated_word : fc.missing_word) ?? `Card ${cardIndex + 1}`,
