@@ -389,8 +389,10 @@ function buildConjugationModel(deckId: number) {
 // Media download helper
 // ---------------------------------------------------------------------------
 
-const MAX_MEDIA_DOWNLOAD_BACKOFF_MS = 5000
-const MEDIA_DOWNLOAD_CONCURRENCY = 12
+const MEDIA_DOWNLOAD_CONCURRENCY = 25
+const RETRY_ATTEMPTS = 3
+const RETRY_DELAYS_MS = [0, 500, 1500]
+const RETRY_TIMEOUTS_MS = [5000, 8000, 10000]
 
 function normalizeProtocolRelativeUrl(url: string): string {
     return url.startsWith("//") ? `https:${url}` : url
@@ -399,34 +401,11 @@ function normalizeProtocolRelativeUrl(url: string): string {
 async function downloadMedia(
     url: string,
     role: "audio" | "image",
-    supabase: Awaited<ReturnType<typeof createClient>>,
-    supabaseUrl: string,
+    timeoutMs: number,
 ): Promise<Buffer | null> {
     try {
-        // Use the Supabase SDK for Storage URLs so auth/RLS is handled correctly
-        const storagePrefix = `${supabaseUrl}/storage/v1/object/public/`
-        if (url.startsWith(storagePrefix)) {
-            const withoutPrefix = url.slice(storagePrefix.length)
-            const slashIdx = withoutPrefix.indexOf("/")
-            if (slashIdx !== -1) {
-                const bucket = withoutPrefix.slice(0, slashIdx)
-                const path = withoutPrefix.slice(slashIdx + 1)
-                const timeoutPromise = new Promise<never>((_, reject) =>
-                    setTimeout(() => reject(new Error("Supabase download timeout")), 5000)
-                )
-                const {data, error} = await Promise.race([
-                    supabase.storage.from(bucket).download(path),
-                    timeoutPromise,
-                ])
-                if (error || !data) return null
-                return Buffer.from(await data.arrayBuffer())
-            }
-        }
-        // Plain fetch for external URLs (e.g. Bing image CDN)
         const normalizedUrl = normalizeProtocolRelativeUrl(url)
-        const timeoutMs = 5000
         const res = await fetch(normalizedUrl, {
-            cache: "no-store",
             signal: AbortSignal.timeout(timeoutMs),
             headers: {
                 "User-Agent": "ReQal/1.0 (Language Learning App; Anki Export; https://github.com/euick0/reqal)",
@@ -443,10 +422,15 @@ async function downloadMedia(
 async function downloadMediaWithRetry(
     url: string,
     role: "audio" | "image",
-    supabase: Awaited<ReturnType<typeof createClient>>,
-    supabaseUrl: string,
 ): Promise<Buffer | null> {
-    return await downloadMedia(url, role, supabase, supabaseUrl)
+    for (let attempt = 0; attempt < RETRY_ATTEMPTS; attempt++) {
+        if (attempt > 0) {
+            await new Promise(r => setTimeout(r, RETRY_DELAYS_MS[attempt] + Math.random() * 200))
+        }
+        const result = await downloadMedia(url, role, RETRY_TIMEOUTS_MS[attempt])
+        if (result) return result
+    }
+    return null
 }
 
 async function runWithConcurrency<T>(
@@ -519,6 +503,10 @@ export async function GET(request: NextRequest) {
     const flashcards = (regularCards && regularCards.length > 0 ? regularCards : conjugationCards) ?? []
     if (flashcards.length === 0) return NextResponse.json({error: "Deck has no flashcards"}, {status: 400})
 
+    if (request.nextUrl.searchParams.get("preflight") === "true") {
+        return NextResponse.json({ok: true, cardCount: flashcards.length, deckName: deck.name})
+    }
+
     // ---------------------------------------------------------------------------
     // Download all media in parallel
     // ---------------------------------------------------------------------------
@@ -542,21 +530,18 @@ export async function GET(request: NextRequest) {
     }
 
     const uniqueUrls = Array.from(urlToRefs.keys())
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
 
     const downloadResults = await runWithConcurrency(
-        uniqueUrls.map(url => () => downloadMediaWithRetry(url, urlToRole.get(url)!, supabase, supabaseUrl)),
+        uniqueUrls.map(url => () => downloadMediaWithRetry(url, urlToRole.get(url)!)),
         MEDIA_DOWNLOAD_CONCURRENCY,
     )
 
     let mediaIndex = 0
-    let skippedCount = 0
 
     type CardMedia = { audioFilename: string | null; imageFilenames: string[] }
     const cardMedia: CardMedia[] = flashcards.map(() => ({audioFilename: null, imageFilenames: []}))
     const mediaManifest: Record<string, string> = {}
     const mediaBuffers: { index: number; buffer: Buffer }[] = []
-    const failureMap = new Map<number, { audioFailed: boolean; imagesFailed: number }>()
 
     for (let k = 0; k < uniqueUrls.length; k++) {
         const url = uniqueUrls[k]
@@ -578,30 +563,7 @@ export async function GET(request: NextRequest) {
                     cardMedia[ref.cardIndex].imageFilenames.push(originalName)
                 }
             }
-        } else {
-            for (const ref of refs) {
-                skippedCount++
-                if (!failureMap.has(ref.cardIndex)) {
-                    failureMap.set(ref.cardIndex, {audioFailed: false, imagesFailed: 0})
-                }
-                const entry = failureMap.get(ref.cardIndex)!
-                if (ref.role === "audio") entry.audioFailed = true
-                else entry.imagesFailed++
-            }
         }
-    }
-
-    type FailedCardDetail = { word: string; audioFailed: boolean; imagesFailed: number }
-    const MAX_FAILED_DETAILS = 50
-    const failedDetails: FailedCardDetail[] = []
-    for (const [cardIndex, failure] of failureMap.entries()) {
-        if (failedDetails.length >= MAX_FAILED_DETAILS) break
-        const fc = flashcards[cardIndex]
-        failedDetails.push({
-            word: ('translated_word' in fc ? fc.translated_word : fc.missing_word) ?? `Card ${cardIndex + 1}`,
-            audioFailed: failure.audioFailed,
-            imagesFailed: failure.imagesFailed,
-        })
     }
 
     // ---------------------------------------------------------------------------
@@ -780,31 +742,16 @@ export async function GET(request: NextRequest) {
         zip.file(String(index), buffer, {compression: "STORE"})
     }
 
-    const nodeStream = zip.generateNodeStream({type: "nodebuffer", streamFiles: true})
-
-    const webStream = new ReadableStream({
-        start(controller) {
-            nodeStream.on("data", (chunk: Buffer) => {
-                controller.enqueue(new Uint8Array(chunk))
-            })
-            nodeStream.on("end", () => {
-                controller.close()
-            })
-            nodeStream.on("error", (err: Error) => {
-                controller.error(err)
-            })
-        },
-    })
+    const zipBuffer = await zip.generateAsync({type: "nodebuffer"})
 
     const safeName = deck.name.replace(/[^a-z0-9_\-]/gi, "_")
     const headers = new Headers({
         "Content-Type": "application/octet-stream",
         "Content-Disposition": `attachment; filename="${safeName}.apkg"`,
-        "X-Skipped-Media": String(skippedCount),
-        "X-Failed-Details": JSON.stringify(failedDetails).replace(/[^\x00-\x7F]/g, c => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`),
+        "Content-Length": String(zipBuffer.byteLength),
     })
 
-    return new NextResponse(webStream, {status: 200, headers})
+    return new NextResponse(new Uint8Array(zipBuffer), {status: 200, headers})
     } catch (err) {
         console.error("[export-anki] Unhandled error:", err)
         return NextResponse.json({error: "Export failed due to an internal error. Please try again."}, {status: 500})

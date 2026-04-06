@@ -41,7 +41,7 @@ const DeckList = () => {
         if (exportingDeckId === deckId) return
         setExportingDeckId(deckId)
         try {
-            const res = await fetch(`/api/export-anki?deckId=${deckId}`)
+            const res = await fetch(`/api/export-anki?deckId=${deckId}&preflight=true`)
 
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}))
@@ -49,47 +49,12 @@ const DeckList = () => {
                 return
             }
 
-            const blob = await res.blob()
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement("a")
-            const safeName = deckName.replace(/[^a-z0-9_\-]/gi, "_")
-            a.href = url
-            a.download = `${safeName}.apkg`
-            document.body.appendChild(a)
-            a.click()
-            document.body.removeChild(a)
-            setTimeout(() => URL.revokeObjectURL(url), 1000)
-
-            toast.success("Deck exported successfully!")
-
-            try {
-                const skipped = Number(res.headers.get("X-Skipped-Media") ?? "0")
-                const failedDetailsRaw = res.headers.get("X-Failed-Details")
-                const failedDetails: { word: string; audioFailed: boolean; imagesFailed: number }[] =
-                    failedDetailsRaw ? JSON.parse(failedDetailsRaw) : []
-
-                if (failedDetails.length > 0) {
-                    const displayLimit = 5
-                    const shown = failedDetails.slice(0, displayLimit)
-                    const lines = shown.map(d => {
-                        const parts: string[] = []
-                        if (d.audioFailed) parts.push("audio")
-                        if (d.imagesFailed > 0) parts.push(`${d.imagesFailed} image${d.imagesFailed > 1 ? "s" : ""}`)
-                        return `• "${d.word}": ${parts.join(", ")} failed`
-                    })
-                    if (failedDetails.length > displayLimit) {
-                        lines.push(`• ...and ${failedDetails.length - displayLimit} more`)
-                    }
-                    toast.warning(`${skipped} media file${skipped !== 1 ? "s" : ""} failed to download`, {
-                        description: lines.join("\n"),
-                    })
-                }
-            } catch {
-            }
+            window.location.href = `/api/export-anki?deckId=${deckId}`
+            toast.success("Download started!")
         } catch {
             toast.error("Export failed. Please check your connection and try again.")
         } finally {
-            setExportingDeckId(null)
+            setTimeout(() => setExportingDeckId(null), 1500)
         }
     }
 
