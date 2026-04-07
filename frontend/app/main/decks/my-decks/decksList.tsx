@@ -62,7 +62,7 @@ const DeckList = () => {
                         const audioRes = await fetch(card.audio_path)
                         if (!audioRes.ok) return
                         const blob = await audioRes.blob()
-                        const ext = card.audio_path.split(".").pop()?.split("?")[0] ?? "ogg"
+                        const ext = (() => { try { const p = new URL(card.audio_path).pathname; return p.split(".").pop()?.split("?")[0] ?? "ogg" } catch { return "ogg" } })()
                         formData.set(`audio_${card.id}`, blob, `audio.${ext}`)
                     } catch {}
                 }))

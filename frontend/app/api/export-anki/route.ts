@@ -579,9 +579,14 @@ async function handleExport(deckId: string, clientAudio: Map<string, Buffer>) {
             mediaManifest[String(idx)] = originalName
             mediaBuffers.push({index: idx, buffer: result.value})
 
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
             for (const ref of refs) {
                 if (ref.role === "audio") {
                     cardMedia[ref.cardIndex].audioFilename = originalName
+                    if (supabaseUrl && !url.startsWith(supabaseUrl)) {
+                        const fc = flashcards[ref.cardIndex] as any
+                        persistAudioToStorage(supabase, user.id, fc.id, tableName, result.value, ext).catch(() => {})
+                    }
                 } else {
                     cardMedia[ref.cardIndex].imageFilenames.push(originalName)
                 }
