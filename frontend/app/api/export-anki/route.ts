@@ -503,8 +503,17 @@ export async function GET(request: NextRequest) {
     const flashcards = (regularCards && regularCards.length > 0 ? regularCards : conjugationCards) ?? []
     if (flashcards.length === 0) return NextResponse.json({error: "Deck has no flashcards"}, {status: 400})
 
+    const isConjugationDeck = !!(conjugationCards && conjugationCards.length > 0 && (!regularCards || regularCards.length === 0))
+
     if (request.nextUrl.searchParams.get("preflight") === "true") {
-        return NextResponse.json({ok: true, cardCount: flashcards.length, deckName: deck.name})
+        const wikiAudioCards = flashcards
+            .filter((fc: any) => fc.audio_path && (fc.audio_path.includes("wikimedia.org") || fc.audio_path.includes("wiktionary.org")))
+            .map((fc: any) => ({
+                id: fc.id,
+                audio_path: fc.audio_path,
+                table: isConjugationDeck ? "conjugation_flashcards" : "flashcards",
+            }))
+        return NextResponse.json({ok: true, cardCount: flashcards.length, deckName: deck.name, wikiAudioCards})
     }
 
     // ---------------------------------------------------------------------------
