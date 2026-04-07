@@ -289,7 +289,18 @@ const CustomFlashcardParameters = () => {
             const {data: uploadedAudioUrl} = await uploadFile(audioFile, "flashcard-audio")
             if (uploadedAudioUrl) formData.set("audioPath", uploadedAudioUrl)
         } else if (audioPath) {
-            formData.set("audioPath", audioPath)
+            try {
+                const audioRes = await fetch(audioPath)
+                if (audioRes.ok) {
+                    const blob = await audioRes.blob()
+                    const ext = audioPath.split(".").pop()?.split("?")[0] ?? "ogg"
+                    const file = new File([blob], `wiktionary_audio.${ext}`, {type: blob.type || "audio/ogg"})
+                    const {data: uploadedAudioUrl} = await uploadFile(file, "flashcard-audio")
+                    if (uploadedAudioUrl) formData.set("audioPath", uploadedAudioUrl)
+                }
+            } catch {
+                formData.set("audioPath", audioPath)
+            }
         }
 
         setProgress(50)

@@ -4,7 +4,8 @@ import React from 'react';
 import {useRouter} from "next/navigation";
 import {Card} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
-import {DeleteDeck, GetDeckList} from "@/lib/backendUtils";
+import {DeleteDeck, GetDeckList, UpdateFlashcard, UpdateConjugationFlashcard} from "@/lib/backendUtils";
+import {uploadFile} from "@/lib/uploadToStorage";
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle} from "@/components/ui/dialog";
 import {Skeleton} from "@/components/ui/skeleton";
 import {toast} from "sonner";
@@ -47,6 +48,27 @@ const DeckList = () => {
                 const err = await res.json().catch(() => ({}))
                 toast.error(err.error ?? "Export failed. Please try again.")
                 return
+            }
+
+            const preflight = await res.json()
+            const wikiCards: {id: string; audio_path: string; table: string}[] = preflight.wikiAudioCards ?? []
+
+            if (wikiCards.length > 0) {
+                toast.info(`Migrating ${wikiCards.length} audio file${wikiCards.length > 1 ? "s" : ""} for export...`)
+                await Promise.all(wikiCards.map(async (card) => {
+                    try {
+                        const audioRes = await fetch(card.audio_path)
+                        if (!audioRes.ok) return
+                        const blob = await audioRes.blob()
+                        const ext = card.audio_path.split(".").pop()?.split("?")[0] ?? "ogg"
+                        const file = new File([blob], `wiktionary_audio.${ext}`, {type: blob.type || "audio/ogg"})
+                        const {data: uploadedUrl} = await uploadFile(file, "flashcard-audio")
+                        if (!uploadedUrl) return
+                        const updateFn = card.table === "conjugation_flashcards" ? UpdateConjugationFlashcard : UpdateFlashcard
+                        await updateFn(card.id, {audio_path: uploadedUrl})
+                    } catch {
+                    }
+                }))
             }
 
             window.location.href = `/api/export-anki?deckId=${deckId}`
