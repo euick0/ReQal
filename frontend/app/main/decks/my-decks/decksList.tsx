@@ -4,8 +4,7 @@ import React from 'react';
 import {useRouter} from "next/navigation";
 import {Card} from "@/components/ui/card";
 import {Button} from "@/components/ui/button";
-import {DeleteDeck, GetDeckList, UpdateFlashcard, UpdateConjugationFlashcard} from "@/lib/backendUtils";
-import {uploadFile} from "@/lib/uploadToStorage";
+import {DeleteDeck, GetDeckList} from "@/lib/backendUtils";
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle} from "@/components/ui/dialog";
 import {Skeleton} from "@/components/ui/skeleton";
 import {toast} from "sonner";
@@ -42,7 +41,35 @@ const DeckList = () => {
         if (exportingDeckId === deckId) return
         setExportingDeckId(deckId)
         try {
-            const res = await fetch(`/api/export-anki?deckId=${deckId}&preflight=true`)
+            const preflightRes = await fetch(`/api/export-anki?deckId=${deckId}&preflight=true`)
+
+            if (!preflightRes.ok) {
+                const err = await preflightRes.json().catch(() => ({}))
+                toast.error(err.error ?? "Export failed. Please try again.")
+                return
+            }
+
+            const preflight = await preflightRes.json()
+            const wikiCards: {id: string; audio_path: string}[] = preflight.wikiAudioCards ?? []
+
+            let res: Response
+            if (wikiCards.length > 0) {
+                toast.info(`Preparing ${wikiCards.length} audio file${wikiCards.length > 1 ? "s" : ""} for export...`)
+                const formData = new FormData()
+                formData.set("deckId", String(deckId))
+                await Promise.all(wikiCards.map(async (card) => {
+                    try {
+                        const audioRes = await fetch(card.audio_path)
+                        if (!audioRes.ok) return
+                        const blob = await audioRes.blob()
+                        const ext = card.audio_path.split(".").pop()?.split("?")[0] ?? "ogg"
+                        formData.set(`audio_${card.id}`, blob, `audio.${ext}`)
+                    } catch {}
+                }))
+                res = await fetch(`/api/export-anki`, {method: "POST", body: formData})
+            } else {
+                res = await fetch(`/api/export-anki?deckId=${deckId}`)
+            }
 
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}))
@@ -50,33 +77,21 @@ const DeckList = () => {
                 return
             }
 
-            const preflight = await res.json()
-            const wikiCards: {id: string; audio_path: string; table: string}[] = preflight.wikiAudioCards ?? []
-
-            if (wikiCards.length > 0) {
-                toast.info(`Migrating ${wikiCards.length} audio file${wikiCards.length > 1 ? "s" : ""} for export...`)
-                await Promise.all(wikiCards.map(async (card) => {
-                    try {
-                        const audioRes = await fetch(card.audio_path)
-                        if (!audioRes.ok) return
-                        const blob = await audioRes.blob()
-                        const ext = card.audio_path.split(".").pop()?.split("?")[0] ?? "ogg"
-                        const file = new File([blob], `wiktionary_audio.${ext}`, {type: blob.type || "audio/ogg"})
-                        const {data: uploadedUrl} = await uploadFile(file, "flashcard-audio")
-                        if (!uploadedUrl) return
-                        const updateFn = card.table === "conjugation_flashcards" ? UpdateConjugationFlashcard : UpdateFlashcard
-                        await updateFn(card.id, {audio_path: uploadedUrl})
-                    } catch {
-                    }
-                }))
-            }
-
-            window.location.href = `/api/export-anki?deckId=${deckId}`
-            toast.success("Download started!")
+            const blob = await res.blob()
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement("a")
+            const safeName = deckName.replace(/[^a-z0-9_\-]/gi, "_")
+            a.href = url
+            a.download = `${safeName}.apkg`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            setTimeout(() => URL.revokeObjectURL(url), 1000)
+            toast.success("Deck exported successfully!")
         } catch {
             toast.error("Export failed. Please check your connection and try again.")
         } finally {
-            setTimeout(() => setExportingDeckId(null), 1500)
+            setExportingDeckId(null)
         }
     }
 
