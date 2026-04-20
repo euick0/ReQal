@@ -397,21 +397,6 @@ const GetDeckFlashcards = async (deckId: string) => {
     }[], error: null}
 }
 
-const GetFlashcardsByDeckId = async (deckId: string) => {
-    const supabase = await createClient()
-
-    const {data, error} = await supabase
-        .from("flashcards")
-        .select("id, translated_word, IPA_translation, gender, image_paths, audio_path, translation_caption, image_caption, pathway")
-        .eq("deck_id", deckId)
-
-    if (error) {
-        console.error("Error fetching flashcards:", error)
-        return {data: null, error}
-    }
-
-    return {data, error: null}
-}
 
 const UpdateFlashcard = async (flashcardId: string, payload: {
     translated_word?: string | null
@@ -855,7 +840,6 @@ export {
     GetConjugationFlashcardsDeckID,
     GetDeckById,
     GetDeckFlashcards,
-    GetFlashcardsByDeckId,
     UpdateFlashcard,
     DeleteFlashcard,
     DeleteFlashcardsBulk,
