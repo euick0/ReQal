@@ -1,6 +1,6 @@
 "use client"
 
-import React, {useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 import {
     Combobox,
     ComboboxContent,
@@ -120,7 +120,7 @@ const FlashcardParameters = () => {
         toast.error(message, {position: "bottom-right"})
     }
 
-    const addImagesToState = (files: File[]) => {
+    const addImagesToState = useCallback((files: File[]) => {
         const availableSlots = 4 - imagePath.length
         if (availableSlots <= 0) {
             showErrorToast("Maximum 4 images allowed")
@@ -130,7 +130,7 @@ const FlashcardParameters = () => {
         const newEntries = toAdd.map(f => ({ file: f, url: URL.createObjectURL(f) }))
         setPastedImages(prev => [...prev, ...newEntries])
         setImagePath(prev => [...prev, ...newEntries.map(e => e.url)])
-    }
+    }, [imagePath.length])
 
     useEffect(() => {
         const handlePaste = (e: ClipboardEvent) => {
@@ -157,6 +157,7 @@ const FlashcardParameters = () => {
         }
 
         const handleWindowFocus = () => {
+            if (window.matchMedia("(pointer: coarse)").matches) return
             const active = document.activeElement
             const isInputFocused = active && (
                 (active.tagName === "INPUT" && (active as HTMLInputElement).type !== "file") ||
@@ -167,7 +168,7 @@ const FlashcardParameters = () => {
             if (!isInputFocused) pasteZoneRef.current?.focus({ preventScroll: true })
         }
 
-        pasteZoneRef.current?.focus({ preventScroll: true })
+        if (!window.matchMedia("(pointer: coarse)").matches) pasteZoneRef.current?.focus({ preventScroll: true })
         window.addEventListener("focus", handleWindowFocus)
         document.addEventListener("paste", handlePaste)
         document.addEventListener("dragover", handleDragOver)
