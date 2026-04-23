@@ -60,9 +60,6 @@ const Header = () => {
                 <div className="flex flex-1 items-center gap-4 justify-start">
                     <Logo width={100} height={100} iconType="textDark" className="w-16 sm:w-20 md:w-28"/>
                 </div>
-                <div className="hidden md:flex items-center gap-4">
-
-                </div>
                 <div className="flex flex-1 items-center gap-2 md:gap-4 justify-end">
                     <Button variant="ghost" size="sm" className="rounded-xl text-white text-md px-3 py-2 font-normal md:hidden"
                             onClick={ToggleLoginModal}>Login</Button>
