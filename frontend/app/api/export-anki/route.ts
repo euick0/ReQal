@@ -389,8 +389,8 @@ function buildConjugationModel(deckId: number) {
 // Media download helper
 // ---------------------------------------------------------------------------
 
-const MAX_MEDIA_DOWNLOAD_BACKOFF_MS = 5000
-const MEDIA_DOWNLOAD_CONCURRENCY = 6
+const MEDIA_DOWNLOAD_TIMEOUT_MS = 15000
+const MEDIA_DOWNLOAD_CONCURRENCY = 10
 
 function normalizeProtocolRelativeUrl(url: string): string {
     return url.startsWith("//") ? `https:${url}` : url
@@ -403,7 +403,6 @@ async function downloadMedia(
     supabaseUrl: string,
 ): Promise<Buffer | null> {
     try {
-        // Use the Supabase SDK for Storage URLs so auth/RLS is handled correctly
         const storagePrefix = `${supabaseUrl}/storage/v1/object/public/`
         if (url.startsWith(storagePrefix)) {
             const withoutPrefix = url.slice(storagePrefix.length)
@@ -412,7 +411,7 @@ async function downloadMedia(
                 const bucket = withoutPrefix.slice(0, slashIdx)
                 const path = withoutPrefix.slice(slashIdx + 1)
                 const timeoutPromise = new Promise<never>((_, reject) =>
-                    setTimeout(() => reject(new Error("Supabase download timeout")), 5000)
+                    setTimeout(() => reject(new Error("Supabase download timeout")), MEDIA_DOWNLOAD_TIMEOUT_MS)
                 )
                 const {data, error} = await Promise.race([
                     supabase.storage.from(bucket).download(path),
@@ -422,12 +421,10 @@ async function downloadMedia(
                 return Buffer.from(await data.arrayBuffer())
             }
         }
-        // Plain fetch for external URLs (e.g. Bing image CDN)
         const normalizedUrl = normalizeProtocolRelativeUrl(url)
-        const timeoutMs = 5000
         const res = await fetch(normalizedUrl, {
             cache: "no-store",
-            signal: AbortSignal.timeout(timeoutMs),
+            signal: AbortSignal.timeout(MEDIA_DOWNLOAD_TIMEOUT_MS),
             headers: {
                 "User-Agent": "ReQal/1.0 (Language Learning App; Anki Export; https://github.com/euick0/reqal)",
                 "Accept": role === "audio" ? "audio/*,*/*;q=0.8" : "image/*,*/*;q=0.8",
@@ -445,20 +442,37 @@ async function downloadMediaWithRetry(
     role: "audio" | "image",
     supabase: Awaited<ReturnType<typeof createClient>>,
     supabaseUrl: string,
+    maxRetries = 3,
 ): Promise<Buffer | null> {
-    return await downloadMedia(url, role, supabase, supabaseUrl)
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        const result = await downloadMedia(url, role, supabase, supabaseUrl)
+        if (result) return result
+        if (attempt < maxRetries - 1) {
+            await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt)))
+        }
+    }
+    return null
 }
 
-async function runWithConcurrency<T>(
+async function runConcurrentPool<T>(
     tasks: (() => Promise<T>)[],
     limit: number,
 ): Promise<PromiseSettledResult<T>[]> {
-    const results: PromiseSettledResult<T>[] = []
-    for (let i = 0; i < tasks.length; i += limit) {
-        const chunk = tasks.slice(i, i + limit)
-        const chunkResults = await Promise.allSettled(chunk.map(fn => fn()))
-        results.push(...chunkResults)
+    const results: PromiseSettledResult<T>[] = new Array(tasks.length)
+    let next = 0
+
+    async function worker() {
+        while (next < tasks.length) {
+            const idx = next++
+            try {
+                results[idx] = {status: "fulfilled", value: await tasks[idx]()}
+            } catch (reason: any) {
+                results[idx] = {status: "rejected", reason}
+            }
+        }
     }
+
+    await Promise.all(Array.from({length: Math.min(limit, tasks.length)}, () => worker()))
     return results
 }
 
@@ -525,7 +539,7 @@ export async function GET(request: NextRequest) {
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
-    const results = await runWithConcurrency(
+    const results = await runConcurrentPool(
         jobs.map(j => () => downloadMediaWithRetry(j.url, j.role, supabase, supabaseUrl)),
         MEDIA_DOWNLOAD_CONCURRENCY,
     )
@@ -680,6 +694,8 @@ export async function GET(request: NextRequest) {
     const insertNote = db.prepare(`INSERT INTO notes VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
     const insertCard = db.prepare(`INSERT INTO cards VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 
+    const insertAll = db.transaction(() => {
+
     for (let i = 0; i < flashcards.length; i++) {
         const fc = flashcards[i]
         const cm = cardMedia[i]
@@ -752,6 +768,9 @@ export async function GET(request: NextRequest) {
             insertCard.run(nextId(), noteId, deckIdNum, 2, now, -1, 0, 0, i, 0, 0, 0, 0, 0, 0, 0, 0, "")
         }
     }
+    })
+
+    insertAll()
 
     // Export the SQLite DB to a Buffer
     const dbBuffer = Buffer.from(db.serialize())
