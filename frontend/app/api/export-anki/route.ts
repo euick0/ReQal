@@ -410,15 +410,18 @@ async function downloadMedia(
             if (slashIdx !== -1) {
                 const bucket = withoutPrefix.slice(0, slashIdx)
                 const path = withoutPrefix.slice(slashIdx + 1)
-                const timeoutPromise = new Promise<never>((_, reject) =>
-                    setTimeout(() => reject(new Error("Supabase download timeout")), MEDIA_DOWNLOAD_TIMEOUT_MS)
-                )
-                const {data, error} = await Promise.race([
-                    supabase.storage.from(bucket).download(path),
-                    timeoutPromise,
-                ])
-                if (error || !data) return null
-                return Buffer.from(await data.arrayBuffer())
+                try {
+                    const timeoutPromise = new Promise<never>((_, reject) =>
+                        setTimeout(() => reject(new Error("Supabase download timeout")), MEDIA_DOWNLOAD_TIMEOUT_MS)
+                    )
+                    const {data, error} = await Promise.race([
+                        supabase.storage.from(bucket).download(path),
+                        timeoutPromise,
+                    ])
+                    if (!error && data) return Buffer.from(await data.arrayBuffer())
+                } catch {
+                    // SDK download failed — fall through to fetch
+                }
             }
         }
         const normalizedUrl = normalizeProtocolRelativeUrl(url)
