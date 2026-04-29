@@ -28,7 +28,6 @@ const RegisterModal = ({onClose, onClickLogin}: RegisterModalProps) => {
     const [showConfirmation, setShowConfirmation] = useState(false)
     const [registeredEmail, setRegisteredEmail] = useState<string>("")
 
-
     const handleUserInput = (name: string, value: string) => {
         setRegisterInput({
             ...registerInput,

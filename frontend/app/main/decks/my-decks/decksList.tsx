@@ -37,23 +37,54 @@ const DeckList = () => {
         })()
     }, [])
 
-    const handleExport = (deckId: number, deckName: string) => {
+    const handleExport = async (deckId: number, deckName: string) => {
         if (exportingDeckId === deckId) return
         setExportingDeckId(deckId)
         try {
+            const res = await fetch(`/api/export-anki?deckId=${deckId}`)
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}))
+                toast.error(err.error ?? "Export failed. Please try again.")
+                return
+            }
+
+            const skipped = Number(res.headers.get("X-Skipped-Media") ?? "0")
+            const failedDetailsRaw = res.headers.get("X-Failed-Details")
+            const failedDetails: { word: string; audioFailed: boolean; imagesFailed: number }[] =
+                failedDetailsRaw ? JSON.parse(failedDetailsRaw) : []
+
+            if (failedDetails.length > 0) {
+                const displayLimit = 5
+                const shown = failedDetails.slice(0, displayLimit)
+                const lines = shown.map(d => {
+                    const parts: string[] = []
+                    if (d.audioFailed) parts.push("audio")
+                    if (d.imagesFailed > 0) parts.push(`${d.imagesFailed} image${d.imagesFailed > 1 ? "s" : ""}`)
+                    return `• "${d.word}": ${parts.join(", ")} failed`
+                })
+                if (failedDetails.length > displayLimit) {
+                    lines.push(`• ...and ${failedDetails.length - displayLimit} more`)
+                }
+                toast.warning(`${skipped} media file${skipped !== 1 ? "s" : ""} failed to download`, {
+                    description: lines.join("\n"),
+                })
+            }
+
+            const blob = await res.blob()
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement("a")
             const safeName = deckName.replace(/[^a-z0-9_\-]/gi, "_")
-            const link = document.createElement("a")
-            link.href = `/api/export-anki?deckId=${deckId}`
-            link.download = `${safeName}.apkg`
-            link.style.display = "none"
-            document.body.appendChild(link)
-            link.click()
-            document.body.removeChild(link)
-            toast.success("Export started — check your downloads")
+            a.href = url
+            a.download = `${safeName}.apkg`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
         } catch {
             toast.error("Export failed. Please check your connection and try again.")
         } finally {
-            setTimeout(() => setExportingDeckId(null), 3000)
+            setExportingDeckId(null)
         }
     }
 
