@@ -43,7 +43,3 @@ next-env.d.ts
 .env.local
 .idea/tailwindcss.xml
 
-nul
-.claude/*
-.gemini/*
-package-lock.json

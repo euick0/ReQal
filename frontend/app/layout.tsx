@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "ReQal",
-  description: "ReQal is a language learning website, that uses AI and flashcards for easy and effective learning",
+  description: "ReQal is a language learning website",
 };
 
 export default function RootLayout({
