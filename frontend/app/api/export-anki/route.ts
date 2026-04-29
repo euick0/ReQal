@@ -389,19 +389,72 @@ function buildConjugationModel(deckId: number) {
 // Media download helper
 // ---------------------------------------------------------------------------
 
-const MEDIA_DOWNLOAD_TIMEOUT_MS = 15000
-const MEDIA_DOWNLOAD_CONCURRENCY = 10
+const MEDIA_DOWNLOAD_TIMEOUT_MS = 30000
+const MEDIA_DOWNLOAD_CONCURRENCY = 6
+const MEDIA_MAX_RETRIES = 6
+
+const VALID_AUDIO_CONTENT_TYPES = new Set([
+    "audio/mpeg", "audio/mp3", "audio/ogg", "audio/wav", "audio/flac",
+    "audio/m4a", "audio/mp4", "audio/x-wav", "audio/webm", "audio/opus",
+    "audio/aac", "audio/x-m4a", "video/ogg", "application/ogg",
+    "application/octet-stream",
+])
+const VALID_IMAGE_CONTENT_TYPES = new Set([
+    "image/jpeg", "image/png", "image/webp", "image/gif", "image/avif",
+    "image/svg+xml", "application/octet-stream",
+])
 
 function normalizeProtocolRelativeUrl(url: string): string {
     return url.startsWith("//") ? `https:${url}` : url
 }
+
+function isValidMediaContentType(contentType: string | null, role: "audio" | "image"): boolean {
+    if (!contentType) return true
+    const base = contentType.split(";")[0].trim().toLowerCase()
+    if (role === "audio") return VALID_AUDIO_CONTENT_TYPES.has(base)
+    return VALID_IMAGE_CONTENT_TYPES.has(base)
+}
+
+function getHostname(url: string): string {
+    try { return new URL(url).hostname } catch { return "unknown" }
+}
+
+const hostSemaphores = new Map<string, { queue: (() => void)[], running: number, limit: number }>()
+
+function getHostSemaphore(host: string, limit: number) {
+    if (!hostSemaphores.has(host)) {
+        hostSemaphores.set(host, { queue: [], running: 0, limit })
+    }
+    return hostSemaphores.get(host)!
+}
+
+async function acquireHostSlot(host: string, limit: number): Promise<void> {
+    const sem = getHostSemaphore(host, limit)
+    if (sem.running < sem.limit) {
+        sem.running++
+        return
+    }
+    return new Promise<void>(resolve => {
+        sem.queue.push(() => { sem.running++; resolve() })
+    })
+}
+
+function releaseHostSlot(host: string): void {
+    const sem = hostSemaphores.get(host)
+    if (!sem) return
+    sem.running--
+    const next = sem.queue.shift()
+    if (next) next()
+}
+
+type DownloadResult = { buffer: Buffer | null; retryAfterMs: number }
 
 async function downloadMedia(
     url: string,
     role: "audio" | "image",
     supabase: Awaited<ReturnType<typeof createClient>>,
     supabaseUrl: string,
-): Promise<Buffer | null> {
+): Promise<DownloadResult> {
     try {
         const storagePrefix = `${supabaseUrl}/storage/v1/object/public/`
         if (url.startsWith(storagePrefix)) {
@@ -418,25 +471,52 @@ async function downloadMedia(
                         supabase.storage.from(bucket).download(path),
                         timeoutPromise,
                     ])
-                    if (!error && data) return Buffer.from(await data.arrayBuffer())
+                    if (!error && data) {
+                        const buf = Buffer.from(await data.arrayBuffer())
+                        if (buf.length > 0) return { buffer: buf, retryAfterMs: 0 }
+                    }
                 } catch {
-                    // SDK download failed — fall through to fetch
                 }
             }
         }
         const normalizedUrl = normalizeProtocolRelativeUrl(url)
-        const res = await fetch(normalizedUrl, {
-            cache: "no-store",
-            signal: AbortSignal.timeout(MEDIA_DOWNLOAD_TIMEOUT_MS),
-            headers: {
-                "User-Agent": "ReQal/1.0 (Language Learning App; Anki Export; https://github.com/euick0/reqal)",
-                "Accept": role === "audio" ? "audio/*,*/*;q=0.8" : "image/*,*/*;q=0.8",
-            },
-        })
-        if (!res.ok) return null
-        return Buffer.from(await res.arrayBuffer())
+        const host = getHostname(normalizedUrl)
+        const hostLimit = host.includes("wikimedia") || host.includes("wikipedia") ? 2 : 4
+        await acquireHostSlot(host, hostLimit)
+        try {
+            const res = await fetch(normalizedUrl, {
+                cache: "no-store",
+                redirect: "follow",
+                signal: AbortSignal.timeout(MEDIA_DOWNLOAD_TIMEOUT_MS),
+                headers: {
+                    "User-Agent": "ReQal/1.0 (Language Learning App; Anki Export; https://github.com/euick0/reqal)",
+                    "Accept": role === "audio"
+                        ? "audio/mpeg, audio/ogg, audio/wav, audio/*, */*;q=0.5"
+                        : "image/webp, image/jpeg, image/png, image/*, */*;q=0.5",
+                    "Referer": "https://en.wiktionary.org/",
+                    "Accept-Encoding": "identity",
+                },
+            })
+            if (res.status === 429 || res.status === 503) {
+                const retryAfter = res.headers.get("retry-after")
+                const waitMs = retryAfter
+                    ? (Number(retryAfter) > 0 ? Number(retryAfter) * 1000 : 5000)
+                    : 5000
+                return { buffer: null, retryAfterMs: waitMs }
+            }
+            if (!res.ok) return { buffer: null, retryAfterMs: 0 }
+            const contentType = res.headers.get("content-type")
+            if (!isValidMediaContentType(contentType, role)) {
+                return { buffer: null, retryAfterMs: 0 }
+            }
+            const buf = Buffer.from(await res.arrayBuffer())
+            if (buf.length === 0) return { buffer: null, retryAfterMs: 0 }
+            return { buffer: buf, retryAfterMs: 0 }
+        } finally {
+            releaseHostSlot(host)
+        }
     } catch {
-        return null
+        return { buffer: null, retryAfterMs: 0 }
     }
 }
 
@@ -445,13 +525,15 @@ async function downloadMediaWithRetry(
     role: "audio" | "image",
     supabase: Awaited<ReturnType<typeof createClient>>,
     supabaseUrl: string,
-    maxRetries = 3,
+    maxRetries = MEDIA_MAX_RETRIES,
 ): Promise<Buffer | null> {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-        const result = await downloadMedia(url, role, supabase, supabaseUrl)
-        if (result) return result
+        const { buffer, retryAfterMs } = await downloadMedia(url, role, supabase, supabaseUrl)
+        if (buffer) return buffer
         if (attempt < maxRetries - 1) {
-            await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt)))
+            const baseDelay = retryAfterMs > 0 ? retryAfterMs : 800 * Math.pow(2, attempt)
+            const jitter = Math.random() * 300
+            await new Promise(r => setTimeout(r, baseDelay + jitter))
         }
     }
     return null
@@ -485,11 +567,15 @@ const KNOWN_AUDIO_EXTS = new Set(["mp3", "ogg", "wav", "m4a", "flac", "opus"])
 function mediaExtension(url: string, role: "audio" | "image"): string {
     try {
         const pathname = new URL(url).pathname
-        const ext = pathname.split(".").pop()?.toLowerCase()
-        if (ext && KNOWN_IMAGE_EXTS.has(ext)) return `.${ext}`
-        if (ext && KNOWN_AUDIO_EXTS.has(ext)) return `.${ext}`
+        const segments = pathname.split("/")
+        const lastSegment = segments[segments.length - 1] || ""
+        const dotIdx = lastSegment.lastIndexOf(".")
+        if (dotIdx !== -1) {
+            const ext = lastSegment.slice(dotIdx + 1).toLowerCase()
+            if (KNOWN_IMAGE_EXTS.has(ext)) return `.${ext}`
+            if (KNOWN_AUDIO_EXTS.has(ext)) return `.${ext}`
+        }
     } catch {
-        // fall through
     }
     return role === "audio" ? ".mp3" : ".jpg"
 }
