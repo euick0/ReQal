@@ -389,11 +389,39 @@ function buildConjugationModel(deckId: number) {
 // Media download helper
 // ---------------------------------------------------------------------------
 
-const MAX_MEDIA_DOWNLOAD_BACKOFF_MS = 5000
-const MEDIA_DOWNLOAD_CONCURRENCY = 6
+const MEDIA_DOWNLOAD_CONCURRENCY = 2
+const MAX_RETRIES = 4
+const INITIAL_BACKOFF_MS = 800
+const EXTERNAL_TIMEOUT_MS = 30_000
+const SUPABASE_TIMEOUT_MS = 15_000
+const INTER_BATCH_DELAY_MS = 500
+
+const VALID_AUDIO_CONTENT_TYPES = new Set([
+    "audio/mpeg", "audio/ogg", "audio/wav", "audio/mp4", "audio/flac",
+    "audio/opus", "audio/webm", "audio/x-wav", "audio/x-m4a",
+    "audio/aac", "audio/vorbis", "application/ogg", "application/octet-stream",
+    "video/ogg",
+])
+const VALID_IMAGE_CONTENT_TYPES = new Set([
+    "image/jpeg", "image/png", "image/webp", "image/gif", "image/avif",
+    "image/svg+xml", "image/bmp", "image/tiff", "application/octet-stream",
+])
 
 function normalizeProtocolRelativeUrl(url: string): string {
     return url.startsWith("//") ? `https:${url}` : url
+}
+
+function isValidContentType(contentType: string | null, role: "audio" | "image"): boolean {
+    if (!contentType) return true
+    const ct = contentType.split(";")[0].trim().toLowerCase()
+    if (ct === "application/octet-stream") return true
+    if (ct.startsWith("text/")) return false
+    const valid = role === "audio" ? VALID_AUDIO_CONTENT_TYPES : VALID_IMAGE_CONTENT_TYPES
+    return valid.has(ct)
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 async function downloadMedia(
@@ -402,42 +430,53 @@ async function downloadMedia(
     supabase: Awaited<ReturnType<typeof createClient>>,
     supabaseUrl: string,
 ): Promise<Buffer | null> {
-    try {
-        // Use the Supabase SDK for Storage URLs so auth/RLS is handled correctly
-        const storagePrefix = `${supabaseUrl}/storage/v1/object/public/`
-        if (url.startsWith(storagePrefix)) {
-            const withoutPrefix = url.slice(storagePrefix.length)
-            const slashIdx = withoutPrefix.indexOf("/")
-            if (slashIdx !== -1) {
-                const bucket = withoutPrefix.slice(0, slashIdx)
-                const path = withoutPrefix.slice(slashIdx + 1)
-                const timeoutPromise = new Promise<never>((_, reject) =>
-                    setTimeout(() => reject(new Error("Supabase download timeout")), 5000)
-                )
-                const {data, error} = await Promise.race([
-                    supabase.storage.from(bucket).download(path),
-                    timeoutPromise,
-                ])
-                if (error || !data) return null
-                return Buffer.from(await data.arrayBuffer())
-            }
+    const storagePrefix = `${supabaseUrl}/storage/v1/object/public/`
+    if (url.startsWith(storagePrefix)) {
+        const withoutPrefix = url.slice(storagePrefix.length)
+        const slashIdx = withoutPrefix.indexOf("/")
+        if (slashIdx !== -1) {
+            const bucket = withoutPrefix.slice(0, slashIdx)
+            const path = withoutPrefix.slice(slashIdx + 1)
+            const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error("Supabase download timeout")), SUPABASE_TIMEOUT_MS)
+            )
+            const {data, error} = await Promise.race([
+                supabase.storage.from(bucket).download(path),
+                timeoutPromise,
+            ])
+            if (error || !data) return null
+            return Buffer.from(await data.arrayBuffer())
         }
-        // Plain fetch for external URLs (e.g. Bing image CDN)
-        const normalizedUrl = normalizeProtocolRelativeUrl(url)
-        const timeoutMs = 5000
-        const res = await fetch(normalizedUrl, {
-            cache: "no-store",
-            signal: AbortSignal.timeout(timeoutMs),
-            headers: {
-                "User-Agent": "ReQal/1.0 (Language Learning App; Anki Export; https://github.com/euick0/reqal)",
-                "Accept": role === "audio" ? "audio/*,*/*;q=0.8" : "image/*,*/*;q=0.8",
-            },
-        })
-        if (!res.ok) return null
-        return Buffer.from(await res.arrayBuffer())
-    } catch {
-        return null
     }
+
+    const normalizedUrl = normalizeProtocolRelativeUrl(url)
+    const res = await fetch(normalizedUrl, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(EXTERNAL_TIMEOUT_MS),
+        headers: {
+            "User-Agent": "ReQal/1.0 (Language Learning App; Anki Export; https://github.com/euick0/reqal)",
+            "Accept": role === "audio"
+                ? "audio/mpeg, audio/ogg, audio/wav, audio/mp4, audio/*, */*;q=0.1"
+                : "image/webp, image/png, image/jpeg, image/*, */*;q=0.1",
+        },
+        redirect: "follow",
+    })
+
+    if (res.status === 429) {
+        const retryAfter = res.headers.get("retry-after")
+        const waitSec = retryAfter ? Math.min(parseInt(retryAfter, 10) || 5, 30) : 5
+        throw Object.assign(new Error("rate-limited"), {retryAfterMs: waitSec * 1000})
+    }
+
+    if (!res.ok) return null
+
+    const ct = res.headers.get("content-type")
+    if (!isValidContentType(ct, role)) return null
+
+    const buf = Buffer.from(await res.arrayBuffer())
+    if (buf.length < 100) return null
+
+    return buf
 }
 
 async function downloadMediaWithRetry(
@@ -446,7 +485,26 @@ async function downloadMediaWithRetry(
     supabase: Awaited<ReturnType<typeof createClient>>,
     supabaseUrl: string,
 ): Promise<Buffer | null> {
-    return await downloadMedia(url, role, supabase, supabaseUrl)
+    let backoff = INITIAL_BACKOFF_MS
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+            const result = await downloadMedia(url, role, supabase, supabaseUrl)
+            if (result) return result
+            if (attempt < MAX_RETRIES - 1) {
+                await sleep(backoff)
+                backoff = Math.min(backoff * 2, 10_000)
+            }
+        } catch (err: unknown) {
+            const retryAfterMs = (err as {retryAfterMs?: number}).retryAfterMs
+            if (retryAfterMs) {
+                await sleep(retryAfterMs)
+            } else if (attempt < MAX_RETRIES - 1) {
+                await sleep(backoff)
+                backoff = Math.min(backoff * 2, 10_000)
+            }
+        }
+    }
+    return null
 }
 
 async function runWithConcurrency<T>(
@@ -458,6 +516,9 @@ async function runWithConcurrency<T>(
         const chunk = tasks.slice(i, i + limit)
         const chunkResults = await Promise.allSettled(chunk.map(fn => fn()))
         results.push(...chunkResults)
+        if (i + limit < tasks.length) {
+            await sleep(INTER_BATCH_DELAY_MS)
+        }
     }
     return results
 }
