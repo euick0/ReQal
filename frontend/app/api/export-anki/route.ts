@@ -1,6 +1,5 @@
 import {NextRequest, NextResponse} from "next/server"
 import Database from "better-sqlite3"
-import JSZip from "jszip"
 import {GetDeckById, GetDeckFlashcards, GetConjugationFlashcards} from "@/lib/backendUtils"
 import {createClient} from "@/lib/supabase/server"
 
@@ -386,143 +385,8 @@ function buildConjugationModel(deckId: number) {
 }
 
 // ---------------------------------------------------------------------------
-// Media download helper
+// Media file extension helper
 // ---------------------------------------------------------------------------
-
-const MEDIA_DOWNLOAD_CONCURRENCY = 2
-const MAX_RETRIES = 4
-const INITIAL_BACKOFF_MS = 800
-const EXTERNAL_TIMEOUT_MS = 30_000
-const SUPABASE_TIMEOUT_MS = 15_000
-const INTER_BATCH_DELAY_MS = 500
-
-const VALID_AUDIO_CONTENT_TYPES = new Set([
-    "audio/mpeg", "audio/ogg", "audio/wav", "audio/mp4", "audio/flac",
-    "audio/opus", "audio/webm", "audio/x-wav", "audio/x-m4a",
-    "audio/aac", "audio/vorbis", "application/ogg", "application/octet-stream",
-    "video/ogg",
-])
-const VALID_IMAGE_CONTENT_TYPES = new Set([
-    "image/jpeg", "image/png", "image/webp", "image/gif", "image/avif",
-    "image/svg+xml", "image/bmp", "image/tiff", "application/octet-stream",
-])
-
-function normalizeProtocolRelativeUrl(url: string): string {
-    return url.startsWith("//") ? `https:${url}` : url
-}
-
-function isValidContentType(contentType: string | null, role: "audio" | "image"): boolean {
-    if (!contentType) return true
-    const ct = contentType.split(";")[0].trim().toLowerCase()
-    if (ct === "application/octet-stream") return true
-    if (ct.startsWith("text/")) return false
-    const valid = role === "audio" ? VALID_AUDIO_CONTENT_TYPES : VALID_IMAGE_CONTENT_TYPES
-    return valid.has(ct)
-}
-
-function sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-async function downloadMedia(
-    url: string,
-    role: "audio" | "image",
-    supabase: Awaited<ReturnType<typeof createClient>>,
-    supabaseUrl: string,
-): Promise<Buffer | null> {
-    const storagePrefix = `${supabaseUrl}/storage/v1/object/public/`
-    if (url.startsWith(storagePrefix)) {
-        const withoutPrefix = url.slice(storagePrefix.length)
-        const slashIdx = withoutPrefix.indexOf("/")
-        if (slashIdx !== -1) {
-            const bucket = withoutPrefix.slice(0, slashIdx)
-            const path = withoutPrefix.slice(slashIdx + 1)
-            const timeoutPromise = new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error("Supabase download timeout")), SUPABASE_TIMEOUT_MS)
-            )
-            const {data, error} = await Promise.race([
-                supabase.storage.from(bucket).download(path),
-                timeoutPromise,
-            ])
-            if (error || !data) return null
-            return Buffer.from(await data.arrayBuffer())
-        }
-    }
-
-    const normalizedUrl = normalizeProtocolRelativeUrl(url)
-    const res = await fetch(normalizedUrl, {
-        cache: "no-store",
-        signal: AbortSignal.timeout(EXTERNAL_TIMEOUT_MS),
-        headers: {
-            "User-Agent": "ReQal/1.0 (Language Learning App; Anki Export; https://github.com/euick0/reqal)",
-            "Accept": role === "audio"
-                ? "audio/mpeg, audio/ogg, audio/wav, audio/mp4, audio/*, */*;q=0.1"
-                : "image/webp, image/png, image/jpeg, image/*, */*;q=0.1",
-        },
-        redirect: "follow",
-    })
-
-    if (res.status === 429) {
-        const retryAfter = res.headers.get("retry-after")
-        const waitSec = retryAfter ? Math.min(parseInt(retryAfter, 10) || 5, 30) : 5
-        throw Object.assign(new Error("rate-limited"), {retryAfterMs: waitSec * 1000})
-    }
-
-    if (!res.ok) return null
-
-    const ct = res.headers.get("content-type")
-    if (!isValidContentType(ct, role)) return null
-
-    const buf = Buffer.from(await res.arrayBuffer())
-    if (buf.length < 100) return null
-
-    return buf
-}
-
-async function downloadMediaWithRetry(
-    url: string,
-    role: "audio" | "image",
-    supabase: Awaited<ReturnType<typeof createClient>>,
-    supabaseUrl: string,
-): Promise<Buffer | null> {
-    let backoff = INITIAL_BACKOFF_MS
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-        try {
-            const result = await downloadMedia(url, role, supabase, supabaseUrl)
-            if (result) return result
-            if (attempt < MAX_RETRIES - 1) {
-                await sleep(backoff)
-                backoff = Math.min(backoff * 2, 10_000)
-            }
-        } catch (err: unknown) {
-            const retryAfterMs = (err as {retryAfterMs?: number}).retryAfterMs
-            if (retryAfterMs) {
-                await sleep(retryAfterMs)
-            } else if (attempt < MAX_RETRIES - 1) {
-                await sleep(backoff)
-                backoff = Math.min(backoff * 2, 10_000)
-            }
-        }
-    }
-    return null
-}
-
-async function runWithConcurrency<T>(
-    tasks: (() => Promise<T>)[],
-    limit: number,
-): Promise<PromiseSettledResult<T>[]> {
-    const results: PromiseSettledResult<T>[] = []
-    for (let i = 0; i < tasks.length; i += limit) {
-        const chunk = tasks.slice(i, i + limit)
-        const chunkResults = await Promise.allSettled(chunk.map(fn => fn()))
-        results.push(...chunkResults)
-        if (i + limit < tasks.length) {
-            await sleep(INTER_BATCH_DELAY_MS)
-        }
-    }
-    return results
-}
-
 const KNOWN_IMAGE_EXTS = new Set(["jpg", "jpeg", "png", "webp", "gif", "avif"])
 const KNOWN_AUDIO_EXTS = new Set(["mp3", "ogg", "wav", "m4a", "flac", "opus"])
 
@@ -540,6 +404,8 @@ function mediaExtension(url: string, role: "audio" | "image"): string {
 
 // ---------------------------------------------------------------------------
 // GET /api/export-anki?deckId=<uuid>
+// Returns JSON: { db, manifest, mediaMap, deckName }
+// Client handles media download + ZIP packaging
 // ---------------------------------------------------------------------------
 
 export async function GET(request: NextRequest) {
@@ -570,9 +436,8 @@ export async function GET(request: NextRequest) {
     if (flashcards.length === 0) return NextResponse.json({error: "Deck has no flashcards"}, {status: 400})
 
     // ---------------------------------------------------------------------------
-    // Download all media in parallel
+    // Pre-assign media filenames (client downloads the actual files)
     // ---------------------------------------------------------------------------
-    // Build a flat list of all media URLs we need, tagged with card index
     type MediaJob = { cardIndex: number; role: "audio" | "image"; imageIndex?: number; url: string }
     const jobs: MediaJob[] = []
 
@@ -585,63 +450,23 @@ export async function GET(request: NextRequest) {
         }
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
-    const results = await runWithConcurrency(
-        jobs.map(j => () => downloadMediaWithRetry(j.url, j.role, supabase, supabaseUrl)),
-        MEDIA_DOWNLOAD_CONCURRENCY,
-    )
-
-    // mediaFiles: maps mediaIndex → { filename, buffer }
-    // We assign each downloaded file a sequential number (Anki media convention)
     let mediaIndex = 0
-    let skippedCount = 0
-
-    // For each card, store its resolved audio filename and image filenames
     type CardMedia = { audioFilename: string | null; imageFilenames: string[] }
     const cardMedia: CardMedia[] = flashcards.map(() => ({audioFilename: null, imageFilenames: []}))
-    const mediaManifest: Record<string, string> = {}  // { "0": "audio.mp3", "1": "img.jpg", ... }
-    const mediaBuffers: { index: number; buffer: Buffer }[] = []
-    const failureMap = new Map<number, { audioFailed: boolean; imagesFailed: number }>()
+    const mediaMap: Record<string, string> = {}
+    const manifest: { index: number; url: string; filename: string; role: "audio" | "image" }[] = []
 
-    for (let k = 0; k < jobs.length; k++) {
-        const job = jobs[k]
-        const result = results[k]
-
-        if (result.status === "fulfilled" && result.value) {
-            const ext = mediaExtension(job.url, job.role)
-            const originalName = `${job.role}_${job.cardIndex}_${job.imageIndex ?? 0}${ext}`
-            const idx = mediaIndex++
-            mediaManifest[String(idx)] = originalName
-            mediaBuffers.push({index: idx, buffer: result.value})
-
-            if (job.role === "audio") {
-                cardMedia[job.cardIndex].audioFilename = originalName
-            } else {
-                cardMedia[job.cardIndex].imageFilenames.push(originalName)
-            }
+    for (const job of jobs) {
+        const ext = mediaExtension(job.url, job.role)
+        const filename = `${job.role}_${job.cardIndex}_${job.imageIndex ?? 0}${ext}`
+        const idx = mediaIndex++
+        mediaMap[String(idx)] = filename
+        manifest.push({index: idx, url: job.url, filename, role: job.role})
+        if (job.role === "audio") {
+            cardMedia[job.cardIndex].audioFilename = filename
         } else {
-            skippedCount++
-            if (!failureMap.has(job.cardIndex)) {
-                failureMap.set(job.cardIndex, {audioFailed: false, imagesFailed: 0})
-            }
-            const entry = failureMap.get(job.cardIndex)!
-            if (job.role === "audio") {
-                entry.audioFailed = true
-            } else {
-                entry.imagesFailed++
-            }
+            cardMedia[job.cardIndex].imageFilenames.push(filename)
         }
-    }
-
-    type FailedCardDetail = { word: string; audioFailed: boolean; imagesFailed: number }
-    const failedDetails: FailedCardDetail[] = []
-    for (const [cardIndex, failure] of failureMap.entries()) {
-        const fc = flashcards[cardIndex]
-        failedDetails.push({
-            word: ('translated_word' in fc ? fc.translated_word : fc.missing_word) ?? `Card ${cardIndex + 1}`,
-            audioFailed: failure.audioFailed,
-            imagesFailed: failure.imagesFailed,
-        })
     }
 
     // ---------------------------------------------------------------------------
@@ -814,30 +639,16 @@ export async function GET(request: NextRequest) {
         }
     }
 
-    // Export the SQLite DB to a Buffer
     const dbBuffer = Buffer.from(db.serialize())
     db.close()
 
     // ---------------------------------------------------------------------------
-    // Assemble .apkg (ZIP)
+    // Return JSON for client-side packaging
     // ---------------------------------------------------------------------------
-    const zip = new JSZip()
-    zip.file("collection.anki2", dbBuffer)
-    zip.file("media", JSON.stringify(mediaManifest))
-
-    for (const {index, buffer} of mediaBuffers) {
-        zip.file(String(index), buffer)
-    }
-
-    const apkgBuffer = await zip.generateAsync({type: "nodebuffer", compression: "DEFLATE"})
-
-    const safeName = deck.name.replace(/[^a-z0-9_\-]/gi, "_")
-    const headers = new Headers({
-        "Content-Type": "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${safeName}.apkg"`,
-        "X-Skipped-Media": String(skippedCount),
-        "X-Failed-Details": JSON.stringify(failedDetails).replace(/[^\x00-\x7F]/g, c => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`),
+    return NextResponse.json({
+        db: dbBuffer.toString("base64"),
+        manifest,
+        mediaMap,
+        deckName: deck.name,
     })
-
-    return new NextResponse(new Uint8Array(apkgBuffer), {status: 200, headers})
 }
