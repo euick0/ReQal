@@ -52,8 +52,6 @@ const ConjugationParameters = () => {
     const [imageSearchResults, setImageSearchResults] = React.useState<string[]>([])
     const [imageAlts, setImageAlts] = React.useState<string[]>([])
     const [missingWord, setMissingWord] = React.useState<string>("")
-    const [showLanguageDialog, setShowLanguageDialog] = React.useState(false)
-    const [dialogLanguage, setDialogLanguage] = React.useState("")
     const [deckId, setDeckId] = React.useState<string | null>(null)
     const [languages, setLanguages] = React.useState<string[]>([])
     const pasteZoneRef = useRef<HTMLDivElement>(null)
@@ -184,10 +182,6 @@ const ConjugationParameters = () => {
         setLanguage(lang)
         setPathway(pathways.find(p => p.pathName === prefs?.pathway?.pathName) ?? pathways[0])
 
-        if (!lang) {
-            setShowLanguageDialog(true)
-            return
-        }
     }
 
     const handleTranslate = async () => {
@@ -251,15 +245,6 @@ const ConjugationParameters = () => {
         setProgress(100)
         setIsTranslating(false)
     }
-
-    const handleLanguageConfirm = async () => {
-        if (!dialogLanguage) return
-        setLanguage(dialogLanguage)
-        await UpdateDeckPreference("600 Words", "prefered_language", dialogLanguage)
-        setShowLanguageDialog(false)
-    }
-
-
 
     const handleEditLast = async () => {
         if (!deckId) {
@@ -562,34 +547,7 @@ const ConjugationParameters = () => {
                             <Button className="text-white " variant="ghost" size="default" type="button" onClick={handleEditLast} disabled={isSubmitting || isTranslating}>Edit Last</Button>
                         </div>
 
-                        <Dialog open={showLanguageDialog} onOpenChange={setShowLanguageDialog}>
-                                <DialogContent showCloseButton={false} onInteractOutside={(e) => e.preventDefault()}>
-                                    <DialogHeader>
-                                        <DialogTitle>Select a language</DialogTitle>
-                                        <DialogDescription>
-                                            Hi, it seems like its your first time here. Select a language you want to learn.
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <Combobox items={languages} value={dialogLanguage}
-                                              onValueChange={(v) => { if (v) setDialogLanguage(v) }}>
-                                        <ComboboxInput placeholder="Select a language" className="w-full"/>
-                                        <ComboboxContent>
-                                            <ComboboxEmpty>No items found.</ComboboxEmpty>
-                                            <ComboboxList>
-                                                {(item) => (
-                                                    <ComboboxItem key={item} value={item}>{item}</ComboboxItem>
-                                                )}
-                                            </ComboboxList>
-                                        </ComboboxContent>
-                                    </Combobox>
-                                    <DialogFooter>
-                                        <Button className="text-white rounded-md!" onClick={handleLanguageConfirm}
-                                                disabled={!dialogLanguage}>
-                                            Confirm
-                                        </Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
+
                     </form>
                 </Field>
                 <ScrollBar className="absolute pl-8"></ScrollBar>
