@@ -1,5 +1,5 @@
 import React from "react"
-import FlashcardList from "@/app/main/decks/my-decks/[deckId]/edit-flashcards/flascardList"
+import FlashcardList from "./flashcardList"
 import {
     GetDeckById,
     GetFlashcardsFiltered,
