@@ -1,6 +1,6 @@
 "use server";
 
-import {GoogleGenAI} from "@google/genai";
+import {GoogleGenAI, ThinkingLevel} from "@google/genai";
 
 const ai = new GoogleGenAI({});
 
@@ -17,7 +17,7 @@ const generateWithRetry = async (prompt: string, attempts = 3): Promise<string> 
                 contents: prompt,
                 config: {
                     temperature: 0,
-                    thinkingConfig: { thinkingLevel: "MINIMAL" },
+                    thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
                 },
             });
             return response.text ?? "";
