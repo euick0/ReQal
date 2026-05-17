@@ -25,7 +25,7 @@ ReQal is a language learning platform where users create, manage, and study voca
 | Icons | Lucide React |
 | Backend/DB | Supabase (PostgreSQL + Storage + Auth) |
 | Auth | Supabase Auth — email/password + Google OAuth |
-| AI | Google Gemini (`gemma-3-27b-it`) via `@google/genai` |
+| AI | Google Gemini (`gemma-4-31b-it`) via `@google/genai` |
 | Audio | Wiktionary / Wikimedia Commons CDN |
 | Images | Bing Image Search (HTML scraping) |
 | Anki Export | `better-sqlite3` + `jszip` |
@@ -221,7 +221,7 @@ Same as `flashcards` plus:
 ### `lib/geminiQueries.ts`
 - `GeminiSendTranslationQuery(word, targetLanguage)` → `{ translation, gender, IPA }`
 - `GeminiSendPhraseTranslationQuery(word, phrase, targetLanguage)` → translation preserving `_` placeholder
-- Model: `gemma-3-27b-it`. Returns strict JSON; sanitizes on parse failure.
+- Model: `gemma-4-31b-it`. Returns strict JSON; sanitizes on parse failure. Retries with exponential backoff on transient API failures.
 
 ### `lib/getAudio.ts`
 - `GetWiktionaryAudio(word, language)` → public CDN URL or null

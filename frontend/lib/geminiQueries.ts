@@ -4,7 +4,7 @@ import {GoogleGenAI} from "@google/genai";
 
 const ai = new GoogleGenAI({});
 
-const GEMINI_MODEL = "gemma-3-27b-it";
+const GEMINI_MODEL = "gemma-4-31b-it";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
