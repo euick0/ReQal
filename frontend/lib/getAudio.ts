@@ -73,13 +73,16 @@ export async function GetWiktionaryAudio(
     word: string,
     language: string
 ): Promise<{ data: { audioUrl: string } | null; error: Error | null }> {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 6000)
+
     try {
         const langCode = languageCodeMap[language] ?? "en"
 
         // Step 1: fetch the wikitext of the word's page
         const res = await fetch(
             `https://en.wiktionary.org/w/api.php?action=parse&page=${encodeURIComponent(word)}&prop=wikitext&format=json`,
-            {next: {revalidate: 86400}}
+            {next: {revalidate: 86400}, signal: controller.signal}
         )
 
         if (!res.ok)
@@ -104,7 +107,7 @@ export async function GetWiktionaryAudio(
         // Step 3: resolve the real CDN URL from Wikimedia Commons
         const infoRes = await fetch(
             `https://commons.wikimedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(fileName)}&prop=imageinfo&iiprop=url&format=json`,
-            { next: { revalidate: 86400 } }
+            { next: { revalidate: 86400 }, signal: controller.signal }
         )
         const infoJson = await infoRes.json()
         const infoPages = infoJson.query?.pages ?? {}
@@ -116,6 +119,10 @@ export async function GetWiktionaryAudio(
 
         return {data: {audioUrl}, error: null}
     } catch (err) {
+        if (err instanceof Error && err.name === "AbortError")
+            return {data: null, error: null}
         return {data: null, error: err instanceof Error ? err : new Error(String(err))}
+    } finally {
+        clearTimeout(timeout)
     }
 }
