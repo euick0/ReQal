@@ -4,7 +4,7 @@ import {GoogleGenAI} from "@google/genai";
 
 const ai = new GoogleGenAI({});
 
-const GEMINI_MODEL = "gemma-4-31b-it";
+const GEMINI_MODEL = "gemma-4-26b-a4b-it";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -15,6 +15,10 @@ const generateWithRetry = async (prompt: string, attempts = 3): Promise<string> 
             const response = await ai.models.generateContent({
                 model: GEMINI_MODEL,
                 contents: prompt,
+                config: {
+                    temperature: 0,
+                    thinkingConfig: { thinkingLevel: "MINIMAL" },
+                },
             });
             return response.text ?? "";
         } catch (err) {
