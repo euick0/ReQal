@@ -4,6 +4,27 @@ import {GoogleGenAI} from "@google/genai";
 
 const ai = new GoogleGenAI({});
 
+const GEMINI_MODEL = "gemma-3-27b-it";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const generateWithRetry = async (prompt: string, attempts = 3): Promise<string> => {
+    let lastError: unknown = null;
+    for (let i = 0; i < attempts; i++) {
+        try {
+            const response = await ai.models.generateContent({
+                model: GEMINI_MODEL,
+                contents: prompt,
+            });
+            return response.text ?? "";
+        } catch (err) {
+            lastError = err;
+            if (i < attempts - 1) await sleep(500 * Math.pow(3, i));
+        }
+    }
+    throw lastError instanceof Error ? lastError : new Error(String(lastError));
+};
+
 interface TranslationResult {
     original_word: string
     context: string | null
@@ -104,21 +125,13 @@ const GeminiSendTranslationQuery = async (word: string, targetLanguage: string) 
          `Now translate the following word: ${word} into ${targetLanguage} and return the JSON according to the rules above:`
         
     try {
-        const response = await ai.models.generateContent({
-            model: "gemma-4-31b-it",
-            contents: prompt,
-        });
-
-        const text = response.text ?? ""
-        console.log("Propmt:", prompt)
-        console.log("Raw Gemini response:", text)
+        const text = await generateWithRetry(prompt)
 
         const fenceStripped = text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim()
-        const match = fenceStripped.match(/\{[\s\S]*1\}/)
+        const match = fenceStripped.match(/\{[\s\S]*\}/)
         const extracted = match ? match[0] : fenceStripped
         const sanitized = extracted.replace(/\]\s*}/g, "}").replace(/\{\s*\[/g, "{")
         const parsed = JSON.parse(sanitized)
-        console.log("Gemini response:", parsed)
 
         return {data: parsed as TranslationResult, error: null}
     } catch (err) {
@@ -291,22 +304,13 @@ const GeminiSendPhraseTranslationQuery = async (word: string, phrase: string, ta
         `Now translate the following word: "${word}" and the following phrase: "${phrase}" into ${targetLanguage} and return the JSON according to the rules above:`
     
     try {
-        const response = await ai.models.generateContent({
-            model: "gemma-4-31b-it",
-            contents: prompt,
-        });
-
-        const text = response.text ?? ""
-        console.log("Prompt:", prompt)
-        console.log("Raw Gemini response:", text)
+        const text = await generateWithRetry(prompt)
 
         const fenceStripped = text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim()
         const match = fenceStripped.match(/\{[\s\S]*\}/)
         const extracted = match ? match[0] : fenceStripped
         const sanitized = extracted.replace(/\]\s*}/g, "}").replace(/\{\s*\[/g, "{")
         const parsed = JSON.parse(sanitized)
-
-        console.log("Gemini response:", parsed)
 
         return {data: parsed as PhraseTranslationResult, error: null}
     } catch (err) {
